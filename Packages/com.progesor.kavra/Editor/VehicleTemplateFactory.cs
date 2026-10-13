@@ -11,7 +11,8 @@ namespace Progesor.Kavra.Editor
         SingleChassis20WheelStressTest
     }
 
-    internal static class VehicleTemplateFactory
+    /// <summary>Deterministic layout presets used by the Wizard and lab.</summary>
+    public static class VehicleTemplateFactory
     {
         public static VehicleDefinition Create(VehicleTemplate kind)
         {
@@ -48,7 +49,7 @@ namespace Progesor.Kavra.Editor
                 default:
                     vehicle.VehicleName = "20W single-chassis scaffold (NOT a tractor-trailer)";
                     vehicle.ChassisMassKg = 30000f;
-                    for (var i = 0; i < 10; i++)
+                    for (int i = 0; i < 10; i++)
                         AddAxle(vehicle, "axle" + (i + 1).ToString("00"), i < 2, i >= 2,
                             6.0f - i * 1.35f, 2.5f, 0.60f, true);
                     break;
@@ -65,9 +66,9 @@ namespace Progesor.Kavra.Editor
                 Id = id, Linkage = heavy ? AxleLinkage.Rigid : AxleLinkage.Independent,
                 IsSteered = steer, IsDriven = drive
             });
-            var width = heavy ? 0.42f : 0.27f;
-            var travel = heavy ? 0.36f : 0.25f;
-            var mountY = heavy ? -0.85f : -0.63f;
+            float width = heavy ? 0.42f : 0.27f;
+            float travel = heavy ? 0.36f : 0.25f;
+            float mountY = heavy ? -0.85f : -0.63f;
             if (trackWidth <= 0.01f)
             {
                 vehicle.Wheels.Add(new WheelDefinition

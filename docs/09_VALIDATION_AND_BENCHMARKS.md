@@ -14,7 +14,7 @@
 - `T07_TractorTrailer`: ayrı gövdeli 18 tekerli taslak (M4).
 - `T08_SurfaceTransitions`: asfalt/çakıl/çamur (M5).
 
-Bunlar **planlanan** sahne adları; bu pakette fizik test sahnesi yok.
+Bu sahneler hâlâ **planlanan** kabul sahneleridir. v0.0.2 ile `Tools > KAVRA > Create M0 Physics Lab Scene` menüsü çalışan sahne nesneleri üretir, kullanıcı tarafından kaydedilip Play Mode'da doğrulanmalıdır. Kaydedilmiş ve doğrulanmış test sahnesi henüz bulunmuyor.
 
 ## Ölçülecek temel büyüklükler
 

@@ -2,8 +2,7 @@
 
 ## M0 — Bootstrap + fizik fizibilite deneyleri
 
-**Bu paket ile hazır (statik kontrol):** repo düzeni, dokümantasyon, UPM,
-C# definition/validator, Wizard temel iskeleti.
+**M0 v0.0.2 kodu önerildi, Unity doğrulaması bekleniyor:** repo, UPM, Wizard temel iskeleti; ilk dinamik raycast tekerlek, süspansiyon, basit lastik, lab generator, testler.
 
 **Unity'de doğrulanacak:**
 - [ ] Proje Unity 6.3 LTS'de Console Error olmadan açılıyor.
@@ -12,14 +11,14 @@ C# definition/validator, Wizard temel iskeleti.
 - [ ] ID/geometry validation yanlış konfigürasyonları engelliyor.
 - [ ] `M0_Scaffold.unity` commit edildi.
 
-**M0 fizik deneyleri (henüz başlanmadı):**
+**M0 fizik deneyleri (kod var, Unity fizik/derleme kabulü bekliyor):**
 - [ ] `Raycast`, `SphereCast` ve gerekli çoklu temas yaklaşımını karşılaştır.
-- [ ] Dikey yay–amortisör tek wheel test fixture çalışıyor.
-- [ ] Basit boylam/yanal lastik kuvvet modeli ve wheel angular speed.
-- [ ] Tek gövdeli dört tekerli düz zeminde ilk dinamik sürüş.
+- [ ] Dikey yay–amortisör tek wheel test fixture Unity Test Runner'da geçiyor (kaynak eklendi).
+- [ ] Basit boylam/yanal lastik kuvvet modeli ve wheel angular speed Unity'de doğrulandı (kaynak eklendi).
+- [ ] Tek gövdeli dört tekerli düz zeminde ilk dinamik sürüş Play Mode'da doğrulandı (lab generator eklendi).
 - [ ] Statik wheel load ≈ `m*g` testinin toleransı belirlendi.
-- [ ] Fizik telemetri logger ve grafik debug eklendi.
-- [ ] En az 3W, 4W, 8W tek gövdeli smoke test.
+- [ ] Telemetri grafiği ve uzun süreli CSV logger eklendi (Inspector snapshot ve debug ray var).
+- [ ] En az 3W, 4W, 8W tek gövdeli Play Mode smoke test.
 
 **M0 çıkış ölçütü:** Wheel dynamics ve Rigidbody entegrasyonunun teknik
 fizibilitesi ölçülmüş olacak; temel modelin birim/kararlılık hataları takip

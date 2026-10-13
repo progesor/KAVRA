@@ -12,7 +12,7 @@ namespace Progesor.Kavra.Editor
         [MenuItem("Tools/KAVRA/Vehicle Setup Wizard")]
         public static void Open()
         {
-            GetWindow<KavraWizardWindow>("KAVRA Wizard").minSize = new Vector2(425f, 345f);
+            GetWindow<KavraWizardWindow>("KAVRA Wizard").minSize = new Vector2(450f, 410f);
         }
 
         private void OnGUI()
@@ -20,57 +20,75 @@ namespace Progesor.Kavra.Editor
             GUILayout.Space(8f);
             EditorGUILayout.LabelField("KAVRA Vehicle Framework", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "M0 foundation only: generates a configuration asset and visible, kinematic " +
-                "vehicle scaffold. This is NOT a driving vehicle. Tire, suspension and drivetrain " +
-                "solvers will be implemented and tested in later milestones.", MessageType.Info);
+                "M0 experimental physics: spring/damper + raycast road contact + simple " +
+                "tire slip and wheel torque. No engine, gearbox, advanced terrain or " +
+                "calibrated simulation fidelity yet.", MessageType.Info);
             GUILayout.Space(6f);
-            EditorGUILayout.LabelField("1. Choose a starter vehicle", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("1. Starter layout", EditorStyles.boldLabel);
             template = (VehicleTemplate)EditorGUILayout.EnumPopup("Template", template);
             if (GUILayout.Button("Create VehicleDefinition Asset")) CreateAsset();
+
             GUILayout.Space(10f);
-            EditorGUILayout.LabelField("2. Validate or edit an existing asset", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("2. Validate existing vehicle asset", EditorStyles.boldLabel);
             configuration = (VehicleDefinition)EditorGUILayout.ObjectField("Definition", configuration,
                 typeof(VehicleDefinition), false);
             if (configuration == null)
             {
-                EditorGUILayout.HelpBox("Create an asset above or drag a VehicleDefinition here.", MessageType.None);
+                EditorGUILayout.HelpBox("Create an asset above or drag an existing VehicleDefinition here.",
+                    MessageType.None);
                 return;
             }
+
             var issues = VehicleConfigurationValidator.Validate(configuration);
-            var containsErrors = false;
-            scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.MaxHeight(160f));
-            foreach (var issue in issues)
+            bool hasErrors = false;
+            scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.MaxHeight(145f));
+            foreach (VehicleValidationIssue issue in issues)
             {
-                var type = issue.Severity == ValidationSeverity.Error ? MessageType.Error :
+                MessageType type = issue.Severity == ValidationSeverity.Error ? MessageType.Error :
                     issue.Severity == ValidationSeverity.Warning ? MessageType.Warning : MessageType.Info;
-                if (issue.Severity == ValidationSeverity.Error) containsErrors = true;
+                if (issue.Severity == ValidationSeverity.Error) hasErrors = true;
                 EditorGUILayout.HelpBox(issue.Message, type);
             }
             EditorGUILayout.EndScrollView();
-            using (new EditorGUI.DisabledScope(containsErrors))
+
+            using (new EditorGUI.DisabledScope(hasErrors))
             {
-                if (GUILayout.Button("3. Build non-drivable scene scaffold", GUILayout.Height(30f)))
+                if (GUILayout.Button("3A. Build non-drivable preview scaffold", GUILayout.Height(29f)))
                 {
-                    var root = VehicleScaffoldBuilder.Create(configuration);
-                    Debug.Log("KAVRA M0: created " + root.name +
-                              " with " + configuration.Wheels.Count + " wheel anchors (kinematic preview only).");
+                    GameObject preview = VehicleScaffoldBuilder.Create(configuration);
+                    Debug.Log("KAVRA: created kinematic preview " + preview.name);
                 }
+
+                bool supportsDynamic = configuration.Wheels != null &&
+                    configuration.Wheels.TrueForAll(w => w != null && w.SuspensionTravelMeters > 0f);
+                using (new EditorGUI.DisabledScope(!supportsDynamic))
+                {
+                    if (GUILayout.Button("3B. Build dynamic M0 test chassis", GUILayout.Height(32f)))
+                    {
+                        GameObject vehicle = VehicleScaffoldBuilder.Create(configuration, true);
+                        Debug.Log("KAVRA M0: created dynamic prototype " + vehicle.name +
+                                  ". Add ground and inputs, or use Tools/KAVRA/Create M0 Physics Lab Scene.");
+                    }
+                }
+                if (!supportsDynamic)
+                    EditorGUILayout.HelpBox("Dynamic M0 requires positive suspension travel on every wheel.",
+                        MessageType.Warning);
             }
         }
 
         private void CreateAsset()
         {
-            var path = EditorUtility.SaveFilePanelInProject("Create KAVRA Definition",
+            string path = EditorUtility.SaveFilePanelInProject("Create KAVRA Definition",
                 "KAVRA_" + template + ".asset", "asset",
                 "Select a location in Assets/ for this configuration.");
             if (string.IsNullOrEmpty(path)) return;
-            var definition = VehicleTemplateFactory.Create(template);
+            VehicleDefinition definition = VehicleTemplateFactory.Create(template);
             AssetDatabase.CreateAsset(definition, path);
             AssetDatabase.SaveAssets();
             configuration = definition;
             Selection.activeObject = definition;
             EditorGUIUtility.PingObject(definition);
-            Debug.Log("KAVRA M0: saved vehicle definition at " + path);
+            Debug.Log("KAVRA: saved vehicle definition at " + path);
         }
     }
 }

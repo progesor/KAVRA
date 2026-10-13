@@ -1,90 +1,81 @@
 # KAVRA Vehicle Framework
 
-**A modular wheeled vehicle framework for Unity.**
+**Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State:** design/bootstrap `0.0.1` (2026-10-13). **This is not yet a vehicle driving controller.**
+**State (2026-10-13): M0 experimental physics source, package 0.0.2. Not yet verified in a Unity Editor.**
+Repository: https://github.com/progesor/KAVRA
 
-**Project vision:** model varied wheeled vehicles using a configurable chassis,
-axle, tire, suspension, drivetrain and terrain contact architecture; preserve
-simulation-quality behavior while exposing optional arcade assistance. A
-reusable Unity Wizard should make configuration practical across projects.
+KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
+plus a separate `Assets/VehiclePhysicsLab` sample host. Its physics assembly
+depends on UnityEngine only: no forced URP, Input System, Cinemachine, Burst,
+or paid vehicle asset dependency.
 
-## What is in this starter archive?
+## What works in source (NOT yet Play Mode accepted)
 
-- `Packages/com.progesor.kavra`: **installable embedded Unity Package**
-  containing a functional configuration/scaffold **Editor Wizard**, sample layout
-  templates and structural validation. It creates kinematic, **non-drivable**
-  placeholders until the M0 physics milestones are implemented.
-- `docs/`: Turkish engineering and roadmap documentation, grounded in MudRunner
-  developer materials and Unity's official package guidance.
-- `.github/`: issue templates and PR checklist.
-- `.gitignore`, `.gitattributes`, `CONTRIBUTING.md`, `CHANGELOG.md`.
-- `Assets/VehiclePhysicsLab/README.md`: recommended scene/test layout.
+- VehicleDefinition assets and layouts: 3W, 4W, 6x6, 8x8, 20W **single chassis**.
+- Wheel/axle ID and geometry validation; Editor wizard with visual-only mode.
+- New **optional** dynamic prototype using `Rigidbody.AddForceAtPosition`.
+- NonAlloc single-ray wheel contact with own-chassis hit filtering.
+- Equivalent spring / compression–rebound damper with nominal static sag.
+- Experimental velocity-slip tire forces with combined friction ellipse.
+- Rotational wheel inertia, direct wheel test torque and service/parking brakes.
+- Inspector per-wheel telemetry and contact debug rays.
+- Host keyboard adapter and chase camera; generated temporary laboratory scene.
+- EditMode test sources: 3/4/6/8/20 layouts, spring statics, slip cap, contact filter.
 
-## Recommended environment
+**Not present:** calibrated tire model, full differential/transmission, accurate
+off-road soil deformation, independent suspension linkage kinematics, trailers,
+ABS/ESC, advanced damage. This is an engineering prototype, not a production
+vehicle or simulation-accuracy certification.
 
-| Area | Decision |
-|---|---|
-| Editor | Unity 6.3 LTS (`6000.3.x`, latest patch within this line) |
-| Project template | Universal 3D (URP), for the host/laboratory project |
-| Physics | Unity 3D Rigidbody/PhysX + independently designed wheel dynamics |
-| Package ID | `com.progesor.kavra` |
-| C# namespaces | `Progesor.Kavra`, `Progesor.Kavra.Editor` |
-| Input | Input System as **host** dependency; core independent |
-| Units / axes | SI units, +X right / +Y up / +Z forward |
-| Initial target | Windows PC Editor development; mobile later via quality profiles |
+## Try M0 locally
 
-## Install into a NEW Unity project
+1. Open the already-created Unity project in its current **6000.3.18f1** editor
+   (or another installed Unity 6.3 LTS patch).
+2. Pull the development branch `feat/m0-wheel-suspension-prototype` or check out its PR.
+3. Wait for Unity's import/compile. In `Window > General > Test Runner`, run
+   `KavraPhysicsEditModeTests` (EditMode).
+4. Choose `Tools > KAVRA > Create M0 Physics Lab Scene`. This creates a new,
+   **unsaved** scene with a ground plane, a vehicle, keyboard input, a ramp
+   and a follow camera.
+5. Save as `Assets/VehiclePhysicsLab/Scenes/M0_DynamicLab.unity`.
+6. Press Play. Drive with W/S (test wheel torque/reverse), A/D (steer),
+   Space (service brake), Left Shift (parking brake), or arrow keys.
+7. Select the root `KAVRA_Passenger Car 4W` GameObject, expand
+   `VehicleSimulationRoot > Wheel Telemetry`; measure static Fz and stability.
 
-1. In Unity Hub: **New Project > Universal 3D** using **Unity 6.3 LTS**;
-   project name `KAVRA` (or `KAVRA-Lab`).
-2. Close the Editor for initial file copy.
-3. Extract the contents of this ZIP **into the Unity project root** (the folder
-   that already contains `Assets/`, `Packages/` and `ProjectSettings/`).
-   **Merge** folders. Do not replace the entire `Packages` folder or overwrite
-   Unity-generated `Packages/manifest.json`.
-4. Reopen in Unity, wait for compiling, and click
-   `Tools > KAVRA > Vehicle Setup Wizard`.
-5. Create a `Passenger Car 4` definition, inspect the asset, and click
-   `Build non-drivable scene scaffold`.
-6. Save an Editor scene at `Assets/VehiclePhysicsLab/Scenes/M0_Scaffold.unity`.
-7. Configure Project Settings using `docs/07_UNITY_SETUP.md`; push the project
-   to GitHub with **all generated `.meta` files** committed.
+The original `Tools > KAVRA > Vehicle Setup Wizard` remains available:
+`3A` produces kinematic scaffolds, `3B` dynamic experimental ones.
+Dynamic chassis needs a suitable ground Collider to support its wheels.
 
-**Embedded package discovery is automatic.** Do not add `com.progesor.kavra`
-to `Packages/manifest.json` when its folder is already embedded under `Packages/`.
+### Acceptance before merging
 
-## Recommended reading order
+Do not mark tests passed without actual Unity Test Runner evidence.
+Capture Console errors, the results of EditMode tests, a 4W Play Mode trial,
+and at least 3W + 8W smoke checks. See
+`docs/13_M0_FIRST_PHYSICS_SLICE.md` and GitHub issue #1.
 
-1. `docs/00_SCOPE_AND_GOALS.md`
-2. `docs/01_MUDRUNNER_RESEARCH.md`
-3. `docs/02_REQUIREMENTS_AND_USE_CASES.md`
-4. `docs/03_SYSTEM_ARCHITECTURE.md`
-5. `docs/04_PHYSICS_MODELS.md`
-6. `docs/05_TERRAIN_AND_SURFACE_INTERACTION.md`
-7. `docs/06_VEHICLE_WIZARD_SPEC.md`
-8. `docs/07_UNITY_SETUP.md`
-9. `docs/08_ROADMAP_AND_MILESTONES.md`
-10. `docs/09_VALIDATION_AND_BENCHMARKS.md`
-11. `docs/10_RISKS_AND_DECISIONS.md`
-12. `docs/11_REFERENCES.md`
-13. `docs/12_NEXT_SESSION_HANDOVER.md`
+## Physics assumptions
 
-## Out of scope for the first physics acceptance
+- Coordinate convention: +X right, +Y up, +Z forward; SI units.
+- Wheel anchor is the suspension mount: at full compression the wheel center
+  is at the anchor, at full droop it is `travel` below the anchor.
+- The Builder initializes the chassis around half-travel sag on level ground.
+- Each wheel is a sensor; its visual cylinder has no friction/collision physics.
+- The temporary cube is a real chassis collider, **not a finished vehicle shape**.
+- Per-wheel spring rate is estimated from equal sprung mass; does not represent
+  measured axle loads, air springs, or load-sharing bogies.
+- Static slope-hold, bump-stop response, rough-rock 3D contact and dynamic
+  differential coupling are future work.
 
-Fully deforming rubber tire FEM, fully resolved multibody suspension linkage,
-beam/node chassis destruction, deterministic online networking, sophisticated
-fluid/soil solvers and independently validated industrial digital twins.
+## Documentation
 
-## Licensing
+Start with `docs/00_SCOPE_AND_GOALS.md`,
+`docs/04_PHYSICS_MODELS.md`, `docs/08_ROADMAP_AND_MILESTONES.md` and
+`docs/13_M0_FIRST_PHYSICS_SLICE.md`. The entire architecture, MudRunner
+notes, terrain interaction design and planned Wizard capabilities are in
+`docs/`. Package API notes: `Packages/com.progesor.kavra/Documentation~/PACKAGE_CONTRACT.md`.
 
-No software license has been selected. Please **choose a license or keep the
-repository private** before assuming the code is reusable by third parties.
-Do not interpret GitHub publication as automatic grant of open-source rights.
+## License
 
-## Integrity note
-
-The package manifests and source files are generated and statically inspected,
-**not compiled or exercised in a Unity Editor** in this environment. The first
-Unity compile/import pass is part of milestone M0 acceptance and may uncover
-necessary compatibility fixes.
+No license has been selected. Publishing on GitHub does not grant reuse rights.

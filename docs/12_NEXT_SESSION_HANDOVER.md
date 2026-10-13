@@ -1,58 +1,44 @@
-# 12 — Devir / yeni sohbette devam talimatları
+# KAVRA — Handover 2026-10-13: M0 experimental wheel dynamics
 
-## Proje
+## Repo / branches
 
-**KAVRA Vehicle Framework** (`com.progesor.kavra`) Unity 6.3 LTS, Universal 3D
-lab host, PC başlangıç, fizik çekirdeği render/input bağımsız.
+- Repository: https://github.com/progesor/KAVRA
+- Unity project version: 6000.3.18f1; embedded package `com.progesor.kavra`.
+- Working branch: `feat/m0-wheel-suspension-prototype`; PR to main.
+- Issue: https://github.com/progesor/KAVRA/issues/1.
 
-Kullanıcı bir Unity projesi açacak, `KAVRA_Unity_Starter` ZIP içeriğini
-projenin köküne ekleyecek, GitHub repo olarak yayınlayacak ve yeni repo URL'si
-ile geri dönecek.
+## Implemented as source in M0 v0.0.2
 
-## Başlangıç dosyalarının gerçek durumu
+- RaycastNonAlloc ground probe excluding own chassis.
+- Simple equivalent spring + bump/rebound damper.
+- Semi-implicit angular wheel/tire slip, traction ellipse, direct wheel torque,
+  service and parking brake.
+- VehicleSimulationRoot computes wheel forces and applies them through Rigidbody.
+- Per-wheel telemetry + optional debug contact rays.
+- Wizard can create dynamic prototypes while preserving kinematic previews.
+- Assets/VehiclePhysicsLab generates a test scene and host keyboard/camera.
+- EditMode test scripts for 3/4/6/8/20 layouts and solver sanity.
 
-- `README.md`, 13 adet `docs/*.md` tasarım/araştırma belgeleri.
-- Embedded UPM `Packages/com.progesor.kavra/package.json` v0.0.1.
-- Runtime: VehicleDefinition, SurfaceProfile, VehicleRoot, VehicleWheelAnchor,
-  VehicleConfigurationValidator.
-- Editor: VehicleTemplateFactory, VehicleScaffoldBuilder, KavraWizardWindow.
-- Şablonlar 3/4/6/8/20 teker single-chassis preview üretir.
-- **Tekerlek/süspansiyon/motor fiziği henüz uygulanmadı.**
-- Unity Editor derlemesi henüz yapılmadı; statik dosya kontrolü yapıldı.
+## Important: still NOT verified in Unity
 
-## İlk kullanıcı geri bildirimi nasıl alınmalı?
+This code was authored and statically reviewed via GitHub. No Unity Editor
+or Play Mode runtime was available for a real compilation or physics run.
+Do not report tests as green until a local Editor test has passed.
 
-1. Unity Hub Editor sürümü ve projenin tam sürümünü teyit et.
-2. `Tools > KAVRA > Vehicle Setup Wizard` açılıyor mu?
-3. 3W/4W/20W definition asset'leri ve scaffold oluşturuluyor mu?
-4. Unity Console hatası veya import warning varsa tam log iste.
-5. `Packages/com.progesor.kavra` altındaki `.meta` dosyaları commit edilmiş mi?
-6. GitHub repo linkinden son commit ve dosya yapısını kontrol et.
-7. Sonrasında M0 wheel/physics prototip issue'larını aç ve test sahnesi kur.
+## Next acceptance path
 
-## Sonraki kodlama sırası (öneri)
+1. Pull/checkout M0 branch (or merge PR after acceptance).
+2. Open Unity and inspect Console import + compile errors.
+3. Run all `KavraPhysicsEditModeTests` in Test Runner.
+4. Generate the M0 lab from Tools menu, save the scene, press Play.
+5. Record rest Fz sum, frame stability, 10-second driving/braking test.
+6. Smoke-check 3W and 8W Wizard dynamic chassis.
+7. Send errors/logs or commit confirmed scene and measured data to repo.
+8. Fix findings; only then merge PR and start richer tire/contact model work.
 
-- `WheelContactProvider`: raycast vs spherecast karşılaştırma ve layer mask.
-- `SuspensionSolver`: spring/damper/bumpstop ve tire load telemetry.
-- `WheelRotationalState`: wheel inertia ve drive/brake torque.
-- `TireForceSolver`: basic combined-slip.
-- `VehicleSimulationRoot`: FixedUpdate, Rigidbody AddForceAtPosition.
-- `PhysicsLab`: test setup, static load, straight acceleration, skidpad.
-- M0 kabul tamamlanmadan detaylı Wizard, arazi deformasyonu veya
-  ağır hasar sistemine geçme.
+Known limits/risks: single contact ray, uncalibrated velocity-slip tire,
+automatic equal wheel spring-rate guess, non-deterministic Unity simulation,
+no actual drivetrain or soil contact deformation, test keyboard is a sample
+in host project and not part of reusable package.
 
-## Kullanıcı tercihleri / projeye özel beklentiler
-
-- Çok kapsamlı ama **pragmatik** gerçekçilik; FEM lastik veya full multibody
-  suspension zorunlu değil.
-- MudRunner örneği: fiziksel çekiş + görsel çamur ayrımı, ileride eklenebilir.
-- Başka Unity oyunlarına entegre edilen modüler package sistemi.
-- İsteğe bağlı arcade sürüş, çok farklı aks/tekerlek düzenleri, ileride hasar.
-- Kullanıcı proje başlangıcında GitHub repo oluşturmayı kendi yapacak.
-
-## Kapsam dışı iddialardan kaçın
-
-- M0 Wizard bir **preview scaffold**, oynanabilir araç değildir.
-- 20W tek gövdeli test, çekici+römork simulasyonu değildir.
-- Kaynak linkleri örnek mimari sağlar; gerçek doğruluk/performans ölçülmedi.
-- Unity derlenmesi kesin kabul edilmeden "hatasız çalışıyor" deneme.
+See `docs/13_M0_FIRST_PHYSICS_SLICE.md` for API and numerical details.

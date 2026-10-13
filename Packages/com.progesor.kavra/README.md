@@ -1,40 +1,34 @@
-# KAVRA Vehicle Framework — embedded Unity package
+# KAVRA embedded package (v0.0.2)
 
-**Version:** `0.0.1` · **State:** M0 design/bootstrap, no driving physics implemented.
+Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
+independent of rendering or input assets.
 
-This folder is an **embedded Unity Package Manager (UPM) package**. Place it under
-`<UnityProject>/Packages/com.progesor.kavra/` with the included `package.json`.
-Unity automatically discovers embedded packages: do **not** add a duplicate
-`com.progesor.kavra` entry to your project's `Packages/manifest.json`.
+### Runtime
 
-## What works now
+- `VehicleDefinition`, `VehicleRoot`, `VehicleWheelAnchor`: single-chassis
+  configuration and wheel mounts.
+- `VehicleSimulationRoot`: **optional dynamic prototype**. FixedUpdate probes
+  contacts, integrates provisional wheel angular dynamics and applies spring,
+  longitudinal and lateral forces to Rigidbody at contact positions.
+- `SuspensionSolver`, `WheelDynamicsSolver`, `WheelContactProbe`: separable
+  force components, first M0 approximations.
+- `WheelTelemetry` in the simulation component: live per-wheel metrics.
 
-- A Unity `VehicleDefinition` ScriptableObject with an arbitrary number of wheels,
-  grouped into axles by ID (no hard-coded 4-wheel assumption).
-- `SurfaceProfile` ScriptableObject (data-only placeholder).
-- `Tools > KAVRA > Vehicle Setup Wizard` Editor window.
-- Starter layouts: 3-wheel delta, 4-wheel car, 6×6, 8×8,
-  and a 20-wheel **single-chassis** structural stress test.
-- Structural validation: missing/duplicate identifiers and invalid dimensions.
-- Generates a visible scene **scaffold** with a kinematic Rigidbody,
-  primitive chassis preview, wheel anchor transforms and gizmos.
+### Editor
 
-## What does NOT work yet
+Menu `Tools > KAVRA > Vehicle Setup Wizard` creates a VehicleDefinition and:
+- `3A`: original kinematic/non-drivable preview;
+- `3B`: experimental dynamic prototype.
 
-- No tire contact, suspension forces, drivetrain, brakes, steering or movement.
-- No real mud deformation, articulated tractor-trailer, physical damage or gameplay input.
-- A 20-wheel single chassis is not an 18-wheel articulated truck.
-- No Editor compilation or Play Mode verification was possible outside Unity.
+Package Editor builders and template factory are publicly callable from
+host-project Editor scripts. They create a cube test collider and wheel
+cylinders with **no** wheel physics colliders.
 
-## Quick use
+### Host sample (outside package)
 
-1. Create a Unity **6.3 LTS (6000.3.x)** `Universal 3D` project.
-2. Extract the full starter ZIP into the **root** of that Unity project,
-   merging but not replacing its existing `Packages/` directory.
-3. Return to Unity and wait for package import/compilation.
-4. Choose `Tools > KAVRA > Vehicle Setup Wizard`.
-5. Pick `Passenger Car 4`, click `Create VehicleDefinition Asset`.
-6. Click `Build non-drivable scene scaffold` and inspect wheel anchors.
-7. Save the scene under `Assets/VehiclePhysicsLab/Scenes/` and commit `.meta` files.
+`Assets/VehiclePhysicsLab` contains optional Input System keyboard driver,
+chase camera and `Tools > KAVRA > Create M0 Physics Lab Scene` generator.
 
-For the full project plan and technical decisions see `../../docs/` at repo root.
+**Experimental only.** Uncalibrated tires, single ray per wheel, direct test
+wheel torque, approximate equal wheel spring loads, no gearboxes/differentials.
+No Unity compilation/Play Mode verification yet; use docs/13 and issue #1.
