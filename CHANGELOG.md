@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.4 — 2026-10-14 (surface grip + user-triggered recovery)
+
+- Wired SurfaceProfile multipliers to longitudinal/lateral tire grip and
+  rolling resistance at each wheel's active Collider contact.
+- Added optional SurfaceZone component and fallback to original default grip
+  when no surface profile exists.
+- Lab builder now creates colored asphalt, gravel, mud and ice sections with
+  reusable ScriptableObject assets; no soil deformation physics.
+- Added R-key **manual** recovery only. No automatic rollover prevention:
+  recovery requires low speed and valid support, and resets wheel/rigidbody
+  motion on explicit user request.
+- Extended telemetry: surface identity, grip coefficients, rolling resistance,
+  and optional total contact query duration (microseconds per physics step).
+- Updated bounded Lab CSV default from 20s to 90s and added EditMode tests.
+- Unity Editor/Play Mode validation is still pending.
+
+
 ## 0.0.3 — 2026-10-13 (ride-height/CoM/contact experiments)
 
 - Added progressive bump-stop force and exposed bottom-out diagnostics.

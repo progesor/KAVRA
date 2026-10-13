@@ -13,6 +13,8 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
 {
     public Progesor.Kavra.VehicleSimulationRoot Simulation;
     private Rigidbody vehicleBody;
+    private string recoveryStatus = "";
+    private float recoveryStatusUntil;
 
     private void Awake()
     {
@@ -30,6 +32,23 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
         {
             Simulation.SetInputs(0f, 0f, 0f, 0f);
             return;
+        }
+
+        // Never prevent a rollover automatically. Recovery occurs ONLY
+        // after a deliberate R key-down, at sufficiently low speed.
+        if (keyboard.rKey.wasPressedThisFrame)
+        {
+            Progesor.Kavra.VehicleRecoveryResult outcome =
+                Progesor.Kavra.VehicleManualRecovery.TryRecover(Simulation);
+            recoveryStatus = outcome == Progesor.Kavra.VehicleRecoveryResult.Success
+                ? "Recovered upright (manual)"
+                : "Recovery unavailable: " + outcome;
+            recoveryStatusUntil = Time.unscaledTime + 4f;
+            if (outcome == Progesor.Kavra.VehicleRecoveryResult.Success)
+            {
+                Debug.Log("KAVRA: manual vehicle recovery succeeded (R).");
+                return; // Do not reapply throttle/steering in this frame.
+            }
         }
 
         bool forward = keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed;
@@ -55,6 +74,8 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
         float maxBottomOut = 0f;
         int groundedCount = 0;
         int fallbackCount = 0;
+        string activeSurface = "";
+        bool mixedSurface = false;
         var telemetry = Simulation.Telemetry;
         if (telemetry != null)
         {
@@ -63,6 +84,11 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
                 var wheel = telemetry[i];
                 if (wheel.Grounded) groundedCount++;
                 if (wheel.UsedRayFallback) fallbackCount++;
+                if (wheel.Grounded)
+                {
+                    if (activeSurface.Length == 0) activeSurface = wheel.SurfaceName;
+                    else if (wheel.SurfaceName != activeSurface) mixedSurface = true;
+                }
                 totalNormal += wheel.NormalLoadN;
                 maxBottomOut = Mathf.Max(maxBottomOut, wheel.BottomOutMeters);
             }
@@ -82,12 +108,22 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
                          (expected * 0.001f).ToString("F2") + " kN static ref" +
                          "\nBottom-out: " + (maxBottomOut * 1000f).ToString("F1") + " mm" +
                          "  Tilt: " + tilt.ToString("F1") + " deg" +
-                         "\nCenter of mass Y: " + coMY.ToString("F2") + " m";
+                         "\nCenter of mass Y: " + coMY.ToString("F2") + " m" +
+                         "\nSurface: " +
+                         (mixedSurface ? "Mixed (transition)" :
+                          activeSurface.Length != 0 ? activeSurface : "Air") +
+                         "\nCast CPU cost: " +
+                         (Simulation.MeasureContactQueryCost
+                             ? Simulation.ContactQueryMicrosecondsLastStep.ToString("F1") + " us/step"
+                             : "off (enable in Inspector)");
 #if ENABLE_INPUT_SYSTEM
-        message += "\nW/S: torque   A/D: steer   Space: brake   Shift: park";
+        message += "\nW/S: torque   A/D: steer   Space: brake   Shift: park" +
+                   "\nR: MANUAL upright recovery (at low speed)";
 #else
         message += "\nInput System unavailable: use VehicleSimulationRoot Inspector controls.";
 #endif
-        GUI.Box(new Rect(12f, 12f, 435f, 150f), message);
+        if (Time.unscaledTime < recoveryStatusUntil)
+            message += "\n" + recoveryStatus;
+        GUI.Box(new Rect(12f, 12f, 455f, 218f), message);
     }
 }

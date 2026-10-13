@@ -334,5 +334,186 @@ namespace Progesor.Kavra.Lab.Tests
             }
         }
 
+        [Test]
+        public void MissingSurfaceProfilePreservesOriginalTireCoefficients()
+        {
+            SurfaceTireParameters result = SurfaceResponse.Evaluate(null, 1.05f, 0.98f, 0.014f);
+            Assert.That(result.LongitudinalFriction, Is.EqualTo(1.05f).Within(0.00001f));
+            Assert.That(result.LateralFriction, Is.EqualTo(0.98f).Within(0.00001f));
+            Assert.That(result.RollingResistanceCoefficient,
+                Is.EqualTo(0.014f).Within(0.00001f));
+        }
+
+        [Test]
+        public void WetAndSoftMetadataCannotApplyUnintendedExtraGripPenalty()
+        {
+            SurfaceProfile profile = ScriptableObject.CreateInstance<SurfaceProfile>();
+            try
+            {
+                profile.LongitudinalGripMultiplier = 0.4f;
+                profile.LateralGripMultiplier = 0.3f;
+                profile.RollingResistanceMultiplier = 5f;
+                profile.Softness = 0.98f;
+                profile.Wetness = 1f;
+
+                SurfaceTireParameters result = SurfaceResponse.Evaluate(
+                    profile, 1.05f, 1.1f, 0.014f);
+                Assert.That(result.LongitudinalFriction, Is.EqualTo(0.42f).Within(0.00001f));
+                Assert.That(result.LateralFriction, Is.EqualTo(0.33f).Within(0.00001f));
+                Assert.That(result.RollingResistanceCoefficient,
+                    Is.EqualTo(0.07f).Within(0.00001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+            }
+        }
+
+        [Test]
+        public void SurfaceProfileIsResolvedFromHitColliderParent()
+        {
+            GameObject road = new GameObject("SurfaceRoad");
+            GameObject geometry = new GameObject("ColliderChild");
+            SurfaceProfile profile = ScriptableObject.CreateInstance<SurfaceProfile>();
+            try
+            {
+                SurfaceZone zone = road.AddComponent<SurfaceZone>();
+                zone.Profile = profile;
+                geometry.transform.SetParent(road.transform, false);
+                Collider roadCollider = geometry.AddComponent<BoxCollider>();
+
+                Assert.AreSame(profile, SurfaceResponse.Resolve(roadCollider));
+                Assert.IsNull(SurfaceResponse.Resolve(null));
+            }
+            finally
+            {
+                Object.DestroyImmediate(road);
+                Object.DestroyImmediate(profile);
+            }
+        }
+
+        [Test]
+        public void SurfaceFrictionCapChangesWithGroundType()
+        {
+            SurfaceProfile slippery = ScriptableObject.CreateInstance<SurfaceProfile>();
+            try
+            {
+                slippery.LongitudinalGripMultiplier = 0.2f;
+                slippery.LateralGripMultiplier = 0.2f;
+                SurfaceTireParameters dry = SurfaceResponse.Evaluate(null, 1f, 1f, 0.01f);
+                SurfaceTireParameters ice = SurfaceResponse.Evaluate(slippery, 1f, 1f, 0.01f);
+
+                var input = new WheelDynamicsInput
+                {
+                    AngularVelocityRadPerSec = 80f,
+                    LongitudinalSpeedMps = 3f,
+                    NormalLoadN = 4000f,
+                    WheelRadiusMeters = 0.36f,
+                    InertiaKgM2 = 2f,
+                    DriveTorqueNm = 1000f,
+                    LongitudinalStiffnessNsPerMeter = 18000f,
+                    LateralStiffnessNsPerMeter = 8000f,
+                    LateralFriction = 1f,
+                    DeltaTime = 0.02f
+                };
+
+                input.LongitudinalFriction = dry.LongitudinalFriction;
+                WheelDynamicsResult dryResult = WheelDynamicsSolver.Step(input);
+                input.LongitudinalFriction = ice.LongitudinalFriction;
+                WheelDynamicsResult iceResult = WheelDynamicsSolver.Step(input);
+
+                Assert.LessOrEqual(Mathf.Abs(iceResult.LongitudinalForceN),
+                    ice.LongitudinalFriction * input.NormalLoadN + 0.01f);
+                Assert.Greater(Mathf.Abs(dryResult.LongitudinalForceN),
+                    Mathf.Abs(iceResult.LongitudinalForceN));
+            }
+            finally
+            {
+                Object.DestroyImmediate(slippery);
+            }
+        }
+
+        [Test]
+        public void ManualRecoveryKeepsHeadingButRemovesRollAndPitch()
+        {
+            Quaternion sideways = Quaternion.Euler(18f, 37f, 165f);
+            Vector3 originalForward = sideways * Vector3.forward;
+            Quaternion recovered = VehicleManualRecovery.UprightRotation(
+                originalForward, sideways * Vector3.right);
+            Vector3 heading = Vector3.ProjectOnPlane(originalForward, Vector3.up).normalized;
+            Assert.That(Vector3.Dot(recovered * Vector3.up, Vector3.up),
+                Is.EqualTo(1f).Within(0.0001f));
+            Assert.Greater(Vector3.Dot(recovered * Vector3.forward, heading), 0.999f);
+        }
+
+        [Test]
+        public void ManualRecoveryRefusesTeleportAtSpeed()
+        {
+            VehicleDefinition definition = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            GameObject car = new GameObject("TestRecoveryFast");
+            try
+            {
+                Rigidbody rigid = car.AddComponent<Rigidbody>();
+                VehicleRoot root = car.AddComponent<VehicleRoot>();
+                root.Definition = definition;
+                VehicleSimulationRoot simulation = car.AddComponent<VehicleSimulationRoot>();
+                car.transform.position = new Vector3(0f, 3f, 0f);
+                car.transform.rotation = Quaternion.Euler(0f, 0f, 170f);
+                rigid.linearVelocity = new Vector3(6f, 0f, 0f);
+                Vector3 beforePosition = rigid.position;
+                Quaternion beforeRotation = rigid.rotation;
+
+                VehicleRecoveryResult result = VehicleManualRecovery.TryRecover(simulation);
+
+                Assert.AreEqual(VehicleRecoveryResult.MovingTooFast, result);
+                Assert.That((rigid.position - beforePosition).sqrMagnitude,
+                    Is.LessThan(0.00001f));
+                Assert.That(Quaternion.Angle(rigid.rotation, beforeRotation),
+                    Is.LessThan(0.001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(car);
+                Object.DestroyImmediate(definition);
+            }
+        }
+
+        [Test]
+        public void ManualRecoveryUprightsSlowOverturnedVehicleAboveGround()
+        {
+            VehicleDefinition definition = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            GameObject car = new GameObject("TestRecoveryStopped");
+            GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                floor.transform.position = new Vector3(0f, -0.5f, 0f);
+                floor.transform.localScale = new Vector3(20f, 1f, 20f);
+                floor.layer = 30;
+
+                Rigidbody rigid = car.AddComponent<Rigidbody>();
+                VehicleRoot root = car.AddComponent<VehicleRoot>();
+                root.Definition = definition;
+                VehicleSimulationRoot simulation = car.AddComponent<VehicleSimulationRoot>();
+                simulation.GroundLayers = 1 << 30;
+                car.transform.position = new Vector3(0f, 0.8f, 0f);
+                car.transform.rotation = Quaternion.Euler(0f, 0f, 172f);
+                rigid.linearVelocity = Vector3.zero;
+                Physics.SyncTransforms();
+
+                VehicleRecoveryResult result = VehicleManualRecovery.TryRecover(simulation);
+
+                Assert.AreEqual(VehicleRecoveryResult.Success, result);
+                Assert.Greater(rigid.position.y, 1.3f);
+                Assert.Greater(Vector3.Dot(rigid.rotation * Vector3.up, Vector3.up), 0.999f);
+                Assert.That(rigid.linearVelocity.sqrMagnitude, Is.EqualTo(0f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(car);
+                Object.DestroyImmediate(definition);
+            }
+        }
+
     }
 }

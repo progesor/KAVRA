@@ -55,3 +55,25 @@ bounded PhysicsLab CSV capture. Tracked at issue #3.
 Re-run the lab from the Tools menu to instantiate a fresh component with
 new defaults. Check EditMode tests, 20-second CSV, bottomout_m and tilt_deg.
 Unity compilation and Play Mode **remain pending independent verification**.
+
+
+## Update 2026-10-14: M0 v0.0.4 surface / R recovery
+
+Issue: https://github.com/progesor/KAVRA/issues/4
+
+Source integrated: `SurfaceZone` collider binding, `SurfaceResponse`
+per-wheel friction/rolling, lab asphalt/gravel/mud/ice equal-height strips,
+`VehicleManualRecovery.TryRecover`, host-only **R** key handling,
+opt-in wheel-contact cast CPU duration, 90-second diagnostic CSV and
+EditMode tests.
+
+User explicitly asked for **no artificial automatic rollover prevention**.
+The vehicle can roll naturally. Pressing R while nearly stopped attempts a
+one-off repositioning to an upright yaw at its current horizontal location;
+if any wheel has no ground, speed is high, or space is obstructed, it refuses.
+
+Re-generate the M0 Physics Lab via Tools menu to see surface strips and new
+component defaults; previous saved scene objects are not automatically
+replaced. First open Unity Console and run EditMode tests, then Play Mode
+with R behavior, surface transition grip and cast cost CSV. Still no actual
+Unity runtime tests performed by assistant.

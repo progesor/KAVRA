@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-13): M0 experimental physics source, package 0.0.3. Not yet verified in a Unity Editor.**
+**State (2026-10-13): M0 experimental physics source, package 0.0.4. Not yet verified in a Unity Editor.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -22,6 +22,11 @@ or paid vehicle asset dependency.
 - New: progressive suspension bump stops, CoM-based nominal wheel loads,
   paired anti-roll, configurable provisional chassis inertia, CoM gizmo.
 - Selectable raycast/spherecast-with-ray-fallback contact probe and CSV lab telemetry.
+- Optional `SurfaceZone` -> `SurfaceProfile`: per-wheel longitudinal/lateral grip
+  and rolling resistance. Sample segmented track: asphalt / gravel / mud / ice.
+- Manual **R** recovery (ONLY on key press, near stop, usable ground required);
+  resets upright pose and wheel state without preventing natural rollovers.
+- Opt-in total wheel-contact cast CPU timing (measured in the local Lab).
 - Inspector per-wheel telemetry and contact debug rays.
 - Host keyboard adapter and chase camera; generated temporary laboratory scene.
 - EditMode test sources: 3/4/6/8/20 layouts, spring statics, slip cap, contact filter.
@@ -39,15 +44,18 @@ vehicle or simulation-accuracy certification.
 3. Wait for Unity's import/compile. In `Window > General > Test Runner`, run
    `KavraPhysicsEditModeTests` (EditMode).
 4. Choose `Tools > KAVRA > Create M0 Physics Lab Scene`. This creates a new,
-   **unsaved** scene with a ground plane, a vehicle, keyboard input, a ramp
-   and a follow camera.
+   **unsaved** scene with a surface test track, a vehicle, keyboard input, ramp
+   and follow camera. Surface preset assets are saved under
+   `Assets/VehiclePhysicsLab/Surfaces/` without overwriting existing assets.
 5. Save as `Assets/VehiclePhysicsLab/Scenes/M0_DynamicLab.unity`.
 6. Press Play. Drive with W/S (test wheel torque/reverse), A/D (steer),
    Space (service brake), Left Shift (parking brake), or arrow keys.
-7. Observe the expanded HUD: bottom-out mm, suspension support, body tilt
-   and world center-of-mass height. After 20 seconds the lab recorder saves
-   an experimental CSV under `Application.persistentDataPath`.
-8. Compare Contact Mode: Raycast vs SphereCastWithRayFallback in the Inspector.
+   **R = manual recovery** only while moving under ~1.75 m/s; no auto-anti-flip.
+7. Drive forward through the colored asphalt, gravel, mud and ice sections.
+   The experimental CSV defaults to **90 seconds** and is saved to
+   `Application.persistentDataPath` (location printed in Console).
+8. Observe surface and grip in Wheel Telemetry, and cast CPU timing in HUD.
+   Compare ContactMode: Raycast vs SphereCastWithRayFallback in Inspector.
 9. Select the root `KAVRA_Passenger Car 4W` GameObject, expand
    `VehicleSimulationRoot > Wheel Telemetry`; measure static Fz and stability.
 
@@ -70,10 +78,13 @@ and at least 3W + 8W smoke checks. See
 - The Builder initializes the chassis around half-travel sag on level ground.
 - Each wheel is a sensor; its visual cylinder has no friction/collision physics.
 - The temporary cube is a real chassis collider, **not a finished vehicle shape**.
-- Per-wheel spring rate is estimated from equal sprung mass; does not represent
-  measured axle loads, air springs, or load-sharing bogies.
-- Static slope-hold, bump-stop response, rough-rock 3D contact and dynamic
-  differential coupling are future work.
+- Per-wheel spring rate is estimated from CoM projection and wheel support
+  footprint; does not yet represent measured axle loads, air springs,
+  or load-sharing bogies.
+- Softness/Wetness are currently descriptive only. "Mud" reduces tire grip
+  and increases rolling resistance but does NOT deform the ground mesh.
+- Static slope-hold, rough-rock 3D contact and drivetrain/differential coupling
+  are future work. Automatic rollover prevention is intentionally absent.
 
 ## Documentation
 

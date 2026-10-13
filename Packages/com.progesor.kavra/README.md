@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.0.3)
+# KAVRA embedded package (v0.0.4)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -17,8 +17,16 @@ independent of rendering or input assets.
 - `AntiRollSolver` pairs left/right wheels of the same axle.
 - `SuspensionSolver` adds progressive end-stop loading and reports bottom-out.
 - `WheelContactProbe.TrySample` provides two contact modes and ray fallback.
-- `WheelTelemetry` now includes bottom-out, bump stop, anti-roll and
-  static-load share; selecting a vehicle reveals its magenta CoM gizmo.
+- `WheelTelemetry` includes bottom-out, bump stop, anti-roll, and static
+  load shares; selected vehicles show a magenta CoM gizmo.
+- `SurfaceZone` is a separate opt-in MonoBehaviour for colliders;
+  `SurfaceResponse` applies `SurfaceProfile` grip and rolling multipliers
+  per wheel while leaving soft soil deformation for later.
+- `VehicleManualRecovery.TryRecover(VehicleSimulationRoot)` is an explicit
+  teleport API. It is NEVER invoked by the physics solver. Requires
+  sufficiently low speed and valid ground under every wheel.
+- Optional `MeasureContactQueryCost` provides a per-physics-step microsecond
+  estimate of cast calls, not a frame-wide CPU benchmark.
 
 ### Editor
 
@@ -41,6 +49,7 @@ and full suspension geometry are later work.
 `Assets/VehiclePhysicsLab` contains optional Input System keyboard driver,
 chase camera and `Tools > KAVRA > Create M0 Physics Lab Scene` generator.
 
-**Experimental only.** Uncalibrated tires, single ray per wheel, direct test
-wheel torque, approximate equal wheel spring loads, no gearboxes/differentials.
+**Experimental only.** Uncalibrated tires, approximate CoM wheel shares,
+no real soil deformation, direct test torque, no gearboxes/differentials.
+Manual recovery is a lab control, not an automatic stability assistant.
 No Unity compilation/Play Mode verification yet; use docs/13 and issue #1.

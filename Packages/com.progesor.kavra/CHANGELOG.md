@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.4] — 2026-10-14
+
+- Added per-contact `SurfaceZone`, optional `SurfaceProfile` physics
+  multipliers and surface/grip telemetry.
+- Added explicit `VehicleManualRecovery` with ground/speed/clearance checks.
+  Recovery has no automatic triggering.
+- Added opt-in wheel-contact cast query cost diagnostics; sample host includes
+  surface test lanes, 90-second CSV and R keyboard adapter.
+- Unity Editor verification still pending.
+
+
 ## [0.0.3] — 2026-10-13
 
 - Introduced `VehicleStaticLoadEstimator` for footprint/CoM-based

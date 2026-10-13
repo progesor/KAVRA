@@ -53,10 +53,10 @@ public static class VehicleLabSceneBuilder
             return;
         }
 
-        GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        floor.name = "TestGround_Flat";
-        floor.transform.position = new Vector3(0f, -0.5f, 0f);
-        floor.transform.localScale = new Vector3(120f, 1f, 120f);
+        // Four simple surface sections at the SAME height: physics changes
+        // come from SurfaceProfile, not hidden differences in geometry.
+        // The end caps give room to accelerate/stop outside the test patches.
+        CreateSurfaceTrack();
 
         GameObject ramp = GameObject.CreatePrimitive(PrimitiveType.Cube);
         ramp.name = "TestRamp_Approx_8deg";
@@ -65,8 +65,11 @@ public static class VehicleLabSceneBuilder
         ramp.transform.rotation = Quaternion.Euler(8f, 0f, 0f);
 
         GameObject vehicle = VehicleScaffoldBuilder.Create(configuration, true);
+        // Starts on asphalt facing the successive grip zones along +Z.
+        vehicle.transform.position += new Vector3(0f, 0f, -33f);
         VehicleLabKeyboardInput input = vehicle.AddComponent<VehicleLabKeyboardInput>();
         input.Simulation = vehicle.GetComponent<VehicleSimulationRoot>();
+        input.Simulation.MeasureContactQueryCost = true; // Lab-only A/B benchmark.
         VehicleLabTelemetryRecorder recorder = vehicle.AddComponent<VehicleLabTelemetryRecorder>();
         recorder.Simulation = input.Simulation;
 
@@ -90,7 +93,90 @@ public static class VehicleLabSceneBuilder
         EditorSceneManager.MarkSceneDirty(scene);
         Debug.Log("KAVRA M0: created dynamic lab using '" + assetPath + "'. Save scene to " +
                   "Assets/VehiclePhysicsLab/Scenes/M0_DynamicLab.unity, then press Play. " +
-                  "Keys: WASD/arrows, Space brake, Left Shift parking brake.");
+                  "Keys: WASD/arrows, Space brake, Left Shift parking brake, " +
+                  "R manual upright recovery (stopped only). " +
+                  "Drive +Z: asphalt, gravel, mud, ice. Terrain is not deformable.");
+    }
+
+    /// <summary>
+    /// An easily repeated, visually distinct longitudinal surface test.
+    /// SurfaceProfile values affect wheel friction/rolling only; geometry is
+    /// completely flat, and no soil deformation solver is enabled.
+    /// </summary>
+    private static void CreateSurfaceTrack()
+    {
+        const string folder = "Assets/VehiclePhysicsLab/Surfaces";
+        if (!AssetDatabase.IsValidFolder(folder))
+            AssetDatabase.CreateFolder("Assets/VehiclePhysicsLab", "Surfaces");
+
+        SurfaceProfile asphalt = GetSurfaceProfile("Asphalt", 1f, 1f, 1f, 0f, 0f);
+        SurfaceProfile gravel = GetSurfaceProfile("Gravel", 0.66f, 0.60f, 1.75f, 0.35f, 0f);
+        SurfaceProfile mud = GetSurfaceProfile("Mud", 0.38f, 0.32f, 4.5f, 0.85f, 0.75f);
+        SurfaceProfile ice = GetSurfaceProfile("Ice", 0.14f, 0.12f, 0.75f, 0f, 0.95f);
+
+        Material matAsphalt = GetSurfaceMaterial("Asphalt", new Color(0.23f, 0.25f, 0.27f));
+        Material matGravel = GetSurfaceMaterial("Gravel", new Color(0.52f, 0.45f, 0.32f));
+        Material matMud = GetSurfaceMaterial("Mud", new Color(0.30f, 0.19f, 0.13f));
+        Material matIce = GetSurfaceMaterial("Ice", new Color(0.52f, 0.73f, 0.88f));
+
+        CreateGroundSection("Asphalt_Start", -60f, 40f, asphalt, matAsphalt);
+        CreateGroundSection("Asphalt_Test", -30f, 20f, asphalt, matAsphalt);
+        CreateGroundSection("Gravel_Test", -10f, 20f, gravel, matGravel);
+        CreateGroundSection("Mud_Test", 10f, 20f, mud, matMud);
+        CreateGroundSection("Ice_Test", 30f, 20f, ice, matIce);
+        CreateGroundSection("Asphalt_End", 80f, 80f, asphalt, matAsphalt);
+        AssetDatabase.SaveAssets();
+    }
+
+    private static SurfaceProfile GetSurfaceProfile(
+        string name, float longitudinal, float lateral, float rolling,
+        float softness, float wetness)
+    {
+        string target = "Assets/VehiclePhysicsLab/Surfaces/M0_" + name + ".asset";
+        SurfaceProfile profile = AssetDatabase.LoadAssetAtPath<SurfaceProfile>(target);
+        if (profile != null) return profile; // Never overwrite user-tuned assets.
+
+        // A broken/occupied asset path is preserved. Make a unique file.
+        target = AssetDatabase.GenerateUniqueAssetPath(target);
+        profile = ScriptableObject.CreateInstance<SurfaceProfile>();
+        profile.LongitudinalGripMultiplier = longitudinal;
+        profile.LateralGripMultiplier = lateral;
+        profile.RollingResistanceMultiplier = rolling;
+        profile.Softness = softness;
+        profile.Wetness = wetness;
+        AssetDatabase.CreateAsset(profile, target);
+        return profile;
+    }
+
+    private static Material GetSurfaceMaterial(string name, Color tint)
+    {
+        string target = "Assets/VehiclePhysicsLab/Surfaces/M0_" + name + ".mat";
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(target);
+        if (material != null) return material;
+
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null) shader = Shader.Find("Standard");
+        if (shader == null) return null; // Physics works without a material.
+
+        material = new Material(shader);
+        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", tint);
+        if (material.HasProperty("_Color")) material.SetColor("_Color", tint);
+        target = AssetDatabase.GenerateUniqueAssetPath(target);
+        AssetDatabase.CreateAsset(material, target);
+        return material;
+    }
+
+    private static void CreateGroundSection(
+        string name, float z, float length, SurfaceProfile profile, Material material)
+    {
+        GameObject piece = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        piece.name = "Ground_" + name;
+        piece.transform.position = new Vector3(0f, -0.5f, z);
+        piece.transform.localScale = new Vector3(45f, 1f, length);
+        SurfaceZone zone = piece.AddComponent<SurfaceZone>();
+        zone.Profile = profile;
+        if (material != null)
+            piece.GetComponent<Renderer>().sharedMaterial = material;
     }
 
     /// <summary>

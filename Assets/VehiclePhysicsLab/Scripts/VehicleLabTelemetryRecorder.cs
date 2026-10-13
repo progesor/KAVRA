@@ -15,7 +15,7 @@ public sealed class VehicleLabTelemetryRecorder : MonoBehaviour
 {
     public Progesor.Kavra.VehicleSimulationRoot Simulation;
     public bool RecordOnPlay = true;
-    [Range(3f, 120f)] public float RecordSeconds = 20f;
+    [Range(3f, 180f)] public float RecordSeconds = 90f;
 
     private Rigidbody vehicleBody;
     private StringBuilder rows;
@@ -34,7 +34,7 @@ public sealed class VehicleLabTelemetryRecorder : MonoBehaviour
         vehicleBody = GetComponent<Rigidbody>();
         if (!RecordOnPlay || Simulation == null) return;
         rows = new StringBuilder(16 * 1024);
-        rows.AppendLine("time_s,wheel_id,grounded,contact_mode,static_share,compression_m,bottomout_m,bump_n,antiroll_n,fz_n,fx_n,fy_n,slipx_mps,slipy_mps,wheel_rpm,speed_mps,tilt_deg,com_height_m");
+        rows.AppendLine("time_s,wheel_id,grounded,contact_mode,surface,mu_long,mu_lat,rolling_coeff,contact_cost_us_total,static_share,compression_m,bottomout_m,bump_n,antiroll_n,fz_n,fx_n,fy_n,slipx_mps,slipy_mps,wheel_rpm,speed_mps,tilt_deg,com_height_m");
     }
 
     private void FixedUpdate()
@@ -56,6 +56,11 @@ public sealed class VehicleLabTelemetryRecorder : MonoBehaviour
                 .Append(w.Grounded ? "1" : "0").Append(',')
                 .Append(w.UsedSphereContact ? "sphere" :
                         w.UsedRayFallback ? "ray_fallback" : "ray").Append(',')
+                .Append(w.SurfaceName ?? "").Append(',')
+                .Append(F(w.EffectiveLongitudinalFriction)).Append(',')
+                .Append(F(w.EffectiveLateralFriction)).Append(',')
+                .Append(F(w.EffectiveRollingResistance)).Append(',')
+                .Append(F(Simulation.ContactQueryMicrosecondsLastStep)).Append(',')
                 .Append(F(w.StaticLoadFraction)).Append(',')
                 .Append(F(w.CompressionMeters)).Append(',')
                 .Append(F(w.BottomOutMeters)).Append(',')

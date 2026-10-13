@@ -57,7 +57,9 @@ girdiyle çalışabilir.
 
 - Surface provider, test patch, soft soil kuvvet modeli.
 - MudRunner'dan esinlenilmiş ayrı görsel iz/deformasyon adapter'ı.
-- Simulation/Sport/Arcade profilleri ve ESC/rollover yardım testleri.
+- Simulation/Sport/Arcade profilleri, giriş yumuşatma ve fiziksel ESC testleri;
+  kullanıcı talebiyle otomatik devrilme engelleme kullanılmayacak.
+  Devrilme sonrası manuel kurtarma M0 v0.0.4'te eklendi.
 
 ## M6 — Kalibrasyon ve performans
 
@@ -89,3 +91,15 @@ girdiyle çalışabilir.
 - [ ] Unity 6000.3.18f1 compiles, all new tests PASS.
 - [ ] Turning on flat ground: acceptable bank without persistent wheel clipping.
 - [ ] Telemetry accepted across 3W / 4W / 8W / 20W.
+
+
+### M0 yüzey sürtünmesi / manuel kurtarma / ölçüm — issue #4
+
+- [x] `SurfaceZone` ve `SurfaceResponse` fizik entegrasyonu kaynak kodu.
+- [x] Lab asfalt / çakıl / çamur / buz zemin şablonları ve yüzey metrikleri.
+- [x] Kullanıcı tetiklemeli `R` kurtarma; otomatik anti-flip **yok**.
+- [x] Ray/sphere cast sorgu maliyetini isteğe bağlı ölçecek sayaç ve 90s CSV.
+- [x] Yüzey davranışları / kurtarma güvenliği için EditMode test kaynakları.
+- [ ] Unity derlemesi, EditMode testleri ve Play Mode yerel kabul.
+- [ ] Farklı yüzeylerde veri kayıtlarının nümerik karşılaştırması.
+- [ ] Cast CPU mikrosaniye istatistikleri gerçek donanımda karşılaştırıldı.

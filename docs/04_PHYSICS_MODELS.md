@@ -91,8 +91,9 @@ tork aktarımı ile wheel angular speed iteratif/alt-adımlı çözülmelidir.
 
 - Servis freni, el/park freni, motor freni, retarder (gelecek).
 - ABS/TCS/ESC fiziksel kontrolleri isteğe bağlı, ayrı sistemler.
-- Arcade steer/yaw stabilizer, rollover prevention ve input shaping,
-  gerçek sürüş desteklerinden ayrı isimlendirilir.
+- Arcade steer/yaw giriş filtreleme gibi yardımcılar fiziksel ABS/ESC'den
+  ayrı isimlendirilir; **otomatik devrilme önleme uygulanmaz**.
+  Kullanıcı isteğiyle manuel kurtarma (R) ayrı bir teleport hizmetidir.
 - Profile geçişi hareket halindeyken de parametre interpolasyonuyla yapılabilir.
 
 ## 9. Zaman adımı / numerik kararlılık

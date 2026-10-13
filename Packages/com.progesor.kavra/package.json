@@ -1,8 +1,8 @@
 {
   "name": "com.progesor.kavra",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "displayName": "KAVRA Vehicle Framework",
-  "description": "Experimental M0: per-wheel static load distribution, bump stops, optional anti-roll, ray/sphere contact and laboratory telemetry.",
+  "description": "M0 experimental physics with collider surface grip, explicit manual recovery, contact/suspension diagnostics and vehicle Wizard.",
   "unity": "6000.3",
   "author": {
     "name": "Progesor Creating"

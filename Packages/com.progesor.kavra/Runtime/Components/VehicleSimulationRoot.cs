@@ -12,6 +12,10 @@ namespace Progesor.Kavra
         public bool Grounded;
         public bool UsedSphereContact;
         public bool UsedRayFallback;
+        public string SurfaceName;
+        public float EffectiveLongitudinalFriction;
+        public float EffectiveLateralFriction;
+        public float EffectiveRollingResistance;
         public float StaticLoadFraction;
         public float CompressionMeters;
         public float CompressionVelocityMps;
@@ -43,6 +47,9 @@ namespace Progesor.Kavra
         public LayerMask GroundLayers = -1;
         public bool DrawDebugContacts;
         public bool ShowCenterOfMassGizmo = true;
+        [Tooltip("M0 A/B benchmark: measures only contact cast call duration.")]
+        public bool MeasureContactQueryCost;
+        public float ContactQueryMicrosecondsLastStep { get; private set; }
 
         [Header("Mass properties")]
         [Tooltip("Test-lab inertia estimated from wheel footprint and body height, not from the low cube collider.")]
@@ -96,6 +103,8 @@ namespace Progesor.Kavra
             // Contact and spring phase for THIS physics step.
             public bool Grounded;
             public WheelContactSample Contact;
+            public SurfaceProfile Surface;
+            public SurfaceTireParameters TireParameters;
             public SuspensionSample Suspension;
             public Vector3 SuspensionUp;
             public float VerticalSupportN;
@@ -122,6 +131,31 @@ namespace Progesor.Kavra
             Steering = Mathf.Clamp(steering, -1f, 1f);
             ServiceBrake = Mathf.Clamp01(serviceBrake);
             ParkingBrake = Mathf.Clamp01(parkingBrake);
+        }
+
+        /// <summary>
+        /// Reset wheel angular motion and spring history after an EXPLICIT
+        /// user teleport. Does not move or stabilize the Rigidbody and is never
+        /// called automatically from FixedUpdate or collision detection.
+        /// </summary>
+        public void ResetTransientMotionState()
+        {
+            if (wheels == null) return;
+            for (int i = 0; i < wheels.Length; i++)
+            {
+                WheelState wheel = wheels[i];
+                wheel.OmegaRadPerSec = 0f;
+                wheel.SpinAngleDeg = 0f;
+                wheel.PreviousRawCompressionMeters = 0f;
+                wheel.WasGrounded = false;
+                wheel.Grounded = false;
+                wheel.Contact = default(WheelContactSample);
+                wheel.Suspension = default(SuspensionSample);
+                wheel.VerticalSupportN = 0f;
+                wheel.AntiRollForceN = 0f;
+                if (wheelTelemetry != null && i < wheelTelemetry.Length)
+                    wheelTelemetry[i] = new WheelTelemetry { WheelId = wheel.Definition.Id };
+            }
         }
 
         private void Awake()
@@ -276,6 +310,8 @@ namespace Progesor.Kavra
             float dt = Time.fixedDeltaTime;
             if (dt <= 0f) return;
 
+            long contactQueryTicks = 0L;
+
             // Phase 1: all contacts, suspension lengths and provisional loads.
             // Splitting phases prevents per-wheel loop ordering from affecting
             // the paired anti-roll calculation.
@@ -284,10 +320,14 @@ namespace Progesor.Kavra
                 WheelState wheel = wheels[i];
                 WheelDefinition spec = wheel.Definition;
                 wheel.SuspensionUp = wheel.Anchor.transform.up;
+                long queryStart = MeasureContactQueryCost
+                    ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
                 wheel.Grounded = WheelContactProbe.TrySample(
                     wheel.Anchor.transform.position, wheel.SuspensionUp,
                     spec.RadiusMeters, spec.SuspensionTravelMeters, ContactMode,
                     GroundLayers.value, transform, body, raycastHits, out wheel.Contact);
+                if (MeasureContactQueryCost)
+                    contactQueryTicks += System.Diagnostics.Stopwatch.GetTimestamp() - queryStart;
 
                 float criticalDamping = 2f * Mathf.Sqrt(
                     Mathf.Max(0f, wheel.SpringRateNPerMeter * wheel.SprungMassKg));
@@ -302,7 +342,21 @@ namespace Progesor.Kavra
 
                 wheel.VerticalSupportN = wheel.Suspension.TotalForceN;
                 wheel.AntiRollForceN = 0f;
+
+                // The hit Collider chooses one optional surface profile per
+                // wheel. Absence of a profile preserves pre-0.0.4 behavior.
+                wheel.Surface = wheel.Grounded
+                    ? SurfaceResponse.Resolve(wheel.Contact.Hit.collider)
+                    : null;
+                wheel.TireParameters = SurfaceResponse.Evaluate(
+                    wheel.Surface, LongitudinalFriction, LateralFriction,
+                    RollingResistanceCoefficient);
             }
+
+            ContactQueryMicrosecondsLastStep = MeasureContactQueryCost
+                ? (float)(contactQueryTicks * 1000000.0 /
+                          System.Diagnostics.Stopwatch.Frequency)
+                : 0f;
 
             // Phase 2: equivalent left/right anti-roll bar forces. Their sum
             // is zero and they never require a wheel to pull on the ground.
@@ -386,9 +440,10 @@ namespace Progesor.Kavra
                         BrakeTorqueNm = brakeTorque,
                         LongitudinalStiffnessNsPerMeter = LongitudinalStiffnessNsPerMeter,
                         LateralStiffnessNsPerMeter = LateralStiffnessNsPerMeter,
-                        LongitudinalFriction = LongitudinalFriction,
-                        LateralFriction = LateralFriction,
-                        RollingResistanceCoefficient = RollingResistanceCoefficient,
+                        LongitudinalFriction = wheel.TireParameters.LongitudinalFriction,
+                        LateralFriction = wheel.TireParameters.LateralFriction,
+                        RollingResistanceCoefficient =
+                            wheel.TireParameters.RollingResistanceCoefficient,
                         DeltaTime = dt / substeps
                     });
                     wheel.OmegaRadPerSec = tire.AngularVelocityRadPerSec;
@@ -450,6 +505,13 @@ namespace Progesor.Kavra
                     Grounded = grounded,
                     UsedSphereContact = grounded && wheel.Contact.IsSphereContact,
                     UsedRayFallback = grounded && wheel.Contact.UsedRayFallback,
+                    SurfaceName = !grounded ? "Air" :
+                        wheel.Surface != null ? wheel.Surface.name : "Default",
+                    EffectiveLongitudinalFriction =
+                        wheel.TireParameters.LongitudinalFriction,
+                    EffectiveLateralFriction = wheel.TireParameters.LateralFriction,
+                    EffectiveRollingResistance =
+                        wheel.TireParameters.RollingResistanceCoefficient,
                     StaticLoadFraction = wheel.StaticLoadFraction,
                     CompressionMeters = wheel.Suspension.CompressionMeters,
                     CompressionVelocityMps = wheel.Suspension.CompressionVelocityMps,

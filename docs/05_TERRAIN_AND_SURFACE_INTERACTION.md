@@ -16,8 +16,12 @@ Zemin kimliği `SurfaceProfile` üzerinden başlatılır:
 - Sonraki: `sinkageExponent`, `soilResistance`, `rutRecovery`, `shearResponse`,
   `penetrationLimit` (empirik parametreler)
 
-İlk `SurfaceProfile` C# sınıfındaki değerler **henüz bir kuvvete bağlanmamıştır**.
-Bunları performans ölçmeden "fiziksel sabit" kabul etmeyeceğiz.
+**v0.0.4 M0:** `SurfaceZone` ile Collider'a atanan `SurfaceProfile` değerleri
+tekerlek lastiğinin boyuna/yanal tutunma limitini ve yuvarlanma direncini
+çarpan olarak değiştiriyor. Ayarı olmayan yüzeyde eski varsayılan değerler
+korunuyor. `Softness` ve `Wetness` M0'da hâlâ yalnızca ilerideki toprak
+modülü için metadata; **gömülme, çamur izi, kalıcı deformasyon yok.**
+Bu katsayılar gerçek ölçümle henüz kalibre edilmedi.
 
 ## Fizik çözücü taslağı
 

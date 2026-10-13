@@ -10,12 +10,14 @@ project; the KAVRA runtime package does not depend on it.
 2. Save the generated, unsaved scene at
    `Assets/VehiclePhysicsLab/Scenes/M0_DynamicLab.unity`.
 3. Press Play. Controls: **W/S** torque/reverse, **A/D** steering,
-   **Space** service brake, **Left Shift** parking brake (arrow keys also work).
+   **Space** service brake, **Left Shift** parking brake, **R** explicit
+   vehicle recovery (only when nearly stopped; arrow keys also work).
 4. Select vehicle root and expand `VehicleSimulationRoot > Wheel Telemetry`.
 5. Run `Window > General > Test Runner > EditMode` for physics unit tests.
 
-Lab content: cube-ground, experimental 4-wheel M0 prototype, ramp,
-keyboard adapter, follow camera and directional light. The scene is made by
+Lab content: flat colored asphalt / gravel / mud / ice strip colliders,
+experimental 4-wheel M0 prototype, off-axis ramp, keyboard adapter,
+follow camera and directional light. The scene is made by
 an Editor script, not checked in as a pre-serialized Unity scene.
 
 ## Null VehicleDefinition regression fix (2026-10-13)
@@ -87,3 +89,35 @@ the ground at high suspension compression. The update adds:
 
 Use normal-speed driving before ramp impacts. The model is still an
 unvalidated prototype, not an FEM tire or MudRunner soil simulation.
+
+
+## M0 surface comparison and manual recovery (v0.0.4)
+
+`Tools > KAVRA > Create M0 Physics Lab Scene` produces contiguous flat
+ground segments. Driving along +Z crosses **asphalt, gravel, mud, ice**.
+Same-height Colliders isolate the friction differences; these are test
+presets, not physically validated coefficients or deformable soils.
+
+The host creates/reuses `Assets/VehiclePhysicsLab/Surfaces/M0_*.asset`
+(`SurfaceProfile`) and `M0_*.mat` assets. Existing tuned assets are never
+overwritten. `SurfaceZone` on each Collider supplies the profile.
+Where no profile exists, baseline tire grip is unchanged.
+
+Per-wheel `WheelTelemetry` exposes `SurfaceName`, effective friction
+coefficients and rolling resistance. The HUD reports surface transitions;
+a **90-second CSV** is recorded at `Application.persistentDataPath`.
+If `MeasureContactQueryCost` is enabled, HUD and CSV include total cast
+time in microseconds per physics step. Compare ray vs sphere+fallback
+on the same hardware/scene. This is a diagnostic, not a Unity profiler
+replacement or a general performance guarantee.
+
+The **R** key tries an explicit manual upright recovery: vehicle must be
+slower than **1.75 m/s**, all wheels need ground below, steep/blocked spaces
+are rejected. It keeps horizontal heading and position, chooses safe clearance,
+and clears velocities and rotor state. Recovery is NOT automatically called
+for rollover, collisions, idle or speed thresholds; the truck/car is free
+to tip over under physical forces. Rejected recovery is shown in HUD.
+
+EditMode tests cover surface coefficient mapping, missing-profile fallback,
+surface component lookup, heading preservation and recovery speed/ground.
+Real Unity Play Mode acceptance and measured CPU comparisons are pending.
