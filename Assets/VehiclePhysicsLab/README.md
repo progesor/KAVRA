@@ -18,6 +18,20 @@ Lab content: cube-ground, experimental 4-wheel M0 prototype, ramp,
 keyboard adapter, follow camera and directional light. The scene is made by
 an Editor script, not checked in as a pre-serialized Unity scene.
 
+## Null VehicleDefinition regression fix (2026-10-13)
+
+The lab generator now looks for a **valid, serialized** configuration at
+`Assets/KAVRA_PassengerCar4.asset`, then
+`Assets/VehiclePhysicsLab/KAVRA_M0_LabCar.asset`. If both are missing,
+have a broken `m_Script` reference, or fail validation, it generates a new
+`KAVRA_M0_LabCar.asset` at a unique path. It never overwrites existing
+assets and checks the reference *both before and after* changing scenes.
+
+When an asset cannot be created/reloaded, the generator logs an actionable
+error and does not pass a null configuration to `VehicleScaffoldBuilder`.
+For repeated issues, inspect the affected `.asset` file in Inspector for
+`Missing Script`, and check Unity's import/compile errors.
+
 ## Checks required
 
 - Errors during package import/Editor compile?
