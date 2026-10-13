@@ -1,0 +1,19 @@
+{
+  "name": "com.progesor.kavra",
+  "version": "0.0.1",
+  "displayName": "KAVRA Vehicle Framework",
+  "description": "Modular wheeled-vehicle framework foundation. M0 includes configuration assets, validation and a non-drivable chassis scaffold wizard.",
+  "unity": "6000.3",
+  "author": {
+    "name": "Progesor Creating"
+  },
+  "keywords": [
+    "vehicle",
+    "physics",
+    "wheels",
+    "simulation",
+    "offroad",
+    "wizard"
+  ],
+  "dependencies": {}
+}

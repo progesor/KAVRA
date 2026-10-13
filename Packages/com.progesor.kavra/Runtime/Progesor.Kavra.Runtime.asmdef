@@ -1,0 +1,14 @@
+{
+  "name": "Progesor.Kavra.Runtime",
+  "rootNamespace": "Progesor.Kavra",
+  "references": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,43 @@
+# Unity generated / machine-local
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+[Aa]ssets/AssetStoreTools*
+
+# IDE caches
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS / generated
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.bak
+
+# Crash and profiler results
+sysinfo.txt
+*.stackdump
+
+# Do NOT ignore: *.meta, ProjectSettings/, Packages/manifest.json,
+# Packages/packages-lock.json or Packages/com.progesor.kavra/.

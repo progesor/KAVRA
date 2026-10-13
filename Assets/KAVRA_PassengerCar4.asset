@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98048a08952b2874baec18a2301b0bd5, type: 3}
+  m_Name: KAVRA_PassengerCar4
+  m_EditorClassIdentifier: Progesor.Kavra.Runtime::Progesor.Kavra.VehicleDefinition
+  VehicleName: Passenger Car 4W
+  ChassisMassKg: 1450
+  CenterOfMassLocal: {x: 0, y: -0.25, z: 0}
+  Axles:
+  - Id: front
+    Linkage: 0
+    IsSteered: 1
+    IsDriven: 0
+    Notes: 
+  - Id: rear
+    Linkage: 0
+    IsSteered: 0
+    IsDriven: 1
+    Notes: 
+  Wheels:
+  - Id: front-L
+    AxleId: front
+    Side: 0
+    MountLocalPosition: {x: -0.79, y: -0.63, z: 1.35}
+    RadiusMeters: 0.36
+    WidthMeters: 0.27
+    SuspensionTravelMeters: 0.25
+    CanSteer: 1
+    CanDrive: 0
+    HasServiceBrake: 1
+    HasParkingBrake: 0
+  - Id: front-R
+    AxleId: front
+    Side: 2
+    MountLocalPosition: {x: 0.79, y: -0.63, z: 1.35}
+    RadiusMeters: 0.36
+    WidthMeters: 0.27
+    SuspensionTravelMeters: 0.25
+    CanSteer: 1
+    CanDrive: 0
+    HasServiceBrake: 1
+    HasParkingBrake: 0
+  - Id: rear-L
+    AxleId: rear
+    Side: 0
+    MountLocalPosition: {x: -0.79, y: -0.63, z: -1.35}
+    RadiusMeters: 0.36
+    WidthMeters: 0.27
+    SuspensionTravelMeters: 0.25
+    CanSteer: 0
+    CanDrive: 1
+    HasServiceBrake: 1
+    HasParkingBrake: 1
+  - Id: rear-R
+    AxleId: rear
+    Side: 2
+    MountLocalPosition: {x: 0.79, y: -0.63, z: -1.35}
+    RadiusMeters: 0.36
+    WidthMeters: 0.27
+    SuspensionTravelMeters: 0.25
+    CanSteer: 0
+    CanDrive: 1
+    HasServiceBrake: 1
+    HasParkingBrake: 1
