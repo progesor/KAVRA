@@ -1,8 +1,8 @@
 {
   "name": "com.progesor.kavra",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "displayName": "KAVRA Vehicle Framework",
-  "description": "Modular wheeled-vehicle framework. M0 experimental raycast suspension and tire dynamics; validation, Editor wizard and kinematic scaffold.",
+  "description": "Experimental M0: per-wheel static load distribution, bump stops, optional anti-roll, ray/sphere contact and laboratory telemetry.",
   "unity": "6000.3",
   "author": {
     "name": "Progesor Creating"

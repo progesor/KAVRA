@@ -67,6 +67,8 @@ public static class VehicleLabSceneBuilder
         GameObject vehicle = VehicleScaffoldBuilder.Create(configuration, true);
         VehicleLabKeyboardInput input = vehicle.AddComponent<VehicleLabKeyboardInput>();
         input.Simulation = vehicle.GetComponent<VehicleSimulationRoot>();
+        VehicleLabTelemetryRecorder recorder = vehicle.AddComponent<VehicleLabTelemetryRecorder>();
+        recorder.Simulation = input.Simulation;
 
         GameObject cameraObject = new GameObject("Main Camera");
         cameraObject.tag = "MainCamera";

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.3] — 2026-10-13
+
+- Introduced `VehicleStaticLoadEstimator` for footprint/CoM-based
+  nominal spring weights.
+- Added `AntiRollSolver`, progressive suspension bump-stop and
+  wheel-bottom-out telemetry.
+- Added optional spherecast contact with raycast fallback; preserved old
+  `WheelContactProbe.TryRaycast` for backward compatibility.
+- Added approximate chassis inertia estimate and center-of-mass gizmo.
+- Host-only lab now exports experimental telemetry CSV; Editor/Play Mode
+  verification is not yet available.
+
+
 ## [0.0.2] — 2026-10-13
 
 - Experimental raycast road contact, vertical spring/damper solver and

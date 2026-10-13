@@ -165,5 +165,174 @@ namespace Progesor.Kavra.Lab.Tests
                 Object.DestroyImmediate(vehicle);
             }
         }
+        [Test]
+        public void ThreeWheelStaticLoadsFollowCenterOfMass()
+        {
+            VehicleDefinition definition = VehicleTemplateFactory.Create(VehicleTemplate.ThreeWheelDelta);
+            try
+            {
+                float[] loads = new float[definition.Wheels.Count];
+                bool balanced = VehicleStaticLoadEstimator.Estimate(
+                    definition.Wheels, definition.CenterOfMassLocal, loads);
+
+                Assert.IsTrue(balanced, "The three-wheel footprint encloses the CoM");
+                Assert.That(loads[0], Is.EqualTo(0.5f).Within(0.0005f));
+                Assert.That(loads[1], Is.EqualTo(0.25f).Within(0.0005f));
+                Assert.That(loads[2], Is.EqualTo(0.25f).Within(0.0005f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(definition);
+            }
+        }
+
+        [TestCase(VehicleTemplate.PassengerCar4)]
+        [TestCase(VehicleTemplate.Truck6x6)]
+        [TestCase(VehicleTemplate.Truck8x8)]
+        [TestCase(VehicleTemplate.SingleChassis20WheelStressTest)]
+        public void NominalLoadsBalanceLateralAndLongitudinalMoments(VehicleTemplate kind)
+        {
+            VehicleDefinition definition = VehicleTemplateFactory.Create(kind);
+            try
+            {
+                float[] fractions = new float[definition.Wheels.Count];
+                bool balanced = VehicleStaticLoadEstimator.Estimate(
+                    definition.Wheels, definition.CenterOfMassLocal, fractions);
+                Assert.IsTrue(balanced, "CoM support for " + kind);
+
+                float total = 0f, x = 0f, z = 0f;
+                for (int i = 0; i < fractions.Length; i++)
+                {
+                    Assert.GreaterOrEqual(fractions[i], 0f);
+                    total += fractions[i];
+                    x += fractions[i] * definition.Wheels[i].MountLocalPosition.x;
+                    z += fractions[i] * definition.Wheels[i].MountLocalPosition.z;
+                }
+                Assert.That(total, Is.EqualTo(1f).Within(0.0005f));
+                Assert.That(x, Is.EqualTo(definition.CenterOfMassLocal.x).Within(0.025f));
+                Assert.That(z, Is.EqualTo(definition.CenterOfMassLocal.z).Within(0.025f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(definition);
+            }
+        }
+
+        [Test]
+        public void ImpossibleCenterOfMassIsReportedAndLoadsStayNonNegative()
+        {
+            VehicleDefinition definition = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            try
+            {
+                float[] fractions = new float[definition.Wheels.Count];
+                bool balanced = VehicleStaticLoadEstimator.Estimate(
+                    definition.Wheels, new Vector3(20f, 0f, 0f), fractions);
+                Assert.IsFalse(balanced);
+                float sum = 0f;
+                foreach (float f in fractions)
+                {
+                    Assert.GreaterOrEqual(f, 0f);
+                    sum += f;
+                }
+                Assert.That(sum, Is.EqualTo(1f).Within(0.0005f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(definition);
+            }
+        }
+
+        [Test]
+        public void BumpStopAddsProgressiveSupportAfterBottomOut()
+        {
+            const float radius = 0.36f;
+            const float travel = 0.25f;
+            const float stiffness = 28000f;
+            SuspensionSample mid = SuspensionSolver.Evaluate(
+                true, radius, travel, radius + travel - 0.125f,
+                stiffness, 0f, 0f, 0.125f, true, 0.016f, 0.85f, 4f);
+            SuspensionSample bottomed = SuspensionSolver.Evaluate(
+                true, radius, travel, radius - 0.03f,
+                stiffness, 0f, 0f, travel + 0.03f, true, 0.016f, 0.85f, 4f);
+
+            Assert.That(mid.BumpStopForceN, Is.EqualTo(0f));
+            Assert.That(bottomed.BottomOutMeters, Is.EqualTo(0.03f).Within(0.0001f));
+            Assert.Greater(bottomed.BumpStopForceN, 0f);
+            Assert.Greater(bottomed.TotalForceN, mid.TotalForceN);
+        }
+
+        [Test]
+        public void AntiRollTransferConservesSupportAndCannotPullWheelDown()
+        {
+            const float leftSpring = 1100f;
+            const float rightSpring = 300f;
+            float transfer = AntiRollSolver.ComputeTransferN(
+                0.22f, 0.10f, leftSpring, rightSpring, 9000f);
+
+            float left = leftSpring + transfer;
+            float right = rightSpring - transfer;
+            Assert.GreaterOrEqual(left, 0f);
+            Assert.GreaterOrEqual(right, 0f);
+            Assert.That(left + right, Is.EqualTo(leftSpring + rightSpring).Within(0.0001f));
+            Assert.That(transfer, Is.EqualTo(rightSpring));
+        }
+
+        [TestCase(WheelContactMode.Raycast)]
+        [TestCase(WheelContactMode.SphereCastWithRayFallback)]
+        public void WheelContactKeepsDistanceAtStaticRideHeight(WheelContactMode mode)
+        {
+            GameObject road = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                road.transform.position = new Vector3(0f, -0.5f, 0f);
+                road.transform.localScale = new Vector3(10f, 1f, 10f);
+                road.layer = 30;
+                Physics.SyncTransforms();
+
+                WheelContactSample sample;
+                bool found = WheelContactProbe.TrySample(
+                    new Vector3(0f, 0.485f, 0f), Vector3.up,
+                    0.36f, 0.25f, mode, 1 << 30,
+                    null, null, new RaycastHit[16], out sample);
+                Assert.IsTrue(found, "Contact for " + mode);
+                Assert.That(sample.RayEquivalentDistanceMeters,
+                    Is.EqualTo(0.485f).Within(0.004f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(road);
+            }
+        }
+
+        [Test]
+        public void RaisedProbeCanDetectContactAfterMountCrossesRoadSurface()
+        {
+            GameObject road = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                road.transform.position = new Vector3(0f, -0.5f, 0f);
+                road.transform.localScale = new Vector3(10f, 1f, 10f);
+                road.layer = 30;
+                Physics.SyncTransforms();
+
+                WheelContactSample sample;
+                bool found = WheelContactProbe.TrySample(
+                    new Vector3(0f, -0.03f, 0f), Vector3.up,
+                    0.36f, 0.25f, WheelContactMode.SphereCastWithRayFallback,
+                    1 << 30, null, null, new RaycastHit[16], out sample);
+                Assert.IsTrue(found, "Wheel mount has gone 3 cm into ground");
+                Assert.Less(sample.RayEquivalentDistanceMeters, 0f);
+                SuspensionSample suspension = SuspensionSolver.Evaluate(
+                    true, 0.36f, 0.25f, sample.RayEquivalentDistanceMeters,
+                    20000f, 0f, 0f, 0.64f, true, 0.016f, 0.85f, 4f);
+                Assert.Greater(suspension.BottomOutMeters, 0.36f);
+                Assert.Greater(suspension.TotalForceN, 0f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(road);
+            }
+        }
+
     }
 }

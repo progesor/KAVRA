@@ -42,3 +42,16 @@ no actual drivetrain or soil contact deformation, test keyboard is a sample
 in host project and not part of reusable package.
 
 See `docs/13_M0_FIRST_PHYSICS_SLICE.md` for API and numerical details.
+
+
+## Update: M0 0.0.3 — ride-height / roll / contact reliability
+
+User drove the prototype and reported moderate body banking, plus a wheel
+visually entering ground during some turns. New source on the same PR #2
+addresses likely causes with CoM-weighted springs, end-stop, anti-roll pair,
+test inertia approximation, CoM gizmo, sphere-vs-ray contact mode and
+bounded PhysicsLab CSV capture. Tracked at issue #3.
+
+Re-run the lab from the Tools menu to instantiate a fresh component with
+new defaults. Check EditMode tests, 20-second CSV, bottomout_m and tilt_deg.
+Unity compilation and Play Mode **remain pending independent verification**.

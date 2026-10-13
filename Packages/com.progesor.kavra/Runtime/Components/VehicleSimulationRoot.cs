@@ -4,14 +4,20 @@ using UnityEngine;
 
 namespace Progesor.Kavra
 {
-    /// <summary>Per-wheel physics telemetry, updated every FixedUpdate.</summary>
+    /// <summary>Per-wheel snapshots of the provisional M0 solver.</summary>
     [Serializable]
     public struct WheelTelemetry
     {
         public string WheelId;
         public bool Grounded;
+        public bool UsedSphereContact;
+        public bool UsedRayFallback;
+        public float StaticLoadFraction;
         public float CompressionMeters;
         public float CompressionVelocityMps;
+        public float BottomOutMeters;
+        public float BumpStopForceN;
+        public float AntiRollForceN;
         public float SuspensionForceN;
         public float NormalLoadN;
         public float LongitudinalForceN;
@@ -25,22 +31,31 @@ namespace Progesor.Kavra
     }
 
     /// <summary>
-    /// M0 single-Rigidbody test simulator. Raycast spring/damper and velocity-slip
-    /// tire forces are approximations, NOT a validated road-vehicle simulator.
-    /// No WheelCollider, engine, gearbox or differential is required.
+    /// M0 experimental single-Rigidbody vehicle. Approximate loads, tire
+    /// forces and contact only; NOT yet calibrated simulation physics.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(VehicleRoot), typeof(Rigidbody))]
     public sealed class VehicleSimulationRoot : MonoBehaviour
     {
         [Header("Contact")]
+        public WheelContactMode ContactMode = WheelContactMode.Raycast;
         public LayerMask GroundLayers = -1;
         public bool DrawDebugContacts;
+        public bool ShowCenterOfMassGizmo = true;
+
+        [Header("Mass properties")]
+        [Tooltip("Test-lab inertia estimated from wheel footprint and body height, not from the low cube collider.")]
+        public bool EstimateChassisInertia = true;
+        [Range(2f, 5f)] public float BodyHeightToWheelRadiusMultiplier = 3.6f;
 
         [Header("Suspension")]
         [Range(0.1f, 0.9f)] public float TargetStaticCompressionFraction = 0.5f;
         [Range(0f, 2f)] public float CompressionDampingRatio = 0.55f;
         [Range(0f, 2f)] public float ReboundDampingRatio = 0.45f;
+        [Range(0.5f, 1f)] public float BumpStopStartFraction = 0.85f;
+        [Range(0f, 12f)] public float BumpStopRateMultiplier = 4f;
+        [Range(0f, 2f)] public float AntiRollRateFraction = 0.35f;
 
         [Header("Tire: provisional velocity-slip model")]
         [Min(0f)] public float LongitudinalStiffnessNsPerMeter = 6500f;
@@ -61,7 +76,7 @@ namespace Progesor.Kavra
         [Min(0f)] public float ParkingBrakeTorquePerWheelNm = 2100f;
         [Range(0f, 65f)] public float MaximumSteerAngleDeg = 28f;
 
-        [Header("Read-only output while playing")]
+        [Header("Read-only snapshots while playing")]
         [SerializeField] private WheelTelemetry[] wheelTelemetry = new WheelTelemetry[0];
 
         private sealed class WheelState
@@ -70,14 +85,32 @@ namespace Progesor.Kavra
             public VehicleWheelAnchor Anchor;
             public Transform Visual;
             public Quaternion BaseVisualRotation;
+            public float StaticLoadFraction;
+            public float SpringRateNPerMeter;
+            public float SprungMassKg;
             public float OmegaRadPerSec;
             public float SpinAngleDeg;
-            public float PreviousCompression;
+            public float PreviousRawCompressionMeters;
             public bool WasGrounded;
+
+            // Contact and spring phase for THIS physics step.
+            public bool Grounded;
+            public WheelContactSample Contact;
+            public SuspensionSample Suspension;
+            public Vector3 SuspensionUp;
+            public float VerticalSupportN;
+            public float AntiRollForceN;
+        }
+
+        private struct AntiRollPair
+        {
+            public int Left;
+            public int Right;
         }
 
         private readonly RaycastHit[] raycastHits = new RaycastHit[32];
         private WheelState[] wheels;
+        private AntiRollPair[] antiRollPairs = new AntiRollPair[0];
         private Rigidbody body;
         private bool ready;
 
@@ -94,10 +127,9 @@ namespace Progesor.Kavra
         private void Awake()
         {
             body = GetComponent<Rigidbody>();
-            VehicleRoot vehicle = GetComponent<VehicleRoot>();
-            VehicleDefinition definition = vehicle != null ? vehicle.Definition : null;
-            List<VehicleValidationIssue> issues = VehicleConfigurationValidator.Validate(definition);
-            foreach (VehicleValidationIssue issue in issues)
+            VehicleRoot root = GetComponent<VehicleRoot>();
+            VehicleDefinition definition = root != null ? root.Definition : null;
+            foreach (VehicleValidationIssue issue in VehicleConfigurationValidator.Validate(definition))
             {
                 if (issue.Severity != ValidationSeverity.Error) continue;
                 Debug.LogError("KAVRA: " + issue.Message, this);
@@ -105,10 +137,9 @@ namespace Progesor.Kavra
                 return;
             }
 
-            if (body.isKinematic)
+            if (body == null || body.isKinematic)
             {
-                Debug.LogError("KAVRA: VehicleSimulationRoot needs a non-kinematic Rigidbody. " +
-                               "Use the dynamic M0 Wizard action.", this);
+                Debug.LogError("KAVRA: dynamic simulation requires a non-kinematic Rigidbody.", this);
                 enabled = false;
                 return;
             }
@@ -117,25 +148,40 @@ namespace Progesor.Kavra
             var byId = new Dictionary<string, VehicleWheelAnchor>(StringComparer.Ordinal);
             foreach (VehicleWheelAnchor anchor in anchors)
             {
-                if (anchor == null || string.IsNullOrEmpty(anchor.WheelId)
-                    || byId.ContainsKey(anchor.WheelId))
+                if (anchor == null || string.IsNullOrEmpty(anchor.WheelId) ||
+                    byId.ContainsKey(anchor.WheelId))
                 {
-                    Debug.LogError("KAVRA: duplicate or empty wheel anchor ID.", this);
+                    Debug.LogError("KAVRA: missing or duplicate wheel anchor ID.", this);
                     enabled = false;
                     return;
                 }
                 byId.Add(anchor.WheelId, anchor);
             }
 
-            wheels = new WheelState[definition.Wheels.Count];
-            wheelTelemetry = new WheelTelemetry[wheels.Length];
-            for (int i = 0; i < wheels.Length; i++)
+            int wheelCount = definition.Wheels.Count;
+            float[] loadFractions = new float[wheelCount];
+            bool balanced = VehicleStaticLoadEstimator.Estimate(
+                definition.Wheels, definition.CenterOfMassLocal, loadFractions);
+            if (!balanced)
+                Debug.LogWarning("KAVRA: vehicle CoM projection is outside or unsupported by " +
+                                 "its wheel footprint. Spring weights are approximate; " +
+                                 "inspect CenterOfMassLocal and wheel positions.", this);
+
+            wheels = new WheelState[wheelCount];
+            wheelTelemetry = new WheelTelemetry[wheelCount];
+
+            float minX = float.PositiveInfinity, maxX = float.NegativeInfinity;
+            float minZ = float.PositiveInfinity, maxZ = float.NegativeInfinity;
+            float biggestRadius = 0f;
+            for (int i = 0; i < wheelCount; i++)
             {
                 WheelDefinition spec = definition.Wheels[i];
                 VehicleWheelAnchor anchor;
-                if (!byId.TryGetValue(spec.Id, out anchor) || spec.SuspensionTravelMeters <= 0f)
+                if (!byId.TryGetValue(spec.Id, out anchor) ||
+                    spec.SuspensionTravelMeters <= 0f)
                 {
-                    Debug.LogError("KAVRA: missing wheel anchor or non-positive suspension travel: " + spec.Id, this);
+                    Debug.LogError("KAVRA: missing anchor or invalid suspension travel for " +
+                                   spec.Id, this);
                     enabled = false;
                     return;
                 }
@@ -143,54 +189,151 @@ namespace Progesor.Kavra
                 Transform visual = anchor.VisualTransform != null
                     ? anchor.VisualTransform
                     : anchor.transform.Find("__WHEEL_PREVIEW");
+                float sprungMass = definition.ChassisMassKg * loadFractions[i];
+                float sag = Mathf.Max(0.01f,
+                    spec.SuspensionTravelMeters * TargetStaticCompressionFraction);
                 wheels[i] = new WheelState
                 {
                     Definition = spec,
                     Anchor = anchor,
                     Visual = visual,
-                    BaseVisualRotation = visual != null ? visual.localRotation : Quaternion.identity
+                    BaseVisualRotation = visual != null ? visual.localRotation : Quaternion.identity,
+                    StaticLoadFraction = loadFractions[i],
+                    SprungMassKg = sprungMass,
+                    SpringRateNPerMeter = sprungMass * Physics.gravity.magnitude / sag
                 };
                 wheelTelemetry[i].WheelId = spec.Id;
+
+                minX = Mathf.Min(minX, spec.MountLocalPosition.x - spec.WidthMeters * 0.5f);
+                maxX = Mathf.Max(maxX, spec.MountLocalPosition.x + spec.WidthMeters * 0.5f);
+                minZ = Mathf.Min(minZ, spec.MountLocalPosition.z - spec.RadiusMeters);
+                maxZ = Mathf.Max(maxZ, spec.MountLocalPosition.z + spec.RadiusMeters);
+                biggestRadius = Mathf.Max(biggestRadius, spec.RadiusMeters);
             }
 
             body.mass = definition.ChassisMassKg;
+            // This value remains data-driven and is NOT silently lowered by
+            // "arcade" handling. It is in local chassis coordinates.
             body.centerOfMass = definition.CenterOfMassLocal;
+
+            if (EstimateChassisInertia)
+            {
+                float width = Mathf.Max(0.6f, maxX - minX);
+                float length = Mathf.Max(1f, maxZ - minZ);
+                float height = Mathf.Max(0.6f,
+                    biggestRadius * BodyHeightToWheelRadiusMultiplier);
+                float m = body.mass / 12f;
+                // Approximate upright box inertia about its CoM. Inertia of
+                // the Editor's very flat temporary cube is otherwise too low.
+                body.automaticInertiaTensor = false;
+                body.inertiaTensorRotation = Quaternion.identity;
+                body.inertiaTensor = new Vector3(
+                    m * (height * height + length * length),
+                    m * (width * width + length * length),
+                    m * (width * width + height * height));
+            }
+
+            // Pair wheels on the same axle by side. Multiwheel axles can later
+            // use explicit anti-roll groups; this pairs each left only once.
+            var pairs = new List<AntiRollPair>();
+            bool[] rightUsed = new bool[wheelCount];
+            for (int i = 0; i < wheelCount; i++)
+            {
+                WheelDefinition left = wheels[i].Definition;
+                if (left.Side != WheelSide.Left) continue;
+                int chosen = -1;
+                float nearest = float.PositiveInfinity;
+                for (int j = 0; j < wheelCount; j++)
+                {
+                    WheelDefinition right = wheels[j].Definition;
+                    if (rightUsed[j] || right.Side != WheelSide.Right ||
+                        !string.Equals(left.AxleId, right.AxleId, StringComparison.Ordinal))
+                        continue;
+
+                    float separation = Mathf.Abs(left.MountLocalPosition.z -
+                                                  right.MountLocalPosition.z) +
+                                       Mathf.Abs(Mathf.Abs(left.MountLocalPosition.x) -
+                                                  Mathf.Abs(right.MountLocalPosition.x));
+                    if (separation < nearest)
+                    {
+                        nearest = separation;
+                        chosen = j;
+                    }
+                }
+                if (chosen >= 0)
+                {
+                    rightUsed[chosen] = true;
+                    pairs.Add(new AntiRollPair { Left = i, Right = chosen });
+                }
+            }
+            antiRollPairs = pairs.ToArray();
             ready = true;
         }
 
         private void FixedUpdate()
         {
-            if (!ready) return;
-
+            if (!ready || wheels == null) return;
             float dt = Time.fixedDeltaTime;
             if (dt <= 0f) return;
-            float sprungMassPerWheel = body.mass / wheels.Length;
-            int substeps = Mathf.Max(1, TireSubsteps);
 
+            // Phase 1: all contacts, suspension lengths and provisional loads.
+            // Splitting phases prevents per-wheel loop ordering from affecting
+            // the paired anti-roll calculation.
             for (int i = 0; i < wheels.Length; i++)
             {
-                WheelState w = wheels[i];
-                WheelDefinition spec = w.Definition;
-                Transform mount = w.Anchor.transform;
-                Vector3 suspensionUp = mount.up;
-                float radius = spec.RadiusMeters;
-                float travel = spec.SuspensionTravelMeters;
-                float rayLength = radius + travel + 0.02f;
+                WheelState wheel = wheels[i];
+                WheelDefinition spec = wheel.Definition;
+                wheel.SuspensionUp = wheel.Anchor.transform.up;
+                wheel.Grounded = WheelContactProbe.TrySample(
+                    wheel.Anchor.transform.position, wheel.SuspensionUp,
+                    spec.RadiusMeters, spec.SuspensionTravelMeters, ContactMode,
+                    GroundLayers.value, transform, body, raycastHits, out wheel.Contact);
 
-                RaycastHit hit;
-                bool grounded = WheelContactProbe.TryRaycast(mount.position, -suspensionUp,
-                    rayLength, GroundLayers.value, transform, body, raycastHits, out hit);
-
-                float targetCompression = Mathf.Max(0.01f,
-                    travel * TargetStaticCompressionFraction);
-                float springRate = sprungMassPerWheel * Physics.gravity.magnitude / targetCompression;
-                float criticalDamping = 2f * Mathf.Sqrt(springRate * sprungMassPerWheel);
-
-                SuspensionSample suspension = SuspensionSolver.Evaluate(
-                    grounded, radius, travel, grounded ? hit.distance : 0f,
-                    springRate, criticalDamping * CompressionDampingRatio,
+                float criticalDamping = 2f * Mathf.Sqrt(
+                    Mathf.Max(0f, wheel.SpringRateNPerMeter * wheel.SprungMassKg));
+                wheel.Suspension = SuspensionSolver.Evaluate(
+                    wheel.Grounded, spec.RadiusMeters, spec.SuspensionTravelMeters,
+                    wheel.Grounded ? wheel.Contact.RayEquivalentDistanceMeters : 0f,
+                    wheel.SpringRateNPerMeter,
+                    criticalDamping * CompressionDampingRatio,
                     criticalDamping * ReboundDampingRatio,
-                    w.PreviousCompression, w.WasGrounded, dt);
+                    wheel.PreviousRawCompressionMeters, wheel.WasGrounded, dt,
+                    BumpStopStartFraction, BumpStopRateMultiplier);
+
+                wheel.VerticalSupportN = wheel.Suspension.TotalForceN;
+                wheel.AntiRollForceN = 0f;
+            }
+
+            // Phase 2: equivalent left/right anti-roll bar forces. Their sum
+            // is zero and they never require a wheel to pull on the ground.
+            for (int p = 0; p < antiRollPairs.Length; p++)
+            {
+                WheelState left = wheels[antiRollPairs[p].Left];
+                WheelState right = wheels[antiRollPairs[p].Right];
+                if (!left.Grounded || !right.Grounded) continue;
+
+                float rate = (left.SpringRateNPerMeter +
+                              right.SpringRateNPerMeter) * 0.5f *
+                             Mathf.Max(0f, AntiRollRateFraction);
+                float transfer = AntiRollSolver.ComputeTransferN(
+                    left.Suspension.CompressionMeters,
+                    right.Suspension.CompressionMeters,
+                    left.VerticalSupportN, right.VerticalSupportN, rate);
+                left.VerticalSupportN += transfer;
+                right.VerticalSupportN -= transfer;
+                left.AntiRollForceN += transfer;
+                right.AntiRollForceN -= transfer;
+            }
+
+            // Phase 3: tire rotor forces, Rigidbody forces and visuals.
+            int substeps = Mathf.Max(1, TireSubsteps);
+            for (int i = 0; i < wheels.Length; i++)
+            {
+                WheelState wheel = wheels[i];
+                WheelDefinition spec = wheel.Definition;
+                Transform mount = wheel.Anchor.transform;
+                bool grounded = wheel.Grounded;
+                RaycastHit hit = wheel.Contact.Hit;
 
                 Vector3 forward = Vector3.zero;
                 Vector3 right = Vector3.zero;
@@ -201,10 +344,11 @@ namespace Progesor.Kavra
 
                 if (grounded)
                 {
-                    normalLoad = suspension.TotalForceN *
-                        Mathf.Max(0f, Vector3.Dot(suspensionUp, hit.normal));
+                    normalLoad = wheel.VerticalSupportN *
+                        Mathf.Max(0f, Vector3.Dot(wheel.SuspensionUp, hit.normal));
 
-                    Vector3 steeredForward = Quaternion.AngleAxis(steerAngle, suspensionUp) * mount.forward;
+                    Vector3 steeredForward = Quaternion.AngleAxis(
+                        steerAngle, wheel.SuspensionUp) * mount.forward;
                     forward = Vector3.ProjectOnPlane(steeredForward, hit.normal);
                     if (forward.sqrMagnitude < 0.0001f)
                         forward = Vector3.ProjectOnPlane(mount.right, hit.normal);
@@ -219,23 +363,24 @@ namespace Progesor.Kavra
                     lateralSpeed = Vector3.Dot(velocity, right);
                 }
 
-                float driveTorque = spec.CanDrive ? Throttle * DriveTorquePerDrivenWheelNm : 0f;
-                float brakeTorque = (spec.HasServiceBrake ? ServiceBrake * ServiceBrakeTorquePerWheelNm : 0f)
-                                  + (spec.HasParkingBrake ? ParkingBrake * ParkingBrakeTorquePerWheelNm : 0f);
+                float driveTorque = spec.CanDrive ?
+                    Throttle * DriveTorquePerDrivenWheelNm : 0f;
+                float brakeTorque =
+                    (spec.HasServiceBrake ? ServiceBrake * ServiceBrakeTorquePerWheelNm : 0f) +
+                    (spec.HasParkingBrake ? ParkingBrake * ParkingBrakeTorquePerWheelNm : 0f);
+                float inertia = 0.5f * WheelMassKg * spec.RadiusMeters * spec.RadiusMeters;
 
-                float inertia = 0.5f * WheelMassKg * radius * radius;
-                float fxSum = 0f;
-                float fySum = 0f;
+                float sumFx = 0f, sumFy = 0f;
                 WheelDynamicsResult tire = default(WheelDynamicsResult);
                 for (int step = 0; step < substeps; step++)
                 {
                     tire = WheelDynamicsSolver.Step(new WheelDynamicsInput
                     {
-                        AngularVelocityRadPerSec = w.OmegaRadPerSec,
+                        AngularVelocityRadPerSec = wheel.OmegaRadPerSec,
                         LongitudinalSpeedMps = longitudinalSpeed,
                         LateralSpeedMps = lateralSpeed,
                         NormalLoadN = normalLoad,
-                        WheelRadiusMeters = radius,
+                        WheelRadiusMeters = spec.RadiusMeters,
                         InertiaKgM2 = inertia,
                         DriveTorqueNm = driveTorque,
                         BrakeTorqueNm = brakeTorque,
@@ -246,71 +391,104 @@ namespace Progesor.Kavra
                         RollingResistanceCoefficient = RollingResistanceCoefficient,
                         DeltaTime = dt / substeps
                     });
-                    w.OmegaRadPerSec = tire.AngularVelocityRadPerSec;
-                    fxSum += tire.LongitudinalForceN;
-                    fySum += tire.LateralForceN;
+                    wheel.OmegaRadPerSec = tire.AngularVelocityRadPerSec;
+                    sumFx += tire.LongitudinalForceN;
+                    sumFy += tire.LateralForceN;
                 }
 
-                float fx = fxSum / substeps;
-                float fy = fySum / substeps;
+                float fx = sumFx / substeps;
+                float fy = sumFy / substeps;
                 if (grounded)
                 {
-                    Vector3 contactForce = suspensionUp * suspension.TotalForceN +
-                                           forward * fx + right * fy;
-                    body.AddForceAtPosition(contactForce, hit.point, ForceMode.Force);
+                    Vector3 force = wheel.SuspensionUp * wheel.VerticalSupportN +
+                                    forward * fx + right * fy;
+                    body.AddForceAtPosition(force, hit.point, ForceMode.Force);
 
-                    // Raycast sensors do not create native contacts. Explicit
-                    // reaction keeps a dynamic ground platform from gaining force.
                     Rigidbody groundBody = hit.collider.attachedRigidbody;
                     if (groundBody != null && !groundBody.isKinematic)
-                        groundBody.AddForceAtPosition(-contactForce, hit.point, ForceMode.Force);
+                        groundBody.AddForceAtPosition(-force, hit.point, ForceMode.Force);
 
                     if (DrawDebugContacts)
                     {
                         Debug.DrawLine(mount.position, hit.point, Color.green, dt);
-                        Debug.DrawRay(hit.point, contactForce / Mathf.Max(1f, body.mass * 9.81f),
+                        Debug.DrawRay(hit.point, force /
+                            Mathf.Max(1f, body.mass * Physics.gravity.magnitude),
                             Color.yellow, dt);
                     }
                 }
                 else if (DrawDebugContacts)
                 {
-                    Debug.DrawRay(mount.position, -suspensionUp * rayLength, Color.red, dt);
+                    Debug.DrawRay(mount.position, -wheel.SuspensionUp *
+                        (spec.RadiusMeters + spec.SuspensionTravelMeters), Color.red, dt);
                 }
 
-                float wheelDrop = grounded
-                    ? Mathf.Clamp(hit.distance - radius, 0f, travel)
-                    : travel;
-                w.SpinAngleDeg = Mathf.Repeat(
-                    w.SpinAngleDeg + w.OmegaRadPerSec * dt * Mathf.Rad2Deg, 360f);
-                if (w.Visual != null)
+                float visualDrop = grounded
+                    ? wheel.Contact.RayEquivalentDistanceMeters - spec.RadiusMeters
+                    : spec.SuspensionTravelMeters;
+                // When the suspension is fully compressed, allow a small VISUAL
+                // correction above the mount. The physical bottom-out remains
+                // visible as telemetry and is resisted by the bump stop.
+                visualDrop = Mathf.Clamp(visualDrop,
+                    -Mathf.Min(0.25f, spec.RadiusMeters * 0.7f),
+                    spec.SuspensionTravelMeters);
+                wheel.SpinAngleDeg = Mathf.Repeat(
+                    wheel.SpinAngleDeg + wheel.OmegaRadPerSec * dt * Mathf.Rad2Deg, 360f);
+                if (wheel.Visual != null)
                 {
-                    w.Visual.localPosition = Vector3.down * wheelDrop;
-                    w.Visual.localRotation =
+                    wheel.Visual.localPosition = Vector3.down * visualDrop;
+                    wheel.Visual.localRotation =
                         Quaternion.AngleAxis(steerAngle, Vector3.up) *
-                        Quaternion.AngleAxis(w.SpinAngleDeg, Vector3.right) *
-                        w.BaseVisualRotation;
+                        Quaternion.AngleAxis(wheel.SpinAngleDeg, Vector3.right) *
+                        wheel.BaseVisualRotation;
                 }
 
-                w.PreviousCompression = suspension.CompressionMeters;
-                w.WasGrounded = grounded;
+                wheel.PreviousRawCompressionMeters = wheel.Suspension.RawCompressionMeters;
+                wheel.WasGrounded = grounded;
                 wheelTelemetry[i] = new WheelTelemetry
                 {
                     WheelId = spec.Id,
                     Grounded = grounded,
-                    CompressionMeters = suspension.CompressionMeters,
-                    CompressionVelocityMps = suspension.CompressionVelocityMps,
-                    SuspensionForceN = suspension.TotalForceN,
+                    UsedSphereContact = grounded && wheel.Contact.IsSphereContact,
+                    UsedRayFallback = grounded && wheel.Contact.UsedRayFallback,
+                    StaticLoadFraction = wheel.StaticLoadFraction,
+                    CompressionMeters = wheel.Suspension.CompressionMeters,
+                    CompressionVelocityMps = wheel.Suspension.CompressionVelocityMps,
+                    BottomOutMeters = wheel.Suspension.BottomOutMeters,
+                    BumpStopForceN = wheel.Suspension.BumpStopForceN,
+                    AntiRollForceN = wheel.AntiRollForceN,
+                    SuspensionForceN = wheel.VerticalSupportN,
                     NormalLoadN = normalLoad,
                     LongitudinalForceN = fx,
                     LateralForceN = fy,
                     LongitudinalSlipMps = tire.LongitudinalSlipSpeedMps,
                     LateralSlipMps = tire.LateralSlipSpeedMps,
-                    AngularVelocityRadPerSec = w.OmegaRadPerSec,
-                    WheelRpm = w.OmegaRadPerSec * (60f / (2f * Mathf.PI)),
+                    AngularVelocityRadPerSec = wheel.OmegaRadPerSec,
+                    WheelRpm = wheel.OmegaRadPerSec * (60f / (2f * Mathf.PI)),
                     ContactPoint = grounded ? hit.point : Vector3.zero,
                     ContactNormal = grounded ? hit.normal : Vector3.zero
                 };
             }
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            if (!ShowCenterOfMassGizmo) return;
+            Rigidbody rigid = Application.isPlaying ? body : GetComponent<Rigidbody>();
+            VehicleRoot root = GetComponent<VehicleRoot>();
+            Vector3 localCoM = rigid != null && Application.isPlaying
+                ? rigid.centerOfMass
+                : root != null && root.Definition != null
+                    ? root.Definition.CenterOfMassLocal
+                    : Vector3.zero;
+            Vector3 worldCoM = transform.TransformPoint(localCoM);
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireSphere(worldCoM, 0.15f);
+            Gizmos.DrawLine(worldCoM - transform.right * 0.25f,
+                            worldCoM + transform.right * 0.25f);
+            Gizmos.DrawLine(worldCoM - transform.up * 0.25f,
+                            worldCoM + transform.up * 0.25f);
+            Gizmos.DrawLine(worldCoM - transform.forward * 0.25f,
+                            worldCoM + transform.forward * 0.25f);
         }
     }
 }

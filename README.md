@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-13): M0 experimental physics source, package 0.0.2. Not yet verified in a Unity Editor.**
+**State (2026-10-13): M0 experimental physics source, package 0.0.3. Not yet verified in a Unity Editor.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -19,6 +19,9 @@ or paid vehicle asset dependency.
 - Equivalent spring / compression–rebound damper with nominal static sag.
 - Experimental velocity-slip tire forces with combined friction ellipse.
 - Rotational wheel inertia, direct wheel test torque and service/parking brakes.
+- New: progressive suspension bump stops, CoM-based nominal wheel loads,
+  paired anti-roll, configurable provisional chassis inertia, CoM gizmo.
+- Selectable raycast/spherecast-with-ray-fallback contact probe and CSV lab telemetry.
 - Inspector per-wheel telemetry and contact debug rays.
 - Host keyboard adapter and chase camera; generated temporary laboratory scene.
 - EditMode test sources: 3/4/6/8/20 layouts, spring statics, slip cap, contact filter.
@@ -41,7 +44,11 @@ vehicle or simulation-accuracy certification.
 5. Save as `Assets/VehiclePhysicsLab/Scenes/M0_DynamicLab.unity`.
 6. Press Play. Drive with W/S (test wheel torque/reverse), A/D (steer),
    Space (service brake), Left Shift (parking brake), or arrow keys.
-7. Select the root `KAVRA_Passenger Car 4W` GameObject, expand
+7. Observe the expanded HUD: bottom-out mm, suspension support, body tilt
+   and world center-of-mass height. After 20 seconds the lab recorder saves
+   an experimental CSV under `Application.persistentDataPath`.
+8. Compare Contact Mode: Raycast vs SphereCastWithRayFallback in the Inspector.
+9. Select the root `KAVRA_Passenger Car 4W` GameObject, expand
    `VehicleSimulationRoot > Wheel Telemetry`; measure static Fz and stability.
 
 The original `Tools > KAVRA > Vehicle Setup Wizard` remains available:

@@ -78,3 +78,14 @@ girdiyle çalışabilir.
 - `0.x` boyunca API deneysel; önemli rename'lerde serialized migration.
 - Fizik modülleri erken benchmark olmadan optimize edilmez.
 - Önce M0 kabul, ardından M1. İlk sürüme M4/M7'nin sahte kodu eklenmez.
+
+
+### M0 ride-height follow-up — issue #3
+
+- [x] Source for footprint/CoM nominal load estimate, bump-stop and anti-roll.
+- [x] Source for ray/sphere contact switch with fallback and bottom-out metrics.
+- [x] HUD and 20-second experimental lab CSV capture source.
+- [x] Pure/EditMode regression test sources added.
+- [ ] Unity 6000.3.18f1 compiles, all new tests PASS.
+- [ ] Turning on flat ground: acceptable bank without persistent wheel clipping.
+- [ ] Telemetry accepted across 3W / 4W / 8W / 20W.

@@ -147,3 +147,53 @@ reproduced in this environment.
 
 **Acceptance status:** Static code inspection only. Unity Editor and Play Mode
 must be verified before marking this fix complete.
+
+
+---
+
+## 2026-10-13 ride-height / center-of-mass / contact follow-up (v0.0.3)
+
+Triggered by a real user Play Mode observation: the vehicle banks lightly in
+corners (not inherently a bug), but wheels may intersect the ground when
+suspension bottoms. Tracked at https://github.com/progesor/KAVRA/issues/3.
+
+**Implemented in source** (Unity Editor execution not yet verified):
+
+- Estimated static load shares via non-negative best-effort equilibrium around
+  `VehicleDefinition.CenterOfMassLocal.x/z`. Uses all wheel mounts, no fixed
+  four-wheel assumption. Warns if CoM cannot be statically supported.
+- Spring rate is proportional to nominal wheel support, not globally mass/N.
+- New progressive bump-stop starts near 85% of travel and continues increasing
+  after travel is exhausted. `BottomOutMeters` distinguishes physical
+  penetration from an intentional small visual correction.
+- Anti-roll bar moves equal/opposite vertical support across wheel pairs with
+  matching AxleId (both contacts must be grounded); it does not use an
+  artificial global roll-lock constraint.
+- Rigidbody inertia in the **test-lab** is approximated with an upright box
+  derived from wheel layout and estimated body height. Toggle available.
+- CoM is visualized with a magenta gizmo. It remains a local-space definition
+  parameter and is not silently shifted down during simulation.
+- Contact mode allows baseline raycast or spherecast with ray fallback.
+  The raised probe origin improves overlap robustness but does not guarantee
+  recoverability under arbitrarily deep impact or extreme scenery geometry.
+- HUD now shows contact count, static support reference, bottom-out and tilt.
+  Host sample captures 20 seconds CSV at `Application.persistentDataPath`.
+
+**Known limitation:** These changes reduce likely causes of ground penetration
+and make clipping measurable, but cannot guarantee zero geometry intersection
+with every extreme curb, deep contact, rolled wheel mesh or moving collider.
+Do not claim physical calibration before actual Unity test and reference data.
+
+### Repeatable A/B lab run
+
+1. Re-generate the dynamic lab scene and save; avoid comparing stale
+   serialized vehicles with new component defaults.
+2. Let settle 3–5 seconds; compare `sum(Fz)` to `m*|g|` on flat ground.
+3. Run straight acceleration, repeated moderate left/right turns, then brakes.
+4. Watch `bottom-out mm` and `tilt`; save the first 20-second CSV.
+5. Repeat with `ContactMode=SphereCastWithRayFallback`; record mode and time.
+6. Compare CSV columns `bottomout_m,antiroll_n,fz_n,tilt_deg,com_height_m`.
+7. Smoke-check 3W, 8W, 20W; monitor extreme CoM outside wheel support.
+
+**Acceptance remains pending:** actual Unity Editor compile, Test Runner
+EditMode results, driving videos and before/after telemetry.

@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.0.2)
+# KAVRA embedded package (v0.0.3)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -12,7 +12,13 @@ independent of rendering or input assets.
   longitudinal and lateral forces to Rigidbody at contact positions.
 - `SuspensionSolver`, `WheelDynamicsSolver`, `WheelContactProbe`: separable
   force components, first M0 approximations.
-- `WheelTelemetry` in the simulation component: live per-wheel metrics.
+- `VehicleStaticLoadEstimator` computes first-order static wheel load shares
+  using axle/wheel mount positions and configured center of mass.
+- `AntiRollSolver` pairs left/right wheels of the same axle.
+- `SuspensionSolver` adds progressive end-stop loading and reports bottom-out.
+- `WheelContactProbe.TrySample` provides two contact modes and ray fallback.
+- `WheelTelemetry` now includes bottom-out, bump stop, anti-roll and
+  static-load share; selecting a vehicle reveals its magenta CoM gizmo.
 
 ### Editor
 
@@ -23,6 +29,12 @@ Menu `Tools > KAVRA > Vehicle Setup Wizard` creates a VehicleDefinition and:
 Package Editor builders and template factory are publicly callable from
 host-project Editor scripts. They create a cube test collider and wheel
 cylinders with **no** wheel physics colliders.
+
+**M0 suspension changes:** spring rates/weights are computed at Awake using
+`VehicleDefinition.CenterOfMassLocal`, and estimated lab inertia can be turned
+on/off. `AntiRollRateFraction` defaults to a modest nonzero value. Alter
+configuration assets and rebuild test chassis for load changes. Fine steering
+and full suspension geometry are later work.
 
 ### Host sample (outside package)
 

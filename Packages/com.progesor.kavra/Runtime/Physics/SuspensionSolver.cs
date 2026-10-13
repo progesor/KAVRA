@@ -2,62 +2,79 @@ using UnityEngine;
 
 namespace Progesor.Kavra
 {
-    /// <summary>One vertical spring/damper sample. All forces are in newtons.</summary>
+    /// <summary>One spring/damper sample. SI units; forces are newtons.</summary>
     public struct SuspensionSample
     {
         public float CompressionMeters;
+        public float RawCompressionMeters;
         public float CompressionVelocityMps;
         public float SpringForceN;
         public float DamperForceN;
+        public float BumpStopForceN;
+        public float BottomOutMeters;
         public float TotalForceN;
     }
 
     /// <summary>
-    /// Equivalent spring/damper for M0. Suspension axis and road-contact
-    /// geometry are handled by VehicleSimulationRoot, not this pure solver.
+    /// Equivalent one-dimensional spring/damper. Includes a progressive
+    /// end-stop to prevent a flat raycast spring from losing its ability to
+    /// resist further chassis penetration after its stroke is exhausted.
+    /// This is a compliant stop, not a rigid collision constraint.
     /// </summary>
     public static class SuspensionSolver
     {
         public static SuspensionSample Evaluate(
-            bool grounded,
-            float radiusMeters,
-            float travelMeters,
-            float rayDistanceMeters,
-            float springRateNPerMeter,
-            float compressionDampingNsPerMeter,
-            float reboundDampingNsPerMeter,
-            float previousCompressionMeters,
-            bool wasGrounded,
-            float deltaTime)
+            bool grounded, float radiusMeters, float travelMeters,
+            float rayDistanceMeters, float springRateNPerMeter,
+            float compressionDampingNsPerMeter, float reboundDampingNsPerMeter,
+            float previousCompressionMeters, bool wasGrounded, float deltaTime)
+        {
+            return Evaluate(grounded, radiusMeters, travelMeters, rayDistanceMeters,
+                springRateNPerMeter, compressionDampingNsPerMeter,
+                reboundDampingNsPerMeter, previousCompressionMeters,
+                wasGrounded, deltaTime, 0.85f, 4f);
+        }
+
+        public static SuspensionSample Evaluate(
+            bool grounded, float radiusMeters, float travelMeters,
+            float rayDistanceMeters, float springRateNPerMeter,
+            float compressionDampingNsPerMeter, float reboundDampingNsPerMeter,
+            float previousRawCompressionMeters, bool wasGrounded, float deltaTime,
+            float bumpStopStartFraction, float bumpStopRateMultiplier)
         {
             if (!grounded || travelMeters <= 0f || deltaTime <= 0f)
                 return default(SuspensionSample);
 
-            // The mount is the wheel-center position at full compression;
-            // the free wheel center is travelMeters below the mount.
-            float compression = Mathf.Clamp(
-                radiusMeters + travelMeters - rayDistanceMeters, 0f, travelMeters);
-
-            // On the first contact frame there is no valid previous sample.
-            // Clamp measurement spikes when encountering sharp geometry.
-            float compressionRate = wasGrounded
-                ? Mathf.Clamp((compression - previousCompressionMeters) / deltaTime, -5f, 5f)
+            float raw = radiusMeters + travelMeters - rayDistanceMeters;
+            float compression = Mathf.Clamp(raw, 0f, travelMeters);
+            float velocity = wasGrounded
+                ? Mathf.Clamp((raw - previousRawCompressionMeters) / deltaTime, -5f, 5f)
                 : 0f;
 
-            float spring = Mathf.Max(0f, springRateNPerMeter) * compression;
-            float dampingCoefficient = compressionRate >= 0f
+            float rate = Mathf.Max(0f, springRateNPerMeter);
+            float spring = rate * compression;
+            float damping = velocity * (velocity >= 0f
                 ? Mathf.Max(0f, compressionDampingNsPerMeter)
-                : Mathf.Max(0f, reboundDampingNsPerMeter);
-            float damper = dampingCoefficient * compressionRate;
+                : Mathf.Max(0f, reboundDampingNsPerMeter));
 
-            // A raycast spring can push but cannot pull the road toward it.
+            float softZoneStart = travelMeters * Mathf.Clamp01(bumpStopStartFraction);
+            float stopTravel = Mathf.Max(0f, compression - softZoneStart);
+            float penetration = Mathf.Max(0f, raw - travelMeters);
+            float stopRate = rate * Mathf.Max(0f, bumpStopRateMultiplier);
+            // Continuous, progressive spring: firming in the last stroke,
+            // and a steeper response after full bottom-out.
+            float bump = stopRate * (stopTravel + 3f * penetration);
+
             return new SuspensionSample
             {
                 CompressionMeters = compression,
-                CompressionVelocityMps = compressionRate,
+                RawCompressionMeters = raw,
+                CompressionVelocityMps = velocity,
                 SpringForceN = spring,
-                DamperForceN = damper,
-                TotalForceN = Mathf.Max(0f, spring + damper)
+                DamperForceN = damping,
+                BumpStopForceN = bump,
+                BottomOutMeters = penetration,
+                TotalForceN = Mathf.Max(0f, spring + damping + bump)
             };
         }
     }

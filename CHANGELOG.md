@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.0.3 — 2026-10-13 (ride-height/CoM/contact experiments)
+
+- Added progressive bump-stop force and exposed bottom-out diagnostics.
+- Nominal spring weights now derive from center of mass and wheel support layout
+  rather than assuming all wheels statically carry exactly mass / wheel count.
+- Added paired per-axle anti-roll transfer with no negative ground support.
+- Added configurable inertia estimate to counter unrealistically thin lab
+  chassis primitive, and magenta CoM gizmo.
+- Added experimental spherecast contact option with raycast fallback and
+  elevated query origin for deeply compressed suspension.
+- Added lab telemetry HUD and bounded 20-second CSV capture.
+- Added new EditMode regression cases. Actual Unity Editor test and
+  Play Mode acceptance are still pending. User noted turning bank + wheel
+  ground penetration; work tracked at issue #3.
+
+
 ## 0.0.2 — 2026-10-13 (experimental source; awaiting Unity validation)
 
 - Added first M0 custom raycast contact and spring/damper force integration.

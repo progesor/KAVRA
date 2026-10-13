@@ -46,3 +46,44 @@ and low-speed slopes. M0 is a technical feasibility experiment, not polished
 vehicle handling or MudRunner-style deforming terrain.
 
 Tests: `Assets/VehiclePhysicsLab/Tests/EditMode`.
+
+## M0 suspension/contact/CoM follow-up (0.0.3)
+
+User observation: the chassis banks in a turn and a wheel may visually enter
+the ground at high suspension compression. The update adds:
+
+- **Progressive bump-stop** within the final 15% of wheel travel, extra
+  geometric end-stop response after bottoming, and telemetry `BottomOutMeters`.
+- **Static per-wheel spring-weight estimate** from CoM X/Z and wheel footprint
+  (no global mass/N assumption for every wheel).
+- Optional **anti-roll pairing** for wheels sharing an axle. It conserves
+  per-pair vertical support and cannot create negative road load.
+- More realistic **temporary chassis inertia** from footprint and estimated
+  body height instead of the thin cube's mass inertia.
+- **Center of mass magenta gizmo** when the vehicle root is selected.
+- Selectable `WheelContactMode`: default baseline Raycast; alternative
+  SphereCastWithRayFallback for curb experiments.
+- A raised ray origin makes the suspension contact query less vulnerable to
+  the wheel mount already crossing the ground surface.
+- The lab now auto-records a **20-second CSV** of suspension/contact/speed
+  telemetry under `Application.persistentDataPath`. Unity Console prints path.
+
+### Ride-height acceptance steps
+
+1. Pull the updated M0 branch and regenerate the lab scene with
+   `Tools > KAVRA > Create M0 Physics Lab Scene`.
+2. Drive through a left/right turn while observing the HUD: contact count,
+   support force vs static reference, maximum bottom-out (mm), body tilt
+   and world CoM height. Some body roll is physically expected.
+3. Select the vehicle to see the magenta CoM gizmo. Modify
+   `VehicleDefinition.CenterOfMassLocal` **offline** (not by changing the
+   Gizmo) to tune future cars, then regenerate a test chassis.
+4. In `VehicleSimulationRoot` compare `ContactMode: Raycast` with
+   `SphereCastWithRayFallback`, keeping other settings equal.
+5. Review the generated CSV after 20 seconds and check whether
+   `bottomout_m` increases. A zero/near-zero bottom-out is desirable on
+   level asphalt. Bump-stop / visual correction do NOT guarantee no clip on
+   every sharp edge or extreme impact.
+
+Use normal-speed driving before ramp impacts. The model is still an
+unvalidated prototype, not an FEM tire or MudRunner soil simulation.
