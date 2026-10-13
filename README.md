@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-13): M0 experimental physics source, package 0.0.4. Not yet verified in a Unity Editor.**
+**State (2026-10-13): M0 experimental physics source, package 0.0.5. Not yet verified in a Unity Editor.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -27,6 +27,13 @@ or paid vehicle asset dependency.
 - Manual **R** recovery (ONLY on key press, near stop, usable ground required);
   resets upright pose and wheel state without preventing natural rollovers.
 - Opt-in total wheel-contact cast CPU timing (measured in the local Lab).
+- Geometry-aware approximate Ackermann steering (parallel mode remains available).
+- Optional `TireTuningProfile` on individual wheels: stiffness, friction, rolling
+  resistance and inertia multipliers, with no-profile compatibility fallback.
+- Bounded low-speed slip ratio and signed slip angle **diagnostics** for
+  calibration; no claim that the underlying force model is Pacejka.
+- Dedicated scripted calibration run (straight brake, steering step, coast-down)
+  with a long asphalt surface and an extended per-wheel CSV.
 - Inspector per-wheel telemetry and contact debug rays.
 - Host keyboard adapter and chase camera; generated temporary laboratory scene.
 - EditMode test sources: 3/4/6/8/20 layouts, spring statics, slip cap, contact filter.
@@ -56,7 +63,13 @@ vehicle or simulation-accuracy certification.
    `Application.persistentDataPath` (location printed in Console).
 8. Observe surface and grip in Wheel Telemetry, and cast CPU timing in HUD.
    Compare ContactMode: Raycast vs SphereCastWithRayFallback in Inspector.
-9. Select the root `KAVRA_Passenger Car 4W` GameObject, expand
+9. For repeatable tests choose `Tools > KAVRA > Create M0 Calibration Run`.
+   In the generated scene's `VehicleLabManeuverRunner` choose
+   `StraightBrake`, `SteeringStep` or `CoastDown`. The calibration scene
+   sets `SteeringMode = ApproximateAckermann` and manual driving keys are off;
+   only explicit R recovery remains available. Generated CSV includes actual
+   steering angle and slip metrics.
+10. Select the root `KAVRA_Passenger Car 4W` GameObject, expand
    `VehicleSimulationRoot > Wheel Telemetry`; measure static Fz and stability.
 
 The original `Tools > KAVRA > Vehicle Setup Wizard` remains available:
@@ -81,6 +94,10 @@ and at least 3W + 8W smoke checks. See
 - Per-wheel spring rate is estimated from CoM projection and wheel support
   footprint; does not yet represent measured axle loads, air springs,
   or load-sharing bogies.
+- Optional per-wheel TireProfile assets multiply baseline stiffness/grip/
+  rolling coefficient/inertia; without one, legacy global parameters remain.
+- Slip ratio/angle telemetry uses regularized speed and is a measured
+  diagnostic, not the tire-force law or a substitute for road testing.
 - Softness/Wetness are currently descriptive only. "Mud" reduces tire grip
   and increases rolling resistance but does NOT deform the ground mesh.
 - Static slope-hold, rough-rock 3D contact and drivetrain/differential coupling

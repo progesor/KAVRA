@@ -18,6 +18,7 @@ public sealed class VehicleLabTelemetryRecorder : MonoBehaviour
     [Range(3f, 180f)] public float RecordSeconds = 90f;
 
     private Rigidbody vehicleBody;
+    private VehicleLabManeuverRunner scripted;
     private StringBuilder rows;
     private float elapsed;
     private bool finished;
@@ -32,9 +33,10 @@ public sealed class VehicleLabTelemetryRecorder : MonoBehaviour
         if (Simulation == null)
             Simulation = GetComponent<Progesor.Kavra.VehicleSimulationRoot>();
         vehicleBody = GetComponent<Rigidbody>();
+        scripted = GetComponent<VehicleLabManeuverRunner>();
         if (!RecordOnPlay || Simulation == null) return;
         rows = new StringBuilder(16 * 1024);
-        rows.AppendLine("time_s,wheel_id,grounded,contact_mode,surface,mu_long,mu_lat,rolling_coeff,contact_cost_us_total,static_share,compression_m,bottomout_m,bump_n,antiroll_n,fz_n,fx_n,fy_n,slipx_mps,slipy_mps,wheel_rpm,speed_mps,tilt_deg,com_height_m");
+        rows.AppendLine("time_s,wheel_id,grounded,contact_mode,surface,mu_long,mu_lat,rolling_coeff,contact_cost_us_total,static_share,compression_m,bottomout_m,bump_n,antiroll_n,fz_n,fx_n,fy_n,slipx_mps,slipy_mps,wheel_rpm,speed_mps,tilt_deg,com_height_m,steer_deg,slip_ratio,slip_angle_deg,tire_profile,tire_kx,tire_ky,throttle_input,steer_input,brake_input,steer_mode,maneuver");
     }
 
     private void FixedUpdate()
@@ -74,7 +76,18 @@ public sealed class VehicleLabTelemetryRecorder : MonoBehaviour
                 .Append(F(w.WheelRpm)).Append(',')
                 .Append(F(speed)).Append(',')
                 .Append(F(tilt)).Append(',')
-                .Append(F(height)).AppendLine();
+                .Append(F(height)).Append(',')
+                .Append(F(w.SteerAngleDegrees)).Append(',')
+                .Append(F(w.SlipRatio)).Append(',')
+                .Append(F(w.SlipAngleDegrees)).Append(',')
+                .Append(w.TireProfileName ?? "Default").Append(',')
+                .Append(F(w.EffectiveLongitudinalStiffness)).Append(',')
+                .Append(F(w.EffectiveLateralStiffness)).Append(',')
+                .Append(F(Simulation.Throttle)).Append(',')
+                .Append(F(Simulation.Steering)).Append(',')
+                .Append(F(Simulation.ServiceBrake)).Append(',')
+                .Append(Simulation.SteeringMode.ToString()).Append(',')
+                .Append(scripted != null ? scripted.Maneuver.ToString() : "Manual").AppendLine();
         }
 
         if (elapsed >= RecordSeconds) Save();

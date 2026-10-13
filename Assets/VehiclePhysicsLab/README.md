@@ -121,3 +121,43 @@ to tip over under physical forces. Rejected recovery is shown in HUD.
 EditMode tests cover surface coefficient mapping, missing-profile fallback,
 surface component lookup, heading preservation and recovery speed/ground.
 Real Unity Play Mode acceptance and measured CPU comparisons are pending.
+
+
+## M0.5 scripted tire and steering calibration (v0.0.5)
+
+Use `Tools > KAVRA > Create M0 Calibration Run` for a new flat asphalt
+lab with a **wide 600 m** surface to avoid geometry/surface changes while
+measuring basic handling. Save as
+`Assets/VehiclePhysicsLab/Scenes/M0_CalibrationLab.unity`.
+
+The chassis contains `VehicleLabManeuverRunner`, configured by default
+for StraightBrake. Choose among:
+
+- `StraightBrake`: 2s settle, 6s torque, 1s coast, 7s brake.
+- `SteeringStep`: 2s settle, 6s accelerate, 2s steer right, 2s steer
+  left, then brake.
+- `CoastDown`: 2s settle, 5s accelerate, coast through 21s then brake.
+
+`VehicleLabKeyboardInput.AcceptDrivingKeys` is disabled in these scenes,
+so keypresses cannot overwrite the scripted controls. R remains a user-
+requested, **manual** upright recovery; using it invalidates run comparisons.
+The regular interactive surface lab retains W/S/A/D/Space/Shift.
+
+The calibration scene sets ApproximateAckermann mode. Physics code uses
+a precomputed layout pivot; each steered wheel receives a geometric angle.
+The global `MaximumSteerAngleDeg` remains an approximate center angle.
+
+`WheelTelemetry` and CSV now include `SlipRatio`, `SlipAngleDegrees`,
+`SteerAngleDegrees`, optional `TireProfileName`, effective longitudinal and
+lateral stiffness, normalized input signals and maneuver identity.
+Slip ratio/angle are intentionally bounded and regularized near zero speed.
+**They are diagnostics, not new tire force calculations or validated metrics.**
+
+For tuning wheel-specific grip/stiffness, create `Assets > Create > KAVRA
+> Tire Tuning Profile` and assign it under the desired WheelDefinition in
+the VehicleDefinition asset. Re-open Play to observe changed parameters.
+Presets are not silently assigned to existing vehicle definitions.
+
+All scripts are written, but the Unity Editor compile/Test Runner/Play Mode
+acceptance must still be checked locally. Results will guide future low-speed
+tire-force stabilization and braking calibration.

@@ -12,6 +12,8 @@ using UnityEngine.InputSystem;
 public sealed class VehicleLabKeyboardInput : MonoBehaviour
 {
     public Progesor.Kavra.VehicleSimulationRoot Simulation;
+    [Tooltip("Disable manual driving keys during an automated calibration run. R recovery remains manual.")]
+    public bool AcceptDrivingKeys = true;
     private Rigidbody vehicleBody;
     private string recoveryStatus = "";
     private float recoveryStatusUntil;
@@ -51,6 +53,8 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
             }
         }
 
+        if (!AcceptDrivingKeys) return; // Scripted runner owns input during calibration.
+
         bool forward = keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed;
         bool backward = keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed;
         bool left = keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed;
@@ -72,6 +76,9 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
             ? vehicleBody.linearVelocity.magnitude * 3.6f : 0f;
         float totalNormal = 0f;
         float maxBottomOut = 0f;
+        float maxAbsSlipRatio = 0f;
+        float maxAbsSlipAngle = 0f;
+        float maxActualSteer = 0f;
         int groundedCount = 0;
         int fallbackCount = 0;
         string activeSurface = "";
@@ -91,6 +98,12 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
                 }
                 totalNormal += wheel.NormalLoadN;
                 maxBottomOut = Mathf.Max(maxBottomOut, wheel.BottomOutMeters);
+                if (wheel.Grounded)
+                {
+                    maxAbsSlipRatio = Mathf.Max(maxAbsSlipRatio, Mathf.Abs(wheel.SlipRatio));
+                    maxAbsSlipAngle = Mathf.Max(maxAbsSlipAngle, Mathf.Abs(wheel.SlipAngleDegrees));
+                    maxActualSteer = Mathf.Max(maxActualSteer, Mathf.Abs(wheel.SteerAngleDegrees));
+                }
             }
         }
 
@@ -115,15 +128,22 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
                          "\nCast CPU cost: " +
                          (Simulation.MeasureContactQueryCost
                              ? Simulation.ContactQueryMicrosecondsLastStep.ToString("F1") + " us/step"
-                             : "off (enable in Inspector)");
+                             : "off (enable in Inspector)") +
+                         "\nSteer geometry: " + Simulation.SteeringMode +
+                         "  |max steer|: " + maxActualSteer.ToString("F1") + " deg" +
+                         "\nMax |slip ratio|: " + maxAbsSlipRatio.ToString("F2") +
+                         "  |slip angle|: " + maxAbsSlipAngle.ToString("F1") + " deg";
 #if ENABLE_INPUT_SYSTEM
-        message += "\nW/S: torque   A/D: steer   Space: brake   Shift: park" +
-                   "\nR: MANUAL upright recovery (at low speed)";
+        if (AcceptDrivingKeys)
+            message += "\nW/S: torque   A/D: steer   Space: brake   Shift: park";
+        else
+            message += "\nSCRIPTED test: set maneuver in VehicleLabManeuverRunner";
+        message += "\nR: MANUAL upright recovery (at low speed)";
 #else
         message += "\nInput System unavailable: use VehicleSimulationRoot Inspector controls.";
 #endif
         if (Time.unscaledTime < recoveryStatusUntil)
             message += "\n" + recoveryStatus;
-        GUI.Box(new Rect(12f, 12f, 455f, 218f), message);
+        GUI.Box(new Rect(12f, 12f, 485f, 267f), message);
     }
 }

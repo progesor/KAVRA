@@ -28,6 +28,12 @@ namespace Progesor.Kavra
         public float LateralForceN;
         public float LongitudinalSlipMps;
         public float LateralSlipMps;
+        public float SlipRatio;
+        public float SlipAngleDegrees;
+        public float SteerAngleDegrees;
+        public string TireProfileName;
+        public float EffectiveLongitudinalStiffness;
+        public float EffectiveLateralStiffness;
         public float AngularVelocityRadPerSec;
         public float WheelRpm;
         public Vector3 ContactPoint;
@@ -72,6 +78,7 @@ namespace Progesor.Kavra
         [Range(0f, 0.1f)] public float RollingResistanceCoefficient = 0.014f;
         [Min(0.1f)] public float WheelMassKg = 25f;
         [Range(1, 8)] public int TireSubsteps = 4;
+        [Range(0.1f, 5f)] public float SlipMetricReferenceSpeedMps = 1f;
 
         [Header("Test controls — NOT a powertrain")]
         [Range(-1f, 1f)] public float Throttle;
@@ -82,6 +89,8 @@ namespace Progesor.Kavra
         [Min(0f)] public float ServiceBrakeTorquePerWheelNm = 1800f;
         [Min(0f)] public float ParkingBrakeTorquePerWheelNm = 2100f;
         [Range(0f, 65f)] public float MaximumSteerAngleDeg = 28f;
+        [Tooltip("Parallel retains M0 steering; ApproximateAckermann accounts for wheel locations.")]
+        public SteeringGeometryMode SteeringMode = SteeringGeometryMode.Parallel;
 
         [Header("Read-only snapshots while playing")]
         [SerializeField] private WheelTelemetry[] wheelTelemetry = new WheelTelemetry[0];
@@ -105,6 +114,7 @@ namespace Progesor.Kavra
             public WheelContactSample Contact;
             public SurfaceProfile Surface;
             public SurfaceTireParameters TireParameters;
+            public TireTuningValues TunedTire;
             public SuspensionSample Suspension;
             public Vector3 SuspensionUp;
             public float VerticalSupportN;
@@ -120,6 +130,7 @@ namespace Progesor.Kavra
         private readonly RaycastHit[] raycastHits = new RaycastHit[32];
         private WheelState[] wheels;
         private AntiRollPair[] antiRollPairs = new AntiRollPair[0];
+        private SteeringGeometryParameters steeringGeometry;
         private Rigidbody body;
         private bool ready;
 
@@ -192,6 +203,7 @@ namespace Progesor.Kavra
                 byId.Add(anchor.WheelId, anchor);
             }
 
+            steeringGeometry = SteeringGeometrySolver.Analyze(definition.Wheels);
             int wheelCount = definition.Wheels.Count;
             float[] loadFractions = new float[wheelCount];
             bool balanced = VehicleStaticLoadEstimator.Estimate(
@@ -351,6 +363,10 @@ namespace Progesor.Kavra
                 wheel.TireParameters = SurfaceResponse.Evaluate(
                     wheel.Surface, LongitudinalFriction, LateralFriction,
                     RollingResistanceCoefficient);
+                wheel.TunedTire = TireTuningResolver.Resolve(
+                    spec.TireProfile, wheel.TireParameters,
+                    LongitudinalStiffnessNsPerMeter, LateralStiffnessNsPerMeter,
+                    WheelMassKg, spec.RadiusMeters);
             }
 
             ContactQueryMicrosecondsLastStep = MeasureContactQueryCost
@@ -394,7 +410,9 @@ namespace Progesor.Kavra
                 float longitudinalSpeed = 0f;
                 float lateralSpeed = 0f;
                 float normalLoad = 0f;
-                float steerAngle = spec.CanSteer ? Steering * MaximumSteerAngleDeg : 0f;
+                float steerAngle = SteeringGeometrySolver.CalculateAngleDegrees(
+                    steeringGeometry, spec, Steering, MaximumSteerAngleDeg,
+                    SteeringMode);
 
                 if (grounded)
                 {
@@ -422,7 +440,7 @@ namespace Progesor.Kavra
                 float brakeTorque =
                     (spec.HasServiceBrake ? ServiceBrake * ServiceBrakeTorquePerWheelNm : 0f) +
                     (spec.HasParkingBrake ? ParkingBrake * ParkingBrakeTorquePerWheelNm : 0f);
-                float inertia = 0.5f * WheelMassKg * spec.RadiusMeters * spec.RadiusMeters;
+                float inertia = wheel.TunedTire.InertiaKgM2;
 
                 float sumFx = 0f, sumFy = 0f;
                 WheelDynamicsResult tire = default(WheelDynamicsResult);
@@ -438,12 +456,14 @@ namespace Progesor.Kavra
                         InertiaKgM2 = inertia,
                         DriveTorqueNm = driveTorque,
                         BrakeTorqueNm = brakeTorque,
-                        LongitudinalStiffnessNsPerMeter = LongitudinalStiffnessNsPerMeter,
-                        LateralStiffnessNsPerMeter = LateralStiffnessNsPerMeter,
-                        LongitudinalFriction = wheel.TireParameters.LongitudinalFriction,
-                        LateralFriction = wheel.TireParameters.LateralFriction,
+                        LongitudinalStiffnessNsPerMeter =
+                            wheel.TunedTire.LongitudinalStiffnessNsPerMeter,
+                        LateralStiffnessNsPerMeter =
+                            wheel.TunedTire.LateralStiffnessNsPerMeter,
+                        LongitudinalFriction = wheel.TunedTire.LongitudinalFriction,
+                        LateralFriction = wheel.TunedTire.LateralFriction,
                         RollingResistanceCoefficient =
-                            wheel.TireParameters.RollingResistanceCoefficient,
+                            wheel.TunedTire.RollingResistanceCoefficient,
                         DeltaTime = dt / substeps
                     });
                     wheel.OmegaRadPerSec = tire.AngularVelocityRadPerSec;
@@ -453,6 +473,9 @@ namespace Progesor.Kavra
 
                 float fx = sumFx / substeps;
                 float fy = sumFy / substeps;
+                TireSlipMetrics slip = TireSlipDiagnostics.Calculate(
+                    longitudinalSpeed, lateralSpeed, wheel.OmegaRadPerSec,
+                    spec.RadiusMeters, SlipMetricReferenceSpeedMps);
                 if (grounded)
                 {
                     Vector3 force = wheel.SuspensionUp * wheel.VerticalSupportN +
@@ -508,10 +531,14 @@ namespace Progesor.Kavra
                     SurfaceName = !grounded ? "Air" :
                         wheel.Surface != null ? wheel.Surface.name : "Default",
                     EffectiveLongitudinalFriction =
-                        wheel.TireParameters.LongitudinalFriction,
-                    EffectiveLateralFriction = wheel.TireParameters.LateralFriction,
+                        wheel.TunedTire.LongitudinalFriction,
+                    EffectiveLateralFriction = wheel.TunedTire.LateralFriction,
                     EffectiveRollingResistance =
-                        wheel.TireParameters.RollingResistanceCoefficient,
+                        wheel.TunedTire.RollingResistanceCoefficient,
+                    EffectiveLongitudinalStiffness =
+                        wheel.TunedTire.LongitudinalStiffnessNsPerMeter,
+                    EffectiveLateralStiffness = wheel.TunedTire.LateralStiffnessNsPerMeter,
+                    TireProfileName = spec.TireProfile != null ? spec.TireProfile.name : "Default",
                     StaticLoadFraction = wheel.StaticLoadFraction,
                     CompressionMeters = wheel.Suspension.CompressionMeters,
                     CompressionVelocityMps = wheel.Suspension.CompressionVelocityMps,
@@ -524,6 +551,9 @@ namespace Progesor.Kavra
                     LateralForceN = fy,
                     LongitudinalSlipMps = tire.LongitudinalSlipSpeedMps,
                     LateralSlipMps = tire.LateralSlipSpeedMps,
+                    SlipRatio = slip.LongitudinalSlipRatio,
+                    SlipAngleDegrees = slip.SlipAngleDegrees,
+                    SteerAngleDegrees = steerAngle,
                     AngularVelocityRadPerSec = wheel.OmegaRadPerSec,
                     WheelRpm = wheel.OmegaRadPerSec * (60f / (2f * Mathf.PI)),
                     ContactPoint = grounded ? hit.point : Vector3.zero,

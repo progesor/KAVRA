@@ -77,3 +77,23 @@ component defaults; previous saved scene objects are not automatically
 replaced. First open Unity Console and run EditMode tests, then Play Mode
 with R behavior, surface transition grip and cast cost CSV. Still no actual
 Unity runtime tests performed by assistant.
+
+
+## Update 2026-10-14: M0.5 v0.0.5 steering & tire calibration tools
+
+Issue #5 / Draft PR #2. Optional `TireTuningProfile` field on
+WheelDefinition (null keeps existing assets working). `SteeringMode`
+offers Parallel and ApproximateAckermann with no automatic roll/yaw correction.
+Precomputed steering geometry used at FixedUpdate without per-wheel layouts
+scanning. Bounded `TireSlipDiagnostics` feeds Inspector/HUD/CSV; still not a
+calibrated tire force model.
+
+New `Tools > KAVRA > Create M0 Calibration Run`: a flat asphalt runway,
+host `VehicleLabManeuverRunner` with repeatable StraightBrake/SteeringStep/
+CoastDown schedules, keyboard driving disabled but explicit R permitted.
+Extended 28s CSV includes slip, actual steering angles, tire profile/stiffness
+and input/maneuver labels. Interactive surface test remains separate.
+
+Run EditMode tests and the three scripted experiments locally, compare CSV,
+inspect 3W/4W/8W. Unity was not available during source authoring; avoid
+merging the Draft PR until actual tests pass.

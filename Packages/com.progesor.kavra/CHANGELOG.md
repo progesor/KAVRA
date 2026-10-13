@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.5] — 2026-10-14
+
+- SteeringGeometrySolver with parallel and approximate Ackermann per-wheel
+  steering, including rear-steered and variable-axle support.
+- TireTuningProfile optional per-wheel multipliers and TireTuningResolver.
+- TireSlipDiagnostics returns bounded slip ratio/slip angle as **telemetry**;
+  velocity-slip tire forces are unchanged.
+- Host-only calibration scene and scripted steering/brake/coast input schedules.
+- EditMode tests, extended CSV telemetry. Unity Play Mode not yet verified.
+
+
 ## [0.0.4] — 2026-10-14
 
 - Added per-contact `SurfaceZone`, optional `SurfaceProfile` physics

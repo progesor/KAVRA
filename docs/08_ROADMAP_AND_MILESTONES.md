@@ -103,3 +103,18 @@ girdiyle çalışabilir.
 - [ ] Unity derlemesi, EditMode testleri ve Play Mode yerel kabul.
 - [ ] Farklı yüzeylerde veri kayıtlarının nümerik karşılaştırması.
 - [ ] Cast CPU mikrosaniye istatistikleri gerçek donanımda karşılaştırıldı.
+
+
+### M0.5 steering/slip diagnostics / reproducible calibration — issue #5
+
+- [x] Steering geometry source: legacy Parallel / ApproximateAckermann for
+  variable wheel counts, rear steer, front steer and multi-axle layouts.
+- [x] Optional TireTuningProfile per wheel with null = legacy defaults.
+- [x] Bounded slip ratio / slip angle diagnostic output per wheel; M0 force
+  model remains the same velocity-slip approximation.
+- [x] Scripted M0 calibration-run source: brake, steering step and coast.
+- [x] Extended Inspector/HUD and CSV telemetry with input/tire/steer fields.
+- [x] Source for EditMode regression tests.
+- [ ] Local Unity compilation, test runner acceptance and actual CSV plots.
+- [ ] Calibration of low-speed tire force, braking and load-transfer against
+  real recorded measurements or explicitly chosen reference behavior.

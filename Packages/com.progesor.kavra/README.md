@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.0.4)
+# KAVRA embedded package (v0.0.5)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -27,6 +27,14 @@ independent of rendering or input assets.
   sufficiently low speed and valid ground under every wheel.
 - Optional `MeasureContactQueryCost` provides a per-physics-step microsecond
   estimate of cast calls, not a frame-wide CPU benchmark.
+- `SteeringGeometrySolver` computes geometry-aware approximate Ackermann
+  per-wheel steering angles from the WheelDefinition layout. `Parallel`
+  steering is retained for exact pre-0.0.5 compatibility.
+- `TireTuningProfile` is an optional per-wheel ScriptableObject; the
+  `TireTuningResolver` composes profile and road coefficients without
+  modifying the shared assets. Null means legacy/default handling.
+- `TireSlipDiagnostics` produces finite, bounded slip ratio and angle
+  telemetry without changing the underlying provisional force formula.
 
 ### Editor
 
@@ -48,6 +56,9 @@ and full suspension geometry are later work.
 
 `Assets/VehiclePhysicsLab` contains optional Input System keyboard driver,
 chase camera and `Tools > KAVRA > Create M0 Physics Lab Scene` generator.
+`Tools > KAVRA > Create M0 Calibration Run` creates a separate long asphalt
+run with a `VehicleLabManeuverRunner` (brake/steer/coast schedules).
+Scripted input is host-only and does not auto-prevent rollovers.
 
 **Experimental only.** Uncalibrated tires, approximate CoM wheel shares,
 no real soil deformation, direct test torque, no gearboxes/differentials.

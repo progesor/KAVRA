@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.0.5 — 2026-10-14 (M0.5 steering/slip calibration instrumentation)
+
+- Added optional approximate Ackermann steering computed from the positions
+  of steerable and nonsteerable wheels, including rear-steer and multi-axle
+  layouts. Preserved legacy `Parallel` mode for existing assets.
+- Added optional `TireTuningProfile` per wheel with no-profile fallback.
+- Added bounded low-speed slip ratio and signed slip angle diagnostics;
+  underlying M0 velocity-slip force solver remains provisional.
+- Extended telemetry, HUD and CSV with steering angles, slip metrics, tire
+  multipliers, control inputs and maneuver labels.
+- Added a dedicated flat asphalt calibration lab + repeatable scripted
+  StraightBrake / SteeringStep / CoastDown input runs.
+- Added EditMode regression source for arbitrary wheel counts, rear-steer,
+  low-speed diagnostic validity and tire tuning composition.
+- No automatic rollover prevention. R recovery still requires a keypress.
+- Unity compilation, test runner and Play Mode verification **pending**.
+
+
 ## 0.0.4 — 2026-10-14 (surface grip + user-triggered recovery)
 
 - Wired SurfaceProfile multipliers to longitudinal/lateral tire grip and

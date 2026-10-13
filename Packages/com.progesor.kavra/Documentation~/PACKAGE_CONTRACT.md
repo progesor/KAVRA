@@ -36,3 +36,22 @@ Keyboard/chase camera/example lab generation live in the **host project**
 Public API is experimental until 1.0. Serialized field renames require a
 migration policy. Unity compilation and Play Mode verification have not yet
 been completed. Track acceptance in GitHub issue #1.
+
+
+## M0.5 optional wheel tuning and steering (0.0.5)
+
+`WheelDefinition.TireProfile` may reference a `TireTuningProfile`
+ScriptableObject. Null is legal, backward compatible and applies no multipliers
+to the vehicle-wide defaults. Tire profile and road SurfaceProfile multipliers
+combine independently at each current contact; shared assets are never mutated.
+The prototype does not implement real tire pressure, thermal model or MF coefficients.
+
+`VehicleSimulationRoot.SteeringMode` defaults to legacy Parallel to preserve
+existing scenes. ApproximateAckermann geometry is inferred from the mean
+Z positions of steerable and nonsteerable wheels at vehicle initialization.
+No 4-wheel assumption or automatic roll/yaw correction is present. Mixed
+front/rear simultaneous steering groups require a future explicit topology.
+
+`TireSlipDiagnostics` reports regularized slip ratio/angle but does not drive
+M0's provisional velocity-slip force model. Values are meaningful as internal
+comparison plots only, not validation against instrumented road tests.

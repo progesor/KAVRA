@@ -19,6 +19,17 @@ public static class VehicleLabSceneBuilder
     [MenuItem("Tools/KAVRA/Create M0 Physics Lab Scene")]
     public static void CreateLab()
     {
+        CreateLabInternal(false);
+    }
+
+    [MenuItem("Tools/KAVRA/Create M0 Calibration Run")]
+    public static void CreateCalibrationLab()
+    {
+        CreateLabInternal(true);
+    }
+
+    private static void CreateLabInternal(bool scripted)
+    {
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             return;
 
@@ -56,13 +67,18 @@ public static class VehicleLabSceneBuilder
         // Four simple surface sections at the SAME height: physics changes
         // come from SurfaceProfile, not hidden differences in geometry.
         // The end caps give room to accelerate/stop outside the test patches.
-        CreateSurfaceTrack();
+        if (scripted)
+            CreateCalibrationRunway();
+        else
+        {
+            CreateSurfaceTrack();
 
-        GameObject ramp = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        ramp.name = "TestRamp_Approx_8deg";
-        ramp.transform.position = new Vector3(-7f, 0.35f, 15f);
-        ramp.transform.localScale = new Vector3(5f, 0.4f, 7f);
-        ramp.transform.rotation = Quaternion.Euler(8f, 0f, 0f);
+            GameObject ramp = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            ramp.name = "TestRamp_Approx_8deg";
+            ramp.transform.position = new Vector3(-7f, 0.35f, 15f);
+            ramp.transform.localScale = new Vector3(5f, 0.4f, 7f);
+            ramp.transform.rotation = Quaternion.Euler(8f, 0f, 0f);
+        }
 
         GameObject vehicle = VehicleScaffoldBuilder.Create(configuration, true);
         // Starts on asphalt facing the successive grip zones along +Z.
@@ -70,8 +86,17 @@ public static class VehicleLabSceneBuilder
         VehicleLabKeyboardInput input = vehicle.AddComponent<VehicleLabKeyboardInput>();
         input.Simulation = vehicle.GetComponent<VehicleSimulationRoot>();
         input.Simulation.MeasureContactQueryCost = true; // Lab-only A/B benchmark.
+        input.Simulation.SteeringMode = SteeringGeometryMode.ApproximateAckermann;
+        input.AcceptDrivingKeys = !scripted;
         VehicleLabTelemetryRecorder recorder = vehicle.AddComponent<VehicleLabTelemetryRecorder>();
         recorder.Simulation = input.Simulation;
+        if (scripted)
+        {
+            VehicleLabManeuverRunner runner = vehicle.AddComponent<VehicleLabManeuverRunner>();
+            runner.Simulation = input.Simulation;
+            runner.Maneuver = VehicleLabManeuver.StraightBrake;
+            recorder.RecordSeconds = 28f;
+        }
 
         GameObject cameraObject = new GameObject("Main Camera");
         cameraObject.tag = "MainCamera";
@@ -91,11 +116,17 @@ public static class VehicleLabSceneBuilder
 
         Selection.activeGameObject = vehicle;
         EditorSceneManager.MarkSceneDirty(scene);
-        Debug.Log("KAVRA M0: created dynamic lab using '" + assetPath + "'. Save scene to " +
-                  "Assets/VehiclePhysicsLab/Scenes/M0_DynamicLab.unity, then press Play. " +
-                  "Keys: WASD/arrows, Space brake, Left Shift parking brake, " +
-                  "R manual upright recovery (stopped only). " +
-                  "Drive +Z: asphalt, gravel, mud, ice. Terrain is not deformable.");
+        if (scripted)
+            Debug.Log("KAVRA M0: created scripted calibration scene. Save as " +
+                      "Assets/VehiclePhysicsLab/Scenes/M0_CalibrationLab.unity. " +
+                      "Press Play; experiment defaults to StraightBrake. Change " +
+                      "VehicleLabManeuverRunner.Maneuver in Inspector for SteeringStep/CoastDown. " +
+                      "Measured values will be written to a CSV file.");
+        else
+            Debug.Log("KAVRA M0: created surface lab using '" + assetPath +
+                      "'. Save as Assets/VehiclePhysicsLab/Scenes/M0_DynamicLab.unity. " +
+                      "WASD/arrows: torque and steer. Space: brake, Shift: park, " +
+                      "R: explicit manual recovery; surface zones in +Z direction.");
     }
 
     /// <summary>
@@ -103,6 +134,25 @@ public static class VehicleLabSceneBuilder
     /// SurfaceProfile values affect wheel friction/rolling only; geometry is
     /// completely flat, and no soil deformation solver is enabled.
     /// </summary>
+    private static void CreateCalibrationRunway()
+    {
+        const string folder = "Assets/VehiclePhysicsLab/Surfaces";
+        if (!AssetDatabase.IsValidFolder(folder))
+            AssetDatabase.CreateFolder("Assets/VehiclePhysicsLab", "Surfaces");
+
+        SurfaceProfile asphalt = GetSurfaceProfile("Asphalt", 1f, 1f, 1f, 0f, 0f);
+        Material material = GetSurfaceMaterial("Asphalt", new Color(0.23f, 0.25f, 0.27f));
+        GameObject runway = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        runway.name = "Ground_CalibrationAsphalt";
+        runway.transform.position = new Vector3(0f, -0.5f, 150f);
+        runway.transform.localScale = new Vector3(220f, 1f, 600f);
+        SurfaceZone zone = runway.AddComponent<SurfaceZone>();
+        zone.Profile = asphalt;
+        if (material != null)
+            runway.GetComponent<Renderer>().sharedMaterial = material;
+        AssetDatabase.SaveAssets();
+    }
+
     private static void CreateSurfaceTrack()
     {
         const string folder = "Assets/VehiclePhysicsLab/Surfaces";

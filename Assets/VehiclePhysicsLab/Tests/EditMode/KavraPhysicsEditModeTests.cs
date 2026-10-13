@@ -515,5 +515,189 @@ namespace Progesor.Kavra.Lab.Tests
             }
         }
 
+        [TestCase(1f)]
+        [TestCase(-1f)]
+        public void AckermannInnerFrontWheelTurnsSharperThanOuter(float direction)
+        {
+            VehicleDefinition definition = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            try
+            {
+                SteeringGeometryParameters geometry =
+                    SteeringGeometrySolver.Analyze(definition.Wheels);
+                Assert.IsTrue(geometry.HasGeometry);
+                WheelDefinition left = definition.Wheels[0];
+                WheelDefinition right = definition.Wheels[1];
+                float leftAngle = SteeringGeometrySolver.CalculateAngleDegrees(
+                    geometry, left, direction, 28f, SteeringGeometryMode.ApproximateAckermann);
+                float rightAngle = SteeringGeometrySolver.CalculateAngleDegrees(
+                    geometry, right, direction, 28f, SteeringGeometryMode.ApproximateAckermann);
+
+                Assert.That(Mathf.Sign(leftAngle), Is.EqualTo(direction));
+                Assert.That(Mathf.Sign(rightAngle), Is.EqualTo(direction));
+                if (direction > 0f)
+                    Assert.Greater(Mathf.Abs(rightAngle), Mathf.Abs(leftAngle));
+                else
+                    Assert.Greater(Mathf.Abs(leftAngle), Mathf.Abs(rightAngle));
+                // Parallel mode still reproduces legacy behavior exactly.
+                Assert.That(SteeringGeometrySolver.CalculateAngleDegrees(
+                    geometry, left, direction, 28f, SteeringGeometryMode.Parallel),
+                    Is.EqualTo(direction * 28f).Within(0.0001f));
+                Assert.That(SteeringGeometrySolver.CalculateAngleDegrees(
+                    geometry, right, direction, 28f, SteeringGeometryMode.Parallel),
+                    Is.EqualTo(direction * 28f).Within(0.0001f));
+            }
+            finally { Object.DestroyImmediate(definition); }
+        }
+
+        [TestCase(VehicleTemplate.ThreeWheelDelta, 3)]
+        [TestCase(VehicleTemplate.PassengerCar4, 4)]
+        [TestCase(VehicleTemplate.Truck6x6, 6)]
+        [TestCase(VehicleTemplate.Truck8x8, 8)]
+        [TestCase(VehicleTemplate.SingleChassis20WheelStressTest, 20)]
+        public void SteeringAnglesStayFiniteForVariableWheelCounts(
+            VehicleTemplate kind, int wheelCount)
+        {
+            VehicleDefinition definition = VehicleTemplateFactory.Create(kind);
+            try
+            {
+                SteeringGeometryParameters geometry =
+                    SteeringGeometrySolver.Analyze(definition.Wheels);
+                Assert.AreEqual(wheelCount, definition.Wheels.Count);
+                foreach (WheelDefinition wheel in definition.Wheels)
+                {
+                    float steer = SteeringGeometrySolver.CalculateAngleDegrees(
+                        geometry, wheel, 0.6f, 35f, SteeringGeometryMode.ApproximateAckermann);
+                    Assert.IsFalse(float.IsNaN(steer) || float.IsInfinity(steer));
+                    Assert.LessOrEqual(Mathf.Abs(steer), 85f);
+                    if (!wheel.CanSteer)
+                        Assert.That(steer, Is.EqualTo(0f));
+                }
+            }
+            finally { Object.DestroyImmediate(definition); }
+        }
+
+        [Test]
+        public void ThreeWheeledDeltaSingleFrontSteeringKeepsCenterAngle()
+        {
+            VehicleDefinition definition = VehicleTemplateFactory.Create(VehicleTemplate.ThreeWheelDelta);
+            try
+            {
+                float angle = SteeringGeometrySolver.CalculateAngleDegrees(
+                    definition.Wheels, definition.Wheels[0], 1f, 24f,
+                    SteeringGeometryMode.ApproximateAckermann);
+                Assert.That(angle, Is.EqualTo(24f).Within(0.0001f));
+            }
+            finally { Object.DestroyImmediate(definition); }
+        }
+
+        [Test]
+        public void RearOnlySteeringTurnsWheelsOppositeDriverYawRequest()
+        {
+            VehicleDefinition definition = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            try
+            {
+                // Simulate a forklift: front axle does not steer, rear axle does.
+                definition.Wheels[0].CanSteer = false;
+                definition.Wheels[1].CanSteer = false;
+                definition.Wheels[2].CanSteer = true;
+                definition.Wheels[3].CanSteer = true;
+                SteeringGeometryParameters geometry =
+                    SteeringGeometrySolver.Analyze(definition.Wheels);
+                float rearLeft = SteeringGeometrySolver.CalculateAngleDegrees(
+                    geometry, definition.Wheels[2], 1f, 25f,
+                    SteeringGeometryMode.ApproximateAckermann);
+                float rearRight = SteeringGeometrySolver.CalculateAngleDegrees(
+                    geometry, definition.Wheels[3], 1f, 25f,
+                    SteeringGeometryMode.ApproximateAckermann);
+                Assert.Less(rearLeft, 0f);
+                Assert.Less(rearRight, 0f);
+                Assert.AreEqual(0f, SteeringGeometrySolver.CalculateAngleDegrees(
+                    geometry, definition.Wheels[0], 1f, 25f,
+                    SteeringGeometryMode.ApproximateAckermann));
+            }
+            finally { Object.DestroyImmediate(definition); }
+        }
+
+        [Test]
+        public void SlipDiagnosticsRemainZeroAtRestAndFiniteAtLowSpeed()
+        {
+            TireSlipMetrics stopped = TireSlipDiagnostics.Calculate(0f, 0f, 0f, 0.36f);
+            Assert.That(stopped.LongitudinalSlipRatio, Is.EqualTo(0f));
+            Assert.That(stopped.SlipAngleDegrees, Is.EqualTo(0f));
+
+            TireSlipMetrics launch = TireSlipDiagnostics.Calculate(0.01f, 0.005f, 15f, 0.36f);
+            Assert.IsFalse(float.IsNaN(launch.LongitudinalSlipRatio));
+            Assert.IsFalse(float.IsInfinity(launch.SlipAngleDegrees));
+            Assert.Greater(launch.LongitudinalSlipRatio, 0f);
+            Assert.LessOrEqual(Mathf.Abs(launch.LongitudinalSlipRatio), 2f);
+            Assert.LessOrEqual(Mathf.Abs(launch.SlipAngleDegrees), 89f);
+        }
+
+        [Test]
+        public void LockedWheelBrakeReportsMinusOneSlipAndPositiveLateralAngle()
+        {
+            TireSlipMetrics locked = TireSlipDiagnostics.Calculate(10f, 1f, 0f, 0.36f);
+            Assert.That(locked.LongitudinalSlipRatio, Is.EqualTo(-1f).Within(0.0001f));
+            Assert.That(locked.SlipAngleDegrees, Is.EqualTo(
+                Mathf.Atan2(1f, 10f) * Mathf.Rad2Deg).Within(0.001f));
+            TireSlipMetrics rolling = TireSlipDiagnostics.Calculate(
+                10f, 0f, 10f / 0.36f, 0.36f);
+            Assert.That(rolling.LongitudinalSlipRatio, Is.EqualTo(0f).Within(0.0001f));
+        }
+
+        [Test]
+        public void TireTuningNullProfileKeepsSurfaceCoefficientsAndStiffness()
+        {
+            SurfaceTireParameters ground = SurfaceResponse.Evaluate(null, 1.1f, 0.95f, 0.014f);
+            TireTuningValues values = TireTuningResolver.Resolve(
+                null, ground, 6500f, 8000f, 25f, 0.36f);
+            Assert.That(values.LongitudinalStiffnessNsPerMeter, Is.EqualTo(6500f));
+            Assert.That(values.LateralStiffnessNsPerMeter, Is.EqualTo(8000f));
+            Assert.That(values.LongitudinalFriction, Is.EqualTo(1.1f).Within(0.0001f));
+            Assert.That(values.LateralFriction, Is.EqualTo(0.95f).Within(0.0001f));
+            Assert.That(values.RollingResistanceCoefficient, Is.EqualTo(0.014f).Within(0.0001f));
+            Assert.That(values.InertiaKgM2, Is.EqualTo(0.5f * 25f * 0.36f * 0.36f).Within(0.0001f));
+        }
+
+        [Test]
+        public void TireTuningAndSurfaceMultipliersComposeWithoutChangingSharedAsset()
+        {
+            TireTuningProfile tire = ScriptableObject.CreateInstance<TireTuningProfile>();
+            SurfaceProfile surface = ScriptableObject.CreateInstance<SurfaceProfile>();
+            try
+            {
+                tire.LongitudinalStiffnessMultiplier = 1.5f;
+                tire.LateralStiffnessMultiplier = 0.9f;
+                tire.LongitudinalGripMultiplier = 1.1f;
+                tire.LateralGripMultiplier = 0.8f;
+                tire.RollingResistanceMultiplier = 1.2f;
+                tire.WheelInertiaMultiplier = 2f;
+                surface.LongitudinalGripMultiplier = 0.5f;
+                surface.LateralGripMultiplier = 0.4f;
+
+                SurfaceTireParameters road = SurfaceResponse.Evaluate(
+                    surface, 1f, 1f, 0.02f);
+                TireTuningValues effective = TireTuningResolver.Resolve(
+                    tire, road, 6500f, 8000f, 25f, 0.36f);
+
+                Assert.That(effective.LongitudinalStiffnessNsPerMeter,
+                    Is.EqualTo(9750f).Within(0.0001f));
+                Assert.That(effective.LateralStiffnessNsPerMeter,
+                    Is.EqualTo(7200f).Within(0.0001f));
+                Assert.That(effective.LongitudinalFriction, Is.EqualTo(0.55f).Within(0.0001f));
+                Assert.That(effective.LateralFriction, Is.EqualTo(0.32f).Within(0.0001f));
+                Assert.That(effective.RollingResistanceCoefficient,
+                    Is.EqualTo(0.024f).Within(0.0001f));
+                Assert.That(effective.InertiaKgM2, Is.EqualTo(3.24f).Within(0.0001f));
+                Assert.That(tire.LongitudinalGripMultiplier, Is.EqualTo(1.1f));
+                Assert.That(surface.LongitudinalGripMultiplier, Is.EqualTo(0.5f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(tire);
+                Object.DestroyImmediate(surface);
+            }
+        }
+
     }
 }
