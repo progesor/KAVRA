@@ -105,3 +105,24 @@ bu hedef klasörlerini boş ve sahte implementasyonlarla doldurmuyoruz.
 - Parametreler SI biriminde, anlamlı bounds ile tanımlanacak.
 - Physics core, URP / UI Toolkit / Input System türleriyle bağımlı olmamalı.
 - M0 `0.0.1` API henüz kararlı değil. M1 öncesi isimler değişebilir.
+
+
+## M1 core implementation update (2026-10-14)
+
+The earlier `Powertrain Graph` in the target diagram remains a future
+fully coupled multi-source architecture. The first **real** implementation
+is `SimplePowertrainDefinition` + `SimplePowertrainRuntime`, which
+provides a separate data asset, per-car dynamic state, engine torque
+curve, gearbox ratios, final drive and explicit driven-wheel outputs.
+`VehicleSimulationRoot` still owns the Rigidbody integration, and
+wheels/tire solver remain separate. `DriveSource` explicitly chooses
+legacy direct torque or simple powertrain; input/replay/camera stay in
+optional host adapters.
+
+The runtime's topology consists of **AxleId groupings** (not a fixed array
+of four corners): total gearbox/final-drive torque is shared equally among
+driven axle groups and then among driven wheel elements in each axle.
+This provides honest initial functionality for 3W to 20W single-chassis
+presets while reserving actual differential clutch reactions and
+torque biasing for M2. Multi-body tractor/trailer remains a separate
+VehicleAssembly future milestone.

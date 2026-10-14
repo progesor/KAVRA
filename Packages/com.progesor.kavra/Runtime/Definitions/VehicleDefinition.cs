@@ -47,6 +47,8 @@ namespace Progesor.Kavra
         public string VehicleName = "Untitled Vehicle";
         [Min(1f)] public float ChassisMassKg = 1200f;
         public Vector3 CenterOfMassLocal = new Vector3(0f, -0.25f, 0f);
+        [Tooltip("Optional M1 engine/gearbox/final-drive asset; null preserves M0 direct wheel torque.")]
+        public SimplePowertrainDefinition Powertrain;
         public List<AxleDefinition> Axles = new List<AxleDefinition>();
         public List<WheelDefinition> Wheels = new List<WheelDefinition>();
     }

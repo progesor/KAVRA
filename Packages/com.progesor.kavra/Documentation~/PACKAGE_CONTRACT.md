@@ -77,3 +77,32 @@ load fractions. No profile or solver settings are silently changed. The
 braking force remains approximate for yawed, steep or multiple-ground-body
 situations; static friction/slope holding and exact effective mass resolution
 are future work. This is **not automatic roll or rollover prevention**.
+
+
+## M1 0.1.0 contract — transitional powertrain module
+
+`SimplePowertrainDefinition` is optional (null on all earlier
+VehicleDefinition assets). Existing VehicleSimulationRoot serialized
+`DriveSource` enum defaults to 0 = LegacyDirectWheelTorque.
+This means the user's v0.0.5/0.0.6 experiments and existing scenes remain
+in the M0 drive model unless they explicitly choose the M1 mode.
+
+`SimplePowertrainRuntime` is a plain C# stateful solver, constructed once
+from a torque-curve asset and a variable-length wheel layout. Engine RPM is
+an approximate function of wheel RPM plus low-speed throttle free-rev
+behavior, following a finite rate. It computes signed total output torque
+through the selected gear/final drive/efficiency, then shares it equally
+among **driven axle IDs** and among the driven wheels on each axle.
+There is NO clutch constraint, torque-converter fluid coupling, LSD,
+locked or open differential mechanical state, per-axle torque biasing,
+motor inertia torque feedback or engine drag. These belong to M2 modules.
+
+`VehicleSimulationRoot.TrySetGear` is an explicit gear API. Runtime
+accepts -1 reverse, 0 neutral and 1..N forward gears and fails closed on
+invalid ratios/gear. A host adapter should avoid selecting reverse during
+forward motion; the included sample does this. The physical tire solver
+still integrates the wheel's response and contact load.
+
+SimplePowertrain source uses only UnityEngine and no imported packages.
+It does not implement automatic rollover prevention. The optional manual
+R recovery remains unchanged.

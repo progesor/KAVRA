@@ -61,9 +61,55 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
         bool right = keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed;
         float throttle = (forward ? 1f : 0f) - (backward ? 1f : 0f);
         float steering = (right ? 1f : 0f) - (left ? 1f : 0f);
+        float braking = keyboard.spaceKey.isPressed ? 1f : 0f;
 
-        Simulation.SetInputs(throttle, steering,
-            keyboard.spaceKey.isPressed ? 1f : 0f,
+        if (Simulation.DriveSource == Progesor.Kavra.VehicleDriveSource.SimplePowertrain)
+        {
+            // The simplified gearbox uses 0..1 accelerator and a separate
+            // gear sign. W/S automatically selects forward/reverse at low
+            // speed. Pressing the opposite direction while driving first
+            // brakes instead of instantly reversing drivetrain torque.
+            int selectedGear = Simulation.SelectedGear;
+            if (keyboard.eKey.wasPressedThisFrame && selectedGear >= 1)
+                Simulation.TrySetGear(selectedGear + 1);
+            else if (keyboard.qKey.wasPressedThisFrame && selectedGear > 1)
+                Simulation.TrySetGear(selectedGear - 1);
+
+            float longitudinal = vehicleBody != null
+                ? Vector3.Dot(vehicleBody.linearVelocity, transform.forward) : 0f;
+            if (forward == backward)
+            {
+                throttle = 0f;
+            }
+            else if (forward)
+            {
+                if (longitudinal < -0.75f)
+                {
+                    braking = 1f;
+                    throttle = 0f;
+                }
+                else
+                {
+                    if (Simulation.SelectedGear < 1) Simulation.TrySetGear(1);
+                    throttle = 1f;
+                }
+            }
+            else
+            {
+                if (longitudinal > 0.75f)
+                {
+                    braking = 1f;
+                    throttle = 0f;
+                }
+                else
+                {
+                    Simulation.TrySetGear(-1);
+                    throttle = 1f;
+                }
+            }
+        }
+
+        Simulation.SetInputs(throttle, steering, braking,
             keyboard.leftShiftKey.isPressed ? 1f : 0f);
 #endif
     }
@@ -134,8 +180,19 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
                          "\nMax |slip ratio|: " + maxAbsSlipRatio.ToString("F2") +
                          "  |slip angle|: " + maxAbsSlipAngle.ToString("F1") + " deg";
 #if ENABLE_INPUT_SYSTEM
+        if (Simulation.DriveSource == Progesor.Kavra.VehicleDriveSource.SimplePowertrain)
+        {
+            message += "\nPOWERTRAIN: " + Simulation.EngineRpm.ToString("F0") +
+                " RPM   Gear: " + Simulation.SelectedGear +
+                "   Engine Nm: " + Simulation.EngineTorqueNm.ToString("F0") +
+                "   Wheel torque Nm: " + Simulation.TotalAppliedDriveTorqueNm.ToString("F0");
+        }
+
         if (AcceptDrivingKeys)
-            message += "\nW/S: torque   A/D: steer   Space: brake   Shift: park";
+            message += Simulation.DriveSource ==
+                       Progesor.Kavra.VehicleDriveSource.SimplePowertrain
+                ? "\nW/S: forward/reverse   Q/E: down/up gear   A/D: steer   Space: brake"
+                : "\nW/S: torque   A/D: steer   Space: brake   Shift: park";
         else
             message += "\nSCRIPTED test: set maneuver in VehicleLabManeuverRunner";
         message += "\nR: MANUAL upright recovery (at low speed)";
@@ -144,6 +201,6 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
 #endif
         if (Time.unscaledTime < recoveryStatusUntil)
             message += "\n" + recoveryStatus;
-        GUI.Box(new Rect(12f, 12f, 485f, 267f), message);
+        GUI.Box(new Rect(12f, 12f, 555f, 292f), message);
     }
 }

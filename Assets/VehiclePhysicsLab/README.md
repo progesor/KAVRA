@@ -183,3 +183,37 @@ After Unity compiles and tests are run, ONE new StraightBrake
 A/B run with default limiter settings is sufficient for the first
 post-fix comparison. No automatic vehicle righting is ever invoked:
 the user must press R to request manual recovery.
+
+
+## M1 core powertrain lab (0.1.0)
+
+The M0 Physics Lab and scripted M0 calibration scene are **preserved**.
+To test the new powertrain separately choose:
+
+`Tools > KAVRA > Create M1 Powertrain Lab Scene`
+
+Save the generated scene to
+`Assets/VehiclePhysicsLab/Scenes/M1_PowertrainLab.unity` and Play.
+
+The M1 menu creates/reuses two **dedicated** host assets:
+`Assets/VehiclePhysicsLab/M1_PassengerCar4.asset` (vehicle)
+and `Assets/VehiclePhysicsLab/M1_SimplePowertrain.asset` (engine/gearbox).
+They do not overwrite your earlier M0 definition or telemetry CSVs.
+It builds one 4W dynamic chassis on a long flat test road.
+
+Keyboard: **W** forward accelerator, **S** reverse accelerator when almost
+stopped (brakes first if still moving forward), **A/D** steer, **Q/E**
+down/up-shift when in forward gears, **Space** brake, **Left Shift**
+parking brake, **R** request manual upright recovery at low speed.
+
+Inspector/HUD: `DriveSource`, `SelectedGear`, `EngineRpm`, motor Nm,
+total distributed wheel torque, per-wheel applied torque.
+CSV also contains `drive_source,selected_gear,engine_rpm,engine_nm,
+delivered_wheel_torque_nm`.
+
+**Limitations:** no automatic transmission shift logic, clutch or
+differential torque feedback, engine braking, measured vehicle tire
+calibration or automatic anti-flip. The M1 starter is a working simple
+powertrain chain, **not** an industrial automotive simulation yet.
+M1 source requires Unity compile and Play Mode verification. M0 data should
+not be used as a numerical baseline for the powered M1 vehicle.

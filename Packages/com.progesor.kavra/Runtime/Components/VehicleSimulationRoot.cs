@@ -4,6 +4,13 @@ using UnityEngine;
 
 namespace Progesor.Kavra
 {
+    /// <summary>Legacy M0 torque remains available for old scene compatibility.</summary>
+    public enum VehicleDriveSource
+    {
+        LegacyDirectWheelTorque = 0,
+        SimplePowertrain = 1
+    }
+
     /// <summary>Per-wheel snapshots of the provisional M0 solver.</summary>
     [Serializable]
     public struct WheelTelemetry
@@ -37,6 +44,7 @@ namespace Progesor.Kavra
         public float EffectiveLateralStiffness;
         public float AngularVelocityRadPerSec;
         public float WheelRpm;
+        public float AppliedDriveTorqueNm;
         public Vector3 ContactPoint;
         public Vector3 ContactNormal;
     }
@@ -81,7 +89,19 @@ namespace Progesor.Kavra
         [Range(1, 8)] public int TireSubsteps = 4;
         [Range(0.1f, 5f)] public float SlipMetricReferenceSpeedMps = 1f;
 
-        [Header("Test controls — NOT a powertrain")]
+        [Header("Power source / control")]
+        [Tooltip("Legacy M0 wheel torque or M1 torque curve, gearbox and axle distribution.")]
+        public VehicleDriveSource DriveSource = VehicleDriveSource.LegacyDirectWheelTorque;
+        [Tooltip("SimplePowertrain uses unsigned throttle magnitude; -1 reverse, 0 neutral, >=1 forward gears.")]
+        [Range(-1, 12)] public int SelectedGear = 1;
+        public float EngineRpm => simplePowertrain != null ? simplePowertrain.EngineRpm : 0f;
+        public float EngineTorqueNm => simplePowertrain != null ? simplePowertrain.EngineTorqueNm : 0f;
+        public float TotalAppliedDriveTorqueNm =>
+            simplePowertrain != null ? simplePowertrain.TotalWheelTorqueNm : 0f;
+        public int MaxForwardGears => powertrainDefinition != null
+            ? powertrainDefinition.ForwardGearCount : 0;
+
+        [Header("Input / legacy M0 test torque")]
         [Range(-1f, 1f)] public float Throttle;
         [Range(-1f, 1f)] public float Steering;
         [Range(0f, 1f)] public float ServiceBrake;
@@ -135,6 +155,10 @@ namespace Progesor.Kavra
         }
 
         private readonly RaycastHit[] raycastHits = new RaycastHit[32];
+        private SimplePowertrainDefinition powertrainDefinition;
+        private SimplePowertrainRuntime simplePowertrain;
+        private float[] wheelDriveTorquesNm;
+        private float[] wheelAngularFeedback;
         private WheelState[] wheels;
         private AntiRollPair[] antiRollPairs = new AntiRollPair[0];
         private SteeringGeometryParameters steeringGeometry;
@@ -152,12 +176,40 @@ namespace Progesor.Kavra
         }
 
         /// <summary>
+        /// Select gear for a configured M1 drivetrain. Gear -1=reverse,
+        /// 0=neutral, 1..N=forward. Failed selections preserve current gear.
+        /// Host controller should prevent shifting into reverse at speed.
+        /// </summary>
+        public bool TrySetGear(int gear)
+        {
+            SimplePowertrainDefinition definition = powertrainDefinition;
+            if (definition == null)
+            {
+                VehicleRoot root = GetComponent<VehicleRoot>();
+                definition = root != null && root.Definition != null
+                    ? root.Definition.Powertrain : null;
+            }
+
+            if (DriveSource != VehicleDriveSource.SimplePowertrain ||
+                definition == null || gear < -1 ||
+                gear > definition.ForwardGearCount)
+                return false;
+            SelectedGear = gear;
+            return true;
+        }
+
+        /// <summary>
         /// Reset wheel angular motion and spring history after an EXPLICIT
         /// user teleport. Does not move or stabilize the Rigidbody and is never
         /// called automatically from FixedUpdate or collision detection.
         /// </summary>
         public void ResetTransientMotionState()
         {
+            if (simplePowertrain != null) simplePowertrain.Reset();
+            if (wheelDriveTorquesNm != null)
+                System.Array.Clear(wheelDriveTorquesNm, 0, wheelDriveTorquesNm.Length);
+            if (wheelAngularFeedback != null)
+                System.Array.Clear(wheelAngularFeedback, 0, wheelAngularFeedback.Length);
             if (wheels == null) return;
             for (int i = 0; i < wheels.Length; i++)
             {
@@ -222,6 +274,29 @@ namespace Progesor.Kavra
 
             wheels = new WheelState[wheelCount];
             wheelTelemetry = new WheelTelemetry[wheelCount];
+
+            if (DriveSource == VehicleDriveSource.SimplePowertrain)
+            {
+                powertrainDefinition = definition.Powertrain;
+                if (powertrainDefinition == null)
+                {
+                    Debug.LogError("KAVRA: M1 drivetrain selected but VehicleDefinition.Powertrain is null.", this);
+                    enabled = false;
+                    return;
+                }
+
+                simplePowertrain = new SimplePowertrainRuntime(powertrainDefinition,
+                    definition.Wheels);
+                if (simplePowertrain.DrivenWheelCount == 0)
+                {
+                    Debug.LogError("KAVRA: no driven wheels in M1 drivetrain configuration.", this);
+                    enabled = false;
+                    return;
+                }
+
+                wheelDriveTorquesNm = new float[wheelCount];
+                wheelAngularFeedback = new float[wheelCount];
+            }
 
             float minX = float.PositiveInfinity, maxX = float.NegativeInfinity;
             float minZ = float.PositiveInfinity, maxZ = float.NegativeInfinity;
@@ -328,6 +403,17 @@ namespace Progesor.Kavra
             if (!ready || wheels == null) return;
             float dt = Time.fixedDeltaTime;
             if (dt <= 0f) return;
+
+            // M1 drivetrain receives the previous wheel state ONCE per body
+            // physics step, independent of substeps in the tire rotor solver.
+            if (DriveSource == VehicleDriveSource.SimplePowertrain &&
+                simplePowertrain != null)
+            {
+                for (int i = 0; i < wheels.Length; i++)
+                    wheelAngularFeedback[i] = wheels[i].OmegaRadPerSec;
+                simplePowertrain.Step(Mathf.Abs(Throttle), SelectedGear, dt,
+                    wheelAngularFeedback, wheelDriveTorquesNm);
+            }
 
             long contactQueryTicks = 0L;
 
@@ -442,8 +528,9 @@ namespace Progesor.Kavra
                     lateralSpeed = Vector3.Dot(velocity, right);
                 }
 
-                float driveTorque = spec.CanDrive ?
-                    Throttle * DriveTorquePerDrivenWheelNm : 0f;
+                float driveTorque = DriveSource == VehicleDriveSource.SimplePowertrain
+                    ? wheelDriveTorquesNm[i]
+                    : (spec.CanDrive ? Throttle * DriveTorquePerDrivenWheelNm : 0f);
                 float brakeTorque =
                     (spec.HasServiceBrake ? ServiceBrake * ServiceBrakeTorquePerWheelNm : 0f) +
                     (spec.HasParkingBrake ? ParkingBrake * ParkingBrakeTorquePerWheelNm : 0f);
@@ -570,6 +657,7 @@ namespace Progesor.Kavra
                     SteerAngleDegrees = steerAngle,
                     AngularVelocityRadPerSec = wheel.OmegaRadPerSec,
                     WheelRpm = wheel.OmegaRadPerSec * (60f / (2f * Mathf.PI)),
+                    AppliedDriveTorqueNm = driveTorque,
                     ContactPoint = grounded ? hit.point : Vector3.zero,
                     ContactNormal = grounded ? hit.normal : Vector3.zero
                 };

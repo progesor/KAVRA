@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.0] — 2026-10-14 — M1 core prototype
+
+- Added optional powertrain ScriptableObject, gear ratios, torque curve,
+  engine RPM state, speed/redline-limited torque distribution.
+- Introduced data-driven axle grouping for driven wheel torque and neutral,
+  reverse and forward gears, independent of wheel count.
+- Legacy direct torque remains the default when existing scenes load.
+- Wizard and dedicated host M1 lab provide asset/scene generation and input.
+- Wizard 4D saves an opt-in dynamic M1 prototype prefab, refusing to overwrite an existing asset.
+- Added M1 EditMode test cases and extended telemetry fields.
+- Source code was statically checked; no Unity Editor test was performed
+  during authorship.
+
 ## [0.0.6] — 2026-10-14
 
 - Real user CSV analysis showed recurring +/-14 kN braking force chatter

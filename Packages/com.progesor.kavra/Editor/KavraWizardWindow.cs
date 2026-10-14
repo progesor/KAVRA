@@ -20,9 +20,10 @@ namespace Progesor.Kavra.Editor
             GUILayout.Space(8f);
             EditorGUILayout.LabelField("KAVRA Vehicle Framework", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "M0 experimental physics: spring/damper + raycast road contact + simple " +
-                "tire slip and wheel torque. No engine, gearbox, advanced terrain or " +
-                "calibrated simulation fidelity yet.", MessageType.Info);
+                "M1 foundation: configure variable wheel layouts, create an optional " +
+                "basic engine/gearbox asset, and build either the existing M0 " +
+                "direct-torque chassis or the new simple powertrain prototype. " +
+                "Clutch/differential physics and real-world calibration are later.", MessageType.Info);
             GUILayout.Space(6f);
             EditorGUILayout.LabelField("1. Starter layout", EditorStyles.boldLabel);
             template = (VehicleTemplate)EditorGUILayout.EnumPopup("Template", template);
@@ -38,6 +39,20 @@ namespace Progesor.Kavra.Editor
                     MessageType.None);
                 return;
             }
+
+            GUILayout.Space(7f);
+            EditorGUILayout.LabelField("3. Powertrain asset (optional)", EditorStyles.boldLabel);
+            SimplePowertrainDefinition powertrain = (SimplePowertrainDefinition)
+                EditorGUILayout.ObjectField("Powertrain", configuration.Powertrain,
+                    typeof(SimplePowertrainDefinition), false);
+            if (powertrain != configuration.Powertrain)
+            {
+                Undo.RecordObject(configuration, "Assign KAVRA powertrain");
+                configuration.Powertrain = powertrain;
+                EditorUtility.SetDirty(configuration);
+            }
+            if (GUILayout.Button("Create Basic Powertrain & assign"))
+                CreatePowertrainAsset();
 
             var issues = VehicleConfigurationValidator.Validate(configuration);
             bool hasErrors = false;
@@ -63,17 +78,54 @@ namespace Progesor.Kavra.Editor
                     configuration.Wheels.TrueForAll(w => w != null && w.SuspensionTravelMeters > 0f);
                 using (new EditorGUI.DisabledScope(!supportsDynamic))
                 {
-                    if (GUILayout.Button("3B. Build dynamic M0 test chassis", GUILayout.Height(32f)))
+                    if (GUILayout.Button("4B. Build dynamic M0 test chassis", GUILayout.Height(32f)))
                     {
                         GameObject vehicle = VehicleScaffoldBuilder.Create(configuration, true);
                         Debug.Log("KAVRA M0: created dynamic prototype " + vehicle.name +
                                   ". Add ground and inputs, or use Tools/KAVRA/Create M0 Physics Lab Scene.");
                     }
                 }
+                using (new EditorGUI.DisabledScope(!supportsDynamic || configuration.Powertrain == null))
+                {
+                    if (GUILayout.Button("4C. Build M1 powertrain chassis", GUILayout.Height(32f)))
+                    {
+                        GameObject vehicle = VehicleScaffoldBuilder.Create(configuration,
+                            true, VehicleDriveSource.SimplePowertrain);
+                        Debug.Log("KAVRA M1: created powered prototype " + vehicle.name +
+                                  ". Use an Input adapter and ground or create the M1 lab scene.");
+                    }
+                    if (GUILayout.Button("4D. Save M1 powered prefab (reusable)", GUILayout.Height(32f)))
+                    {
+                        VehiclePrefabBuilder.SaveSimplePowertrainPrefab(configuration);
+                    }
+                }
                 if (!supportsDynamic)
-                    EditorGUILayout.HelpBox("Dynamic M0 requires positive suspension travel on every wheel.",
+                    EditorGUILayout.HelpBox("Dynamic solver requires positive suspension travel.",
                         MessageType.Warning);
+                if (configuration.Powertrain == null)
+                    EditorGUILayout.HelpBox("Add a powertrain asset to enable M1 mode. " +
+                                            "M0 direct torque is still available.",
+                        MessageType.Info);
             }
+        }
+
+        private void CreatePowertrainAsset()
+        {
+            if (configuration == null) return;
+
+            string path = EditorUtility.SaveFilePanelInProject(
+                "Create M1 Simple Powertrain", "KAVRA_SimplePowertrain.asset",
+                "asset", "Save motor torque curve and gearbox settings.");
+            if (string.IsNullOrEmpty(path)) return;
+
+            var asset = ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            AssetDatabase.CreateAsset(asset, path);
+            Undo.RecordObject(configuration, "Connect M1 powertrain");
+            configuration.Powertrain = asset;
+            EditorUtility.SetDirty(configuration);
+            AssetDatabase.SaveAssets();
+            EditorGUIUtility.PingObject(asset);
+            Debug.Log("KAVRA M1: powertrain assigned to " + configuration.name);
         }
 
         private void CreateAsset()

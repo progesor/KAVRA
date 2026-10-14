@@ -84,6 +84,41 @@ namespace Progesor.Kavra
                     if (axle != null && !string.IsNullOrWhiteSpace(axle.Id) && !usedAxles.Contains(axle.Id))
                         issues.Add(new VehicleValidationIssue(ValidationSeverity.Warning, "Unused axle: " + axle.Id));
 
+            // Optional powertrain is validated only when attached. Old M0
+            // vehicle assets remain valid without a powertrain.
+            if (definition.Powertrain != null)
+            {
+                var p = definition.Powertrain;
+                if (p.IdleRpm < 100f || p.MaxRpm <= p.IdleRpm)
+                    issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                        "Powertrain RPM settings are invalid (MaxRpm must exceed IdleRpm)."));
+                if (p.FinalDriveRatio <= 0f || p.ReverseGearRatio <= 0f ||
+                    p.Efficiency <= 0f || p.Efficiency > 1f)
+                    issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                        "Powertrain final-drive/reverse/efficiency settings are invalid."));
+                if (p.ForwardGearRatios == null || p.ForwardGearRatios.Length == 0)
+                    issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                        "Powertrain needs at least one forward gear."));
+                else
+                    foreach (float ratio in p.ForwardGearRatios)
+                        if (ratio <= 0f)
+                        {
+                            issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                                "Powertrain forward gear ratios must be positive."));
+                            break;
+                        }
+                if (p.TorqueNmByRpm == null || p.TorqueNmByRpm.length == 0)
+                    issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                        "Powertrain requires an RPM-to-torque curve."));
+                bool driven = false;
+                if (definition.Wheels != null)
+                    foreach (var wheel in definition.Wheels)
+                        if (wheel != null && wheel.CanDrive) { driven = true; break; }
+                if (!driven)
+                    issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                        "Powertrain cannot run: vehicle has no driven wheels."));
+            }
+
             if (issues.Count == 0)
                 issues.Add(new VehicleValidationIssue(ValidationSeverity.Info, "Configuration structure is valid (physics not yet verified)."));
             return issues;

@@ -146,3 +146,27 @@ different road friction/axle layouts, before/after contact mode benchmark,
 airborne wheel overspeed with future powertrain. Preserve user's
 committed files and keep PR #2 Draft pending broad acceptance. Never
 add automatic rollover prevention; R-only manual recovery remains.
+
+
+## 2026-10-14: New M1 core powertrain branch
+
+Branch: `feat/m1-core-powertrain-foundation` based on the existing M0
+prototype branch; separate Draft PR to M0 will track this milestone.
+Issue: https://github.com/progesor/KAVRA/issues/7
+
+Main priority changed by user: *build a robust general modular vehicle
+framework*, stop over-investing in minor physics imperfections.
+
+Added M1 simple engine/gearbox ScriptableObject (torque vs RPM, idle/redline,
+forward/reverse/neutral, final drive), C# powertrain runtime calculating
+signed wheel torques distributed across any number of driven AxleId groups.
+Gear and drive source fields integrated in VehicleSimulationRoot;
+M0 legacy mode default retained. Wizard creates/assigns asset and an M1
+dynamic chassis. Separate host-only M1 lab generator/input HUD/CSV.
+EditMode tests include 3/4/6/8/20, neutral/reverse, torque totals and
+gearing compatibility.
+
+Open next steps: compile in user's Unity 6000.3.18f1 Editor, run EditMode
+tests, drive a generated M1 lab car, smoke check custom 8W in Wizard.
+Full differential/clutch/engine drag/real calibration out of scope.
+No automatic rollover prevention; only R recovery.

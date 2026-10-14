@@ -135,3 +135,26 @@ girdiyle çalışabilir.
 - [ ] SteeringStep repeated and airborne wheel RPM/grounded behavior assessed;
   no automatic roll or flip correction will be introduced.
 - [ ] Surface/multi-axle behavior acceptance, before M1 freeze.
+
+
+## M1 — Reordered implementation focus: core vehicle power path
+
+Based on the user's request, we now prioritize the **functioning reusable
+vehicle system** before tiny near-limit physics tuning details.
+
+- [x] Source: SimplePowertrainDefinition (torque/RPM + gears + final drive).
+- [x] Source: reusable SimplePowertrainRuntime with axle-ID torque splits and
+      no 4-wheel hardcoding; direct M0 drive mode remains optional/default.
+- [x] Source: Wizard create/attach powertrain asset, build M1 chassis
+      and save a placeholder reusable powered Unity prefab.
+- [x] Source: M1 host scene generator, input/gear handling, HUD/CSV and tests.
+- [ ] Unity 6000.3.x imports and compiles new M1 sources.
+- [ ] EditMode tests pass, 3/4/6/8/20 wheels allocate motor torque correctly.
+- [ ] M1 Play Mode W/S, Q/E, brakes, R manual recovery and gear RPM telemetry.
+- [ ] Save actual M1 lab scene and minimum smoke results in repo.
+- [ ] Confirm older M0 scenes and user telemetry behavior are unchanged.
+
+Next: move forward with a basic explicit open differential and optional
+multi-axle weighting, better Wizard prefab binding, then M2 clutch/gearbox
+reaction models. Do NOT block main framework development on minuscule tire
+force refinements. Natural rollover and R-only manual recovery remain.

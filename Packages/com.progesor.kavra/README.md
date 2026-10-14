@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.0.6)
+# KAVRA embedded package (v0.1.0)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -71,3 +71,38 @@ Scripted input is host-only and does not auto-prevent rollovers.
 no real soil deformation, direct test torque, no gearboxes/differentials.
 Manual recovery is a lab control, not an automatic stability assistant.
 No Unity compilation/Play Mode verification yet; use docs/13 and issue #1.
+
+
+## M1 core vehicle drive option (0.1.0)
+
+- `VehicleDefinition.Powertrain` is optional. Null remains valid for all
+  earlier vehicles and does not alter serialized tire/axle configuration.
+- `SimplePowertrainDefinition` is a ScriptableObject with one engine torque
+  curve (Nm/RPM), 1..N forward gear ratios, -1 reverse, 0 neutral, final
+  drive and mechanical efficiency.
+- `SimplePowertrainRuntime` calculates per-wheel torque once per fixed
+  chassis step, groups driven wheels by their `AxleId`, splits total torque
+  equally among driven axles, then equally among driven wheels on each axle.
+  `WheelDefinition.CanDrive` is the physical drive authority; the axle
+  IsDriven flag is currently metadata.
+- `VehicleSimulationRoot.DriveSource` defaults
+  `LegacyDirectWheelTorque` for backward compatibility. Choose
+  `SimplePowertrain` explicitly in a new M1 vehicle.
+- `TrySetGear(int)` selects -1 reverse, 0 neutral or 1..ForwardGearCount.
+  Host controllers handle speed-aware direction changes. Gear clutches and
+  differential reactions are future modules, not M1's prototype.
+- EngineRPM, EngineTorqueNm, TotalAppliedDriveTorqueNm and wheel-level
+  AppliedDriveTorqueNm are available for telemetry and host presentation.
+
+The embedded runtime package still references only UnityEngine; sample
+Input System adapters and test scenes belong to the separate Unity host
+at `Assets/VehiclePhysicsLab`. No automatic anti-rollover handling is added.
+
+### Save powered prefab
+
+`VehiclePrefabBuilder` is an Editor-only helper exposed through the Wizard:
+`4D. Save M1 powered prefab (reusable)`. It saves a real Unity Prefab
+with a Rigidbody, WheelAnchors, VehicleRoot/VehicleSimulationRoot and
+links to VehicleDefinition/SimplePowertrainDefinition assets. The generated
+cube and cylinders remain **temporary placeholders**, not production-grade
+physics/visual meshes. It does not add host input or require URP.

@@ -816,5 +816,202 @@ namespace Progesor.Kavra.Lab.Tests
             Assert.AreEqual(0f, bounded.LateralForceN);
         }
 
+        [TestCase(VehicleTemplate.ThreeWheelDelta, 3, 2, 1)]
+        [TestCase(VehicleTemplate.PassengerCar4, 4, 2, 1)]
+        [TestCase(VehicleTemplate.Truck6x6, 6, 6, 3)]
+        [TestCase(VehicleTemplate.Truck8x8, 8, 8, 4)]
+        [TestCase(VehicleTemplate.SingleChassis20WheelStressTest, 20, 16, 8)]
+        public void M1TorqueDistributionSupportsEveryStarterLayout(
+            VehicleTemplate template, int total, int driven, int drivenAxles)
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(template);
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                vehicle.Powertrain = config;
+                foreach (var error in VehicleConfigurationValidator.Validate(vehicle))
+                    Assert.AreNotEqual(ValidationSeverity.Error, error.Severity, error.Message);
+
+                var state = new SimplePowertrainRuntime(config, vehicle.Wheels);
+                float[] feedback = new float[total];
+                float[] torque = new float[total];
+                state.Step(1f, 1, 0f, feedback, torque);
+
+                Assert.AreEqual(total, vehicle.Wheels.Count);
+                Assert.AreEqual(driven, state.DrivenWheelCount);
+                Assert.AreEqual(drivenAxles, state.DrivenAxleCount);
+                float sum = 0f;
+                for (int i = 0; i < total; i++)
+                {
+                    if (vehicle.Wheels[i].CanDrive)
+                        Assert.Greater(torque[i], 0f);
+                    else
+                        Assert.AreEqual(0f, torque[i]);
+                    sum += torque[i];
+                }
+                Assert.Greater(sum, 0f);
+                Assert.That(sum, Is.EqualTo(state.TotalWheelTorqueNm).Within(0.01f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void M1EqualAxleDistributionDoesNotAssumeSameWheelsPerAxle()
+        {
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                // One-wheel steering-drive axle and a separate two-wheel axle.
+                var wheels = new System.Collections.Generic.List<WheelDefinition>
+                {
+                    new WheelDefinition { Id = "front-C", AxleId = "front", CanDrive = true },
+                    new WheelDefinition { Id = "rear-L", AxleId = "rear", CanDrive = true },
+                    new WheelDefinition { Id = "rear-R", AxleId = "rear", CanDrive = true },
+                    new WheelDefinition { Id = "trailing-C", AxleId = "free", CanDrive = false }
+                };
+                var model = new SimplePowertrainRuntime(config, wheels);
+                float[] output = new float[4];
+                model.Step(1f, 1, 0f, new float[4], output);
+                Assert.Greater(output[0], 0f);
+                Assert.That(output[0], Is.EqualTo(output[1] + output[2]).Within(0.01f));
+                Assert.That(output[1], Is.EqualTo(output[2]).Within(0.001f));
+                Assert.AreEqual(0f, output[3]);
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void M1NeutralHasNoTorqueAndReverseChangesTorqueSign()
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                var runtime = new SimplePowertrainRuntime(config, vehicle.Wheels);
+                float[] torques = new float[vehicle.Wheels.Count];
+                float[] angular = new float[torques.Length];
+
+                runtime.Step(1f, 0, 0f, angular, torques);
+                Assert.AreEqual(0f, runtime.TotalWheelTorqueNm);
+                foreach (float value in torques) Assert.AreEqual(0f, value);
+
+                runtime.Step(1f, -1, 0f, angular, torques);
+                Assert.Less(runtime.TotalWheelTorqueNm, 0f);
+                foreach (int i in new[] { 2, 3 })
+                    Assert.Less(torques[i], 0f);
+                Assert.AreEqual(-1, runtime.CurrentGear);
+
+                runtime.Step(1f, 1, 0f, angular, torques);
+                Assert.Greater(runtime.TotalWheelTorqueNm, 0f);
+                Assert.Greater(runtime.EngineRpm, 0f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void M1FirstGearDeliversMoreWheelTorqueThanSecondAtSameEngineRpm()
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                var runtime = new SimplePowertrainRuntime(config, vehicle.Wheels);
+                float[] feedback = new float[4];
+                float[] output = new float[4];
+                runtime.Step(0.7f, 1, 0f, feedback, output);
+                float first = runtime.TotalWheelTorqueNm;
+                runtime.Reset();
+                runtime.Step(0.7f, 2, 0f, feedback, output);
+                float second = runtime.TotalWheelTorqueNm;
+                Assert.Greater(first, second);
+                Assert.Greater(second, 0f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void M1RedlineCutStopsPowerToOverspinningWheels()
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                var runtime = new SimplePowertrainRuntime(config, vehicle.Wheels);
+                float[] output = new float[4];
+                float[] angular = { 0f, 0f, 200f, 200f };
+                runtime.Step(1f, 1, 0.02f, angular, output);
+                foreach (float torque in output) Assert.AreEqual(0f, torque);
+                Assert.AreEqual(0f, runtime.TotalWheelTorqueNm);
+                Assert.LessOrEqual(runtime.EngineRpm, config.MaxRpm);
+            }
+            finally
+            {
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void M1InvalidGearsAndMissingDrivenWheelsAreSafe()
+        {
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                var wheels = new System.Collections.Generic.List<WheelDefinition>
+                {
+                    new WheelDefinition { Id = "free", AxleId = "a", CanDrive = false }
+                };
+                var runtime = new SimplePowertrainRuntime(config, wheels);
+                float[] output = { 123f };
+                float[] angular = new float[1];
+                runtime.Step(1f, 1, .016f, angular, output);
+                Assert.AreEqual(0, runtime.DrivenWheelCount);
+                Assert.AreEqual(0f, output[0]);
+
+                var driven = new System.Collections.Generic.List<WheelDefinition>
+                {
+                    new WheelDefinition { Id = "powered", AxleId = "b", CanDrive = true }
+                };
+                runtime = new SimplePowertrainRuntime(config, driven);
+                runtime.Step(1f, 99, .016f, angular, output);
+                Assert.AreEqual(0f, output[0]);
+                Assert.AreEqual(0f, runtime.TotalWheelTorqueNm);
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void M1VehicleDefinitionRemainsValidWithoutPowertrain()
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            try
+            {
+                Assert.IsNull(vehicle.Powertrain);
+                foreach (VehicleValidationIssue issue in
+                         VehicleConfigurationValidator.Validate(vehicle))
+                    Assert.AreNotEqual(ValidationSeverity.Error,
+                        issue.Severity, issue.Message);
+            }
+            finally { Object.DestroyImmediate(vehicle); }
+        }
+
     }
 }

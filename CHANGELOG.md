@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.0 — 2026-10-14 (M1 modular powertrain foundation — unverified in Unity)
+
+- Added separate `SimplePowertrainDefinition` with torque-by-RPM curve,
+  forward/reverse/neutral gears, final drive and efficiency.
+- Added `SimplePowertrainRuntime` with speed-coupled engine RPM, basic
+  redline torque cutoff and axle-group/wheel torque distribution for
+  variable wheel counts (3/4/6/8/20).
+- `VehicleSimulationRoot` now selects between legacy direct-torque and
+  opt-in simple powertrain. Existing scenes and unassigned definitions
+  preserve their original M0 behavior.
+- Wizard now creates/assigns the asset and builds a dynamic M1 chassis.
+- Added a host-only M1 Powertrain Lab menu, keyboard forward/reverse
+  (direction change only when slow), Q/E gear shifting and basic engine
+  RPM/gear/wheel torque HUD+CSV.
+- Added EditMode regression sources for gear direction, neutral, redline,
+  per-axle distribution, arbitrary wheels and M0 compatibility.
+- Full clutch/gear engagement dynamics, differential types, engine braking,
+  hybrid power units and vehicle certification are NOT claimed.
+- **Unity Editor import/compilation and driving tests still pending.**
+
 ## 0.0.6 — 2026-10-14 (first real telemetry review and brake jitter fix)
 
 - Reviewed four user-recorded PhysicsLab CSV sessions in `docs/Telemetry/`:
