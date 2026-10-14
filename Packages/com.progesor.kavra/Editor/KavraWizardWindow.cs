@@ -64,6 +64,9 @@ namespace Progesor.Kavra.Editor
             if (GUILayout.Button("Create Basic Powertrain & assign"))
                 CreatePowertrainAsset();
 
+            if (configuration.Powertrain != null)
+                DrawAxleDriveSettings();
+
             var issues = VehicleConfigurationValidator.Validate(configuration);
             bool hasErrors = false;
             scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.MaxHeight(145f));
@@ -116,6 +119,82 @@ namespace Progesor.Kavra.Editor
                     EditorGUILayout.HelpBox("Add a powertrain asset to enable M1 mode. " +
                                             "M0 direct torque is still available.",
                         MessageType.Info);
+            }
+        }
+
+        private void DrawAxleDriveSettings()
+        {
+            EditorGUILayout.Space(7f);
+            EditorGUILayout.LabelField("4. Driven axle distribution", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Each powered wheel is selected by Wheel.CanDrive; axle torque weights " +
+                "distribute engine output between axle groups. EqualTorque is the " +
+                "default. SpeedBiasedApproximation prefers slower-spinning wheels " +
+                "but does NOT physically lock a differential.", MessageType.None);
+
+            if (configuration.Axles == null || configuration.Wheels == null) return;
+            foreach (AxleDefinition axle in configuration.Axles)
+            {
+                if (axle == null) continue;
+                int powered = 0;
+                int wheelCount = 0;
+                for (int i = 0; i < configuration.Wheels.Count; i++)
+                {
+                    WheelDefinition wheel = configuration.Wheels[i];
+                    if (wheel == null || wheel.AxleId != axle.Id) continue;
+                    wheelCount++;
+                    if (wheel.CanDrive) powered++;
+                }
+                if (wheelCount == 0) continue;
+
+                EditorGUILayout.LabelField(axle.Id + " — " + powered + "/" + wheelCount +
+                    " driven wheels", EditorStyles.miniBoldLabel);
+                bool driveEnabled = powered > 0;
+                bool newDriveEnabled = EditorGUILayout.Toggle("Drive this axle", driveEnabled);
+                if (newDriveEnabled != driveEnabled)
+                {
+                    Undo.RecordObject(configuration, "Configure KAVRA driven wheels");
+                    for (int i = 0; i < configuration.Wheels.Count; i++)
+                    {
+                        WheelDefinition wheel = configuration.Wheels[i];
+                        if (wheel != null && wheel.AxleId == axle.Id)
+                            wheel.CanDrive = newDriveEnabled;
+                    }
+                    axle.IsDriven = newDriveEnabled;
+                    EditorUtility.SetDirty(configuration);
+                    powered = newDriveEnabled ? wheelCount : 0;
+                }
+                if (powered == 0) continue;
+                float currentWeight = axle.DriveTorqueWeight > 0f
+                    ? axle.DriveTorqueWeight : 1f;
+                float weight = EditorGUILayout.FloatField("Axle torque weight", currentWeight);
+                AxleDifferentialMode mode = (AxleDifferentialMode)EditorGUILayout.EnumPopup(
+                    "Differential approximation", axle.DifferentialMode);
+                float ratio = axle.MaximumSpeedBiasRatio > 0f
+                    ? axle.MaximumSpeedBiasRatio : 2.5f;
+                float gain = axle.SpeedBiasGainPerRadPerSec > 0f
+                    ? axle.SpeedBiasGainPerRadPerSec : 0.12f;
+                if (mode == AxleDifferentialMode.SpeedBiasedApproximation)
+                {
+                    ratio = EditorGUILayout.FloatField("Maximum bias ratio", ratio);
+                    gain = EditorGUILayout.FloatField("Speed bias gain", gain);
+                }
+
+                weight = Mathf.Max(0.01f, weight);
+                ratio = Mathf.Max(1f, ratio);
+                gain = Mathf.Max(0f, gain);
+                if (!Mathf.Approximately(axle.DriveTorqueWeight, weight) ||
+                    axle.DifferentialMode != mode ||
+                    !Mathf.Approximately(axle.MaximumSpeedBiasRatio, ratio) ||
+                    !Mathf.Approximately(axle.SpeedBiasGainPerRadPerSec, gain))
+                {
+                    Undo.RecordObject(configuration, "Update KAVRA axle drive distribution");
+                    axle.DriveTorqueWeight = weight;
+                    axle.DifferentialMode = mode;
+                    axle.MaximumSpeedBiasRatio = ratio;
+                    axle.SpeedBiasGainPerRadPerSec = gain;
+                    EditorUtility.SetDirty(configuration);
+                }
             }
         }
 

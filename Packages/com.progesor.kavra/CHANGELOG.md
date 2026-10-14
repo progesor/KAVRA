@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.1] — 2026-10-14
+
+- Added axle-relative drive torque weighting and selectable EqualTorque /
+  SpeedBiasedApproximation torque-command routing per driven axle.
+- Extended SimplePowertrainRuntime constructor with AxleDefinition list;
+  older two-parameter constructor remains supported.
+- Wizard can toggle driven axles and tune axle torque/differential settings.
+- Added 3W, 6x6, 8x8 and 20W host powertrain lab scene options.
+- Added six EditMode test sources and documented approximation limits.
+- No Unity Editor test result yet.
+
+
 ## [0.1.0] — 2026-10-14 — M1 core prototype
 
 - Added optional powertrain ScriptableObject, gear ratios, torque curve,

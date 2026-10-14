@@ -49,6 +49,20 @@ namespace Progesor.Kavra
                     }
                     if (!axleIds.Add(axle.Id))
                         issues.Add(new VehicleValidationIssue(ValidationSeverity.Error, "Duplicate axle ID: " + axle.Id));
+                    if (axle.DriveTorqueWeight < 0f ||
+                        float.IsNaN(axle.DriveTorqueWeight) ||
+                        float.IsInfinity(axle.DriveTorqueWeight))
+                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                            "Axle " + axle.Id + " has an invalid drive torque weight."));
+                    if (axle.DifferentialMode == AxleDifferentialMode.SpeedBiasedApproximation &&
+                        (axle.MaximumSpeedBiasRatio < 1f ||
+                         float.IsNaN(axle.MaximumSpeedBiasRatio) ||
+                         float.IsInfinity(axle.MaximumSpeedBiasRatio) ||
+                         axle.SpeedBiasGainPerRadPerSec < 0f ||
+                         float.IsNaN(axle.SpeedBiasGainPerRadPerSec) ||
+                         float.IsInfinity(axle.SpeedBiasGainPerRadPerSec)))
+                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                            "Axle " + axle.Id + " has invalid speed-bias settings."));
                 }
             }
 

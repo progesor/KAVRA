@@ -12,18 +12,30 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public static class VehicleM1LabSceneBuilder
 {
-    private const string DefinitionPath =
-        "Assets/VehiclePhysicsLab/M1_PassengerCar4.asset";
-    private const string PowertrainPath =
-        "Assets/VehiclePhysicsLab/M1_SimplePowertrain.asset";
-
     [MenuItem("Tools/KAVRA/Create M1 Powertrain Lab Scene")]
-    public static void Create()
+    public static void Create() { CreateForTemplate(VehicleTemplate.PassengerCar4); }
+
+    [MenuItem("Tools/KAVRA/Create M1 Three-Wheel Lab Scene")]
+    public static void Create3W() { CreateForTemplate(VehicleTemplate.ThreeWheelDelta); }
+
+    [MenuItem("Tools/KAVRA/Create M1 6x6 Truck Lab Scene")]
+    public static void Create6x6() { CreateForTemplate(VehicleTemplate.Truck6x6); }
+
+    [MenuItem("Tools/KAVRA/Create M1 8x8 Truck Lab Scene")]
+    public static void Create8x8() { CreateForTemplate(VehicleTemplate.Truck8x8); }
+
+    [MenuItem("Tools/KAVRA/Create M1 20W Stress Lab Scene")]
+    public static void Create20W() {
+        CreateForTemplate(VehicleTemplate.SingleChassis20WheelStressTest);
+    }
+
+    private static void CreateForTemplate(VehicleTemplate kind)
     {
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             return;
 
-        if (!TryCreateAssets(out string definitionPath))
+        string definitionPath;
+        if (!TryCreateAssets(kind, out definitionPath))
             return;
 
         VehicleDefinition definition =
@@ -46,7 +58,7 @@ public static class VehicleM1LabSceneBuilder
         GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
         ground.name = "M1_Ground_Asphalt";
         ground.transform.position = new Vector3(0f, -0.5f, 80f);
-        ground.transform.localScale = new Vector3(100f, 1f, 400f);
+        ground.transform.localScale = new Vector3(120f, 1f, 400f);
 
         GameObject car = VehicleScaffoldBuilder.Create(
             definition, true, VehicleDriveSource.SimplePowertrain);
@@ -77,44 +89,72 @@ public static class VehicleM1LabSceneBuilder
 
         Selection.activeGameObject = car;
         EditorSceneManager.MarkSceneDirty(scene);
-        Debug.Log("KAVRA M1: engine/gearbox lab ready. Save to " +
-                  "Assets/VehiclePhysicsLab/Scenes/M1_PowertrainLab.unity. " +
-                  "W/S forward/reverse (shift only when slow), Q/E gears, A/D " +
+        string sceneName = kind == VehicleTemplate.PassengerCar4
+            ? "M1_PowertrainLab.unity" : "M1_" + kind + "Lab.unity";
+        Debug.Log("KAVRA M1: " + kind + " lab ready. Save to " +
+                  "Assets/VehiclePhysicsLab/Scenes/" + sceneName +
+                  ". W/S forward/reverse (reverse at low speed), Q/E gears, A/D " +
                   "steer, Space brake, Left Shift park, R manual recovery. " +
-                  "Inspect EngineRpm, SelectedGear and wheel torque telemetry.");
+                  "Inspect per-axle torque allocation and EngineRpm.");
     }
 
-    private static bool TryCreateAssets(out string definitionPath)
+    private static bool TryCreateAssets(VehicleTemplate kind, out string definitionPath)
     {
-        definitionPath = DefinitionPath;
+        string suffix = kind.ToString();
+        definitionPath = "Assets/VehiclePhysicsLab/M1_" + suffix + ".asset";
+        string powertrainPath = kind == VehicleTemplate.PassengerCar4
+            ? "Assets/VehiclePhysicsLab/M1_SimplePowertrain.asset"
+            : "Assets/VehiclePhysicsLab/M1_Powertrain_" + suffix + ".asset";
+
         SimplePowertrainDefinition powertrain =
-            AssetDatabase.LoadAssetAtPath<SimplePowertrainDefinition>(PowertrainPath);
+            AssetDatabase.LoadAssetAtPath<SimplePowertrainDefinition>(powertrainPath);
 
         if (powertrain == null)
         {
-            if (AssetDatabase.LoadMainAssetAtPath(PowertrainPath) != null)
+            if (AssetDatabase.LoadMainAssetAtPath(powertrainPath) != null)
             {
-                Debug.LogError("KAVRA M1: another asset occupies " + PowertrainPath +
+                Debug.LogError("KAVRA M1: another asset occupies " + powertrainPath +
                                ". Existing files are not overwritten.");
                 return false;
             }
             powertrain = ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
-            AssetDatabase.CreateAsset(powertrain, PowertrainPath);
+            // Heavier presets get a demonstration diesel-like torque curve.
+            // This is an example, not a measured commercial truck engine.
+            if (kind == VehicleTemplate.Truck6x6 ||
+                kind == VehicleTemplate.Truck8x8 ||
+                kind == VehicleTemplate.SingleChassis20WheelStressTest)
+            {
+                powertrain.IdleRpm = 650f;
+                powertrain.MaxRpm = 3100f;
+                powertrain.EngineRpmResponsePerSecond = 950f;
+                powertrain.LaunchFreeRevFraction = 0.22f;
+                powertrain.TorqueNmByRpm = new AnimationCurve(
+                    new Keyframe(650f, 660f),
+                    new Keyframe(1000f, 950f),
+                    new Keyframe(1900f, 1100f),
+                    new Keyframe(3000f, 790f));
+                powertrain.ForwardGearRatios =
+                    new[] { 8.3f, 4.6f, 2.7f, 1.7f, 1f };
+                powertrain.ReverseGearRatio = 8f;
+                powertrain.FinalDriveRatio = 4.5f;
+                powertrain.Efficiency = 0.83f;
+            }
+            AssetDatabase.CreateAsset(powertrain, powertrainPath);
         }
 
         VehicleDefinition definition =
-            AssetDatabase.LoadAssetAtPath<VehicleDefinition>(DefinitionPath);
+            AssetDatabase.LoadAssetAtPath<VehicleDefinition>(definitionPath);
         if (definition == null)
         {
-            if (AssetDatabase.LoadMainAssetAtPath(DefinitionPath) != null)
+            if (AssetDatabase.LoadMainAssetAtPath(definitionPath) != null)
             {
-                Debug.LogError("KAVRA M1: incompatible asset at " + DefinitionPath);
+                Debug.LogError("KAVRA M1: incompatible asset at " + definitionPath);
                 return false;
             }
 
-            definition = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            definition = VehicleTemplateFactory.Create(kind);
             definition.Powertrain = powertrain;
-            AssetDatabase.CreateAsset(definition, DefinitionPath);
+            AssetDatabase.CreateAsset(definition, definitionPath);
         }
         else if (definition.Powertrain == null)
         {

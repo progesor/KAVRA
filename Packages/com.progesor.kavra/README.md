@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.1.0)
+# KAVRA embedded package (v0.1.1)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -106,3 +106,22 @@ with a Rigidbody, WheelAnchors, VehicleRoot/VehicleSimulationRoot and
 links to VehicleDefinition/SimplePowertrainDefinition assets. The generated
 cube and cylinders remain **temporary placeholders**, not production-grade
 physics/visual meshes. It does not add host input or require URP.
+
+### M1.1 axle routing and differential-command modes
+
+`AxleDefinition` now contains `DriveTorqueWeight`,
+`DifferentialMode`, `MaximumSpeedBiasRatio` and
+`SpeedBiasGainPerRadPerSec`. Normalized axle weights distribute power
+across the driven `AxleId` groups while `WheelDefinition.CanDrive`
+remains authoritative. Existing wheels and cars retain equal-torque
+allocation by default; absent/zero weights normalize to one.
+
+`EqualTorque` sends equal requested torque to driven wheels on an axle.
+`SpeedBiasedApproximation` changes only TORQUE SHARES when one driven
+wheel spins significantly faster than another on the same axle. No
+mechanical differential rotational constraint or wheel-speed lock is
+implemented. The new Wizard UI exposes these choices per axle and allows
+enabling/disabling its powered wheels at once.
+
+The host has new 3W/6x6/8x8/20W test scene generator menus. These are
+not production-art demos; imported mechanical models are a later issue.

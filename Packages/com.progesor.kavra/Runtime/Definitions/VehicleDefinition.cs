@@ -6,6 +6,15 @@ namespace Progesor.Kavra
 {
     public enum WheelSide { Left, Center, Right }
     public enum AxleLinkage { Independent, Rigid, Bogie, Virtual }
+    /// <summary>
+    /// Output torque allocation strategy only. A rigidly locked differential
+    /// would also constrain shaft speeds; it is NOT modeled here.
+    /// </summary>
+    public enum AxleDifferentialMode
+    {
+        EqualTorque = 0,
+        SpeedBiasedApproximation = 1
+    }
 
     [Serializable]
     public sealed class AxleDefinition
@@ -14,6 +23,15 @@ namespace Progesor.Kavra
         public AxleLinkage Linkage = AxleLinkage.Independent;
         public bool IsSteered;
         public bool IsDriven;
+
+        [Header("M1 drive torque routing (optional)")]
+        [Tooltip("Relative share of total gearbox output for this driven axle. " +
+                 "Legacy/missing/zero values resolve to 1; use Wheel.CanDrive to disable an axle.")]
+        [Min(0f)] public float DriveTorqueWeight = 1f;
+        public AxleDifferentialMode DifferentialMode = AxleDifferentialMode.EqualTorque;
+        [Range(1f, 8f)] public float MaximumSpeedBiasRatio = 2.5f;
+        [Min(0f)] public float SpeedBiasGainPerRadPerSec = 0.12f;
+
         public string Notes = "";
     }
 

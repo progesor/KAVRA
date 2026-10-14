@@ -286,7 +286,7 @@ namespace Progesor.Kavra
                 }
 
                 simplePowertrain = new SimplePowertrainRuntime(powertrainDefinition,
-                    definition.Wheels);
+                    definition.Wheels, definition.Axles);
                 if (simplePowertrain.DrivenWheelCount == 0)
                 {
                     Debug.LogError("KAVRA: no driven wheels in M1 drivetrain configuration.", this);

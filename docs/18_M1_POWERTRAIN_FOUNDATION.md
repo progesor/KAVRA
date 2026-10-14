@@ -112,3 +112,11 @@ This is an important **framework usability** milestone, but still uses
 a box chassis and cylinder wheel mesh placeholders. It cannot yet
 bind imported GLB/FBX meshes, trailer articulation, damage skeletons,
 production collider mapping or lights/sounds. These remain Wizard M3 tasks.
+
+
+## M1.1 continuation
+
+A subsequent M1.1 pass extends the foundational implementation with
+per-axle torque allocation weights, a bounded wheel-speed-biased torque
+split, Wizard axle drive toggles and dedicated 3W/6x6/8x8/20W sample labs.
+For design limitations and tests, see `docs/19_M1_AXLE_DRIVE_AND_DEMOS.md`.

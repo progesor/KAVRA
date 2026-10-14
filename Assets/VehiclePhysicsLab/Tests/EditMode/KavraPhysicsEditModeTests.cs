@@ -1013,5 +1013,177 @@ namespace Progesor.Kavra.Lab.Tests
             finally { Object.DestroyImmediate(vehicle); }
         }
 
+        [Test]
+        public void M1WeightedAxlesShareTorqueInConfiguredProportions()
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(VehicleTemplate.Truck6x6);
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                vehicle.Axles[0].DriveTorqueWeight = 2f;
+                vehicle.Axles[1].DriveTorqueWeight = 1f;
+                vehicle.Axles[2].DriveTorqueWeight = 1f;
+                SimplePowertrainRuntime runtime = new SimplePowertrainRuntime(
+                    config, vehicle.Wheels, vehicle.Axles);
+                float[] torque = new float[vehicle.Wheels.Count];
+                runtime.Step(1f, 1, 0f, new float[torque.Length], torque);
+
+                float front = torque[0] + torque[1];
+                float middle = torque[2] + torque[3];
+                float rear = torque[4] + torque[5];
+
+                Assert.That(front, Is.EqualTo(2f * middle).Within(0.01f));
+                Assert.That(middle, Is.EqualTo(rear).Within(0.01f));
+                Assert.That(front + middle + rear,
+                    Is.EqualTo(runtime.TotalWheelTorqueNm).Within(0.02f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void M1SpeedBiasedAxlePrefersSlowerDrivenWheelWithoutExtraTorque()
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                AxleDefinition rear = vehicle.Axles[1];
+                rear.DifferentialMode = AxleDifferentialMode.SpeedBiasedApproximation;
+                rear.MaximumSpeedBiasRatio = 3f;
+                rear.SpeedBiasGainPerRadPerSec = 0.5f;
+
+                var model = new SimplePowertrainRuntime(config, vehicle.Wheels, vehicle.Axles);
+                float[] inputRpm = { 0f, 0f, 0f, 30f };
+                float[] torques = new float[4];
+                model.Step(1f, 1, 0f, inputRpm, torques);
+
+                Assert.AreEqual(0f, torques[0]);
+                Assert.AreEqual(0f, torques[1]);
+                Assert.Greater(torques[2], torques[3]);
+                Assert.That(torques[2] / torques[3], Is.EqualTo(3f).Within(0.01f));
+                Assert.That(torques[2] + torques[3],
+                    Is.EqualTo(model.TotalWheelTorqueNm).Within(0.01f));
+
+                // Conventional equal command split with identical wheel speeds.
+                rear.DifferentialMode = AxleDifferentialMode.EqualTorque;
+                var open = new SimplePowertrainRuntime(config, vehicle.Wheels, vehicle.Axles);
+                open.Step(1f, 1, 0f, inputRpm, torques);
+                Assert.That(torques[2], Is.EqualTo(torques[3]).Within(0.001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void M1SpeedBiasInReversePreservesNegativeWheelTorque()
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                vehicle.Axles[1].DifferentialMode = AxleDifferentialMode.SpeedBiasedApproximation;
+                vehicle.Axles[1].MaximumSpeedBiasRatio = 3f;
+                vehicle.Axles[1].SpeedBiasGainPerRadPerSec = 0.5f;
+
+                var runtime = new SimplePowertrainRuntime(config, vehicle.Wheels, vehicle.Axles);
+                float[] angular = { 0f, 0f, 0f, -28f };
+                float[] torques = new float[4];
+                runtime.Step(1f, -1, 0f, angular, torques);
+
+                Assert.Less(torques[2], 0f);
+                Assert.Less(torques[3], 0f);
+                Assert.Greater(Mathf.Abs(torques[2]), Mathf.Abs(torques[3]));
+                Assert.That(torques[2] + torques[3],
+                    Is.EqualTo(runtime.TotalWheelTorqueNm).Within(0.01f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void M1OldConstructorAndZeroSerializedWeightRetainEqualAxleShares()
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(VehicleTemplate.Truck6x6);
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                // Missing new serialized fields on old axle assets may read 0.
+                vehicle.Axles[0].DriveTorqueWeight = 0f;
+                vehicle.Axles[1].DriveTorqueWeight = 1f;
+                vehicle.Axles[2].DriveTorqueWeight = 1f;
+
+                var legacy = new SimplePowertrainRuntime(config, vehicle.Wheels);
+                var configured = new SimplePowertrainRuntime(config, vehicle.Wheels, vehicle.Axles);
+                float[] oldTorques = new float[vehicle.Wheels.Count];
+                float[] newTorques = new float[vehicle.Wheels.Count];
+                float[] speeds = new float[vehicle.Wheels.Count];
+                legacy.Step(0.7f, 1, 0f, speeds, oldTorques);
+                configured.Step(0.7f, 1, 0f, speeds, newTorques);
+
+                for (int i = 0; i < oldTorques.Length; i++)
+                    Assert.That(newTorques[i], Is.EqualTo(oldTorques[i]).Within(0.001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void M1LegacyAxleModeNeverOverridesWheelCanDrive()
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                // IsDriven is a legacy group hint; Wheel.CanDrive stays decisive.
+                vehicle.Axles[0].IsDriven = true;
+                vehicle.Axles[1].IsDriven = false;
+                var model = new SimplePowertrainRuntime(config, vehicle.Wheels, vehicle.Axles);
+                float[] torque = new float[4];
+                model.Step(1f, 1, 0f, new float[4], torque);
+                Assert.AreEqual(0f, torque[0]);
+                Assert.AreEqual(0f, torque[1]);
+                Assert.Greater(torque[2], 0f);
+                Assert.Greater(torque[3], 0f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(config);
+            }
+        }
+
+        [Test]
+        public void M1ValidatorRejectsInvalidSpeedBiasConfiguration()
+        {
+            VehicleDefinition vehicle = VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            try
+            {
+                vehicle.Axles[1].DifferentialMode =
+                    AxleDifferentialMode.SpeedBiasedApproximation;
+                vehicle.Axles[1].MaximumSpeedBiasRatio = -1f;
+                var errors = VehicleConfigurationValidator.Validate(vehicle);
+                Assert.IsTrue(errors.Exists(i => i.Severity == ValidationSeverity.Error));
+            }
+            finally { Object.DestroyImmediate(vehicle); }
+        }
+
     }
 }

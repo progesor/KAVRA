@@ -217,3 +217,26 @@ calibration or automatic anti-flip. The M1 starter is a working simple
 powertrain chain, **not** an industrial automotive simulation yet.
 M1 source requires Unity compile and Play Mode verification. M0 data should
 not be used as a numerical baseline for the powered M1 vehicle.
+
+
+## M1.1: quick multi-axle demonstration menus
+
+With the `feat/m1-core-powertrain-foundation` branch open, use any of:
+
+- `Tools > KAVRA > Create M1 Powertrain Lab Scene` — 4W car.
+- `Tools > KAVRA > Create M1 Three-Wheel Lab Scene` — 3W delta.
+- `Tools > KAVRA > Create M1 6x6 Truck Lab Scene` — 6W / 3 driven axles.
+- `Tools > KAVRA > Create M1 8x8 Truck Lab Scene` — 8W / 4 driven axles.
+- `Tools > KAVRA > Create M1 20W Stress Lab Scene` — 20W
+  **single-chassis** load/stress test, NOT a multi-body semi-trailer.
+
+Each menu creates its own reusable `M1_<template>.asset` and
+`M1_Powertrain_<template>.asset` (car keeps existing
+`M1_SimplePowertrain.asset`). Valid existing tuned assets are **reused**
+without overwriting. Truck examples generate an uncalibrated diesel-like
+engine torque curve appropriate to a heavy demo vehicle.
+
+Save the generated scene from the Unity Editor; no pre-generated scenes
+are committed for these menu options. Use W/S, Q/E, A/D, Space, Shift and
+manual R recovery as in the 4W host sample. No high-fidelity meshes
+or automatically preventing rollovers.

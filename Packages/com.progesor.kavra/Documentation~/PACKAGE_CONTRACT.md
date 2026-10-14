@@ -106,3 +106,27 @@ still integrates the wheel's response and contact load.
 SimplePowertrain source uses only UnityEngine and no imported packages.
 It does not implement automatic rollover prevention. The optional manual
 R recovery remains unchanged.
+
+
+## M1.1 axle group configuration
+
+All drivetrain settings are optional additional serialized fields on
+`AxleDefinition`: `DriveTorqueWeight` (relative positive share),
+`DifferentialMode` (0 = EqualTorque default, 1 = SpeedBiasedApproximation),
+`MaximumSpeedBiasRatio`, `SpeedBiasGainPerRadPerSec`.
+Zero/missing historical `DriveTorqueWeight` resolves to 1 to retain
+existing assets; to disable a driven axle, set the appropriate
+`WheelDefinition.CanDrive = false` instead. `IsDriven` is kept as a
+descriptive flag, not an overriding drive eligibility rule.
+
+`SimplePowertrainRuntime(config,wheels,axles)` can now read the group
+configuration. Legacy `SimplePowertrainRuntime(config,wheels)` remains
+source-compatible and uses equal power per driven axle and equal torque
+per driven wheel within each axle.
+
+Speed-biased mode uses relative wheel angular-speed MAGNITUDE with a
+3 rad/s deadband, preferring slower driven wheels up to a configured
+maximum torque share ratio. It is only a bounded torque **command** model,
+not a physical open or limited-slip differential constraint. Redline
+protection may cause unused engine power, which is not redistributed
+after limiting an overspeeding wheel. No auto-righting/roll stability logic.

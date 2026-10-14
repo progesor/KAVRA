@@ -170,3 +170,21 @@ Open next steps: compile in user's Unity 6000.3.18f1 Editor, run EditMode
 tests, drive a generated M1 lab car, smoke check custom 8W in Wizard.
 Full differential/clutch/engine drag/real calibration out of scope.
 No automatic rollover prevention; only R recovery.
+
+
+## 2026-10-14 M1.1 axle routing & demo vehicle options
+
+Working branch `feat/m1-core-powertrain-foundation`, Draft PR #8, issue #10.
+User's priority remains completing main configurable vehicle framework over
+minute vehicle physics. 3D model assets tracked in backlog issue #9.
+
+Added per-axle weight + speed-based differential torque COMMAND approximation,
+kept older engine/wheel APIs, Wizard drive layout toggles and torque settings.
+Separate generated M1 lab menus for 3W/4W/6x6/8x8/20W with appropriate
+sample engine torque curves. Six EditMode test source cases added.
+
+Do NOT call the approximate speed-based mode a physically locked differential.
+The engine/gearbox baseline remains simple and fast, separate from M0 tire
+solver. Unity Editor compiler/tests and multi-axle Play Mode verification
+are still required; PR should remain Draft. No auto-rollover prevention,
+only R manually recover.

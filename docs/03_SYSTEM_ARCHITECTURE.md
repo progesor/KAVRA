@@ -126,3 +126,19 @@ This provides honest initial functionality for 3W to 20W single-chassis
 presets while reserving actual differential clutch reactions and
 torque biasing for M2. Multi-body tractor/trailer remains a separate
 VehicleAssembly future milestone.
+
+
+## M1.1 axle torque routing
+
+The SimplePowertrainRuntime accepts optional AxleDefinition instances
+for each driven AxleId group. Weighting between axle groups is data-driven
+while the original wheel CanDrive layout remains the source of drive
+eligibility. A temporary mode can bias wheel torque commands according to
+wheel speed differences. It neither adds mechanical shaft constraints nor
+modifies the collision/suspension/ground-tire solver.
+
+This is a deliberate intermediate modular layer: full open diff, locked
+differential and LSD mechanics can later implement proper output shaft
+constraints behind the same public drive API. The KAVRA Wizard now exposes
+per-axle drive enable and torque weight/mode without requiring a prefab
+custom C# script.

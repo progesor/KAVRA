@@ -1,8 +1,8 @@
 {
   "name": "com.progesor.kavra",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "displayName": "KAVRA Vehicle Framework",
-  "description": "M1 modular vehicle framework foundation: optional torque curve engine, gearbox ratios, axle distribution and wizard, preserving M0 physics.",
+  "description": "M1.1 modular vehicle drivetrain with configurable driven axle weights, optional speed-biased torque routing and multi-axle labs.",
   "unity": "6000.3",
   "author": {
     "name": "Progesor Creating"

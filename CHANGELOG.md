@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.1 — 2026-10-14 (M1.1 axle drive routing and demo breadth)
+
+- Added optional per-axle drive torque weights and two explicit allocation
+  modes: EqualTorque (legacy), SpeedBiasedApproximation (LSD-like **command
+  routing**, not wheel-speed locking or traction-limited mechanical diff).
+- Updated SimplePowertrainRuntime to accept AxleDefinition configs while
+  preserving the original two-argument constructor and older assets.
+- Added per-axle drive flags and differential/allocation controls to Wizard.
+- Added standalone 3W, 6x6, 8x8 and 20W M1 lab generation menus, including
+  an approximate heavy diesel torque preset for truck demos.
+- Added six EditMode regression tests for weighted axles, speed-bias torque,
+  reverse, legacy weight compatibility, CanDrive authority and validation.
+- New docs/19; no automatic anti-rollover and no real car 3D assets.
+- Source/static checks only; Unity Editor/Play Mode acceptance pending.
+
+
 ## 0.1.0 — 2026-10-14 (M1 modular powertrain foundation — unverified in Unity)
 
 - Added separate `SimplePowertrainDefinition` with torque-by-RPM curve,

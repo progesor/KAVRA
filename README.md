@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-13): M0 experimental physics source, package 0.1.0. Not yet verified in a Unity Editor.**
+**State (2026-10-14): M1 vehicle framework foundation, package 0.1.1. New M1.1 source awaiting Unity Editor verification.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -154,3 +154,28 @@ The prefab contains test cube body/wheel visuals with real KAVRA wheel
 physics; bring your own ground Collider, input, camera and 3D meshes when
 integrating into another game. Full imported-mesh analysis, production
 collision construction and polished asset wizard are subsequent milestones.
+
+## M1.1 — Configurable driven axles (issue #10)
+
+This extension focuses on the **main framework**, not microscopic
+tire-physics tuning. The original M0 modes and previous user CSV files
+are still preserved.
+
+- `AxleDefinition.DriveTorqueWeight` assigns relative engine output torque
+  shares among powered axle groups. Zero/missing serialized values read as
+  the legacy default 1; to disable power use wheel `CanDrive` flags.
+- `AxleDifferentialMode.EqualTorque` is the original equal-torque split.
+- `AxleDifferentialMode.SpeedBiasedApproximation` mildly favors the slower
+  spinning driven wheel(s) on one axle, with adjustable maximum bias and gain.
+  **It does not lock wheel speeds or model a real mechanical LSD.**
+- The Vehicle Wizard now shows drive-enable switches and torque allocation
+  settings for each axle when a powertrain is assigned.
+- The M1 lab menu now offers a 3W demo, 4W car, 6x6 truck, 8x8 truck and
+  20W single-chassis stress layout. Heavy presets get a separate, *example*
+  diesel-like torque curve. No complete vehicle-model meshes are bundled.
+- The compatibility constructor of `SimplePowertrainRuntime` retains equal
+  weights and mode; core Unity package still has **no extra dependencies**.
+
+See `docs/19_M1_AXLE_DRIVE_AND_DEMOS.md`. Existing powered M1 vehicles
+keep their per-axle routing unless axle settings are changed explicitly.
+Unity compilation and driving verification are still required.

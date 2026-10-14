@@ -158,3 +158,22 @@ Next: move forward with a basic explicit open differential and optional
 multi-axle weighting, better Wizard prefab binding, then M2 clutch/gearbox
 reaction models. Do NOT block main framework development on minuscule tire
 force refinements. Natural rollover and R-only manual recovery remain.
+
+
+### M1.1 reusable driveline and multi-axle demos — issue #10
+
+- [x] Source: AxleDefinition extended with backward-compatible drive torque
+  weighting and clearly labeled approximation mode.
+- [x] Source: SimplePowertrainRuntime distributes total engine output by
+  axle weights and wheel-level relative-speed bias when requested.
+- [x] Source: Wizard can toggle powered axles and modify group torque modes.
+- [x] Source: separate M1 labs for 3W/4W/6x6/8x8/20W (one rigid body each).
+- [x] Source: six EditMode regression tests, old constructor retained.
+- [ ] Unity 6000.3.x compile and EditMode tests actually PASS.
+- [ ] M1 truck 6x6 and 8x8 scenes drive, reverse and show wheel torques.
+- [ ] M0 .unity scenes and previously recorded user telemetry remain intact.
+- [ ] Actual gear/torque behavior and performance evaluated in Play Mode.
+
+Next foundational step: basic real gearbox state/shift control and simpler
+reusable model/visual binding; full mechanical differential lock remains
+deferred. Realistic mechanical demo 3D models are tracked separately #9.
