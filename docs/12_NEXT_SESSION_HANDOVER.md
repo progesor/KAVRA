@@ -123,3 +123,26 @@ New EditMode tests added. **Unity Editor not run after the patch.**
 First next acceptance: compile/Test Runner, then compare a new
 StraightBrake CSV with user's two existing logs. Do not ask to re-run all
 four older tests, or mark PR as accepted without a new after-run.
+
+
+## 2026-10-14, T3: after-fix brake A/B received — DO NOT repeat request
+
+The user committed `c278b42` (`T3`), containing the real Unity CSV
+`docs/Telemetry/kavra_m0_telemetry_20261014_132146.csv` (4W
+StraightBrake, 14.883s, 893 fixed steps, 3572 wheel rows,
+`brake_limiter_enabled=1`). It also updates the Unity calibration
+scene. Read the appended v0.0.6 after-results in `docs/17`.
+
+The flat-asphalt brake chatter regression is now **validated from telemetry**:
+on the common near-stop window, 243 -> 3 longitudinal sum-Fx sign flips;
+p95 |sum(Fx)| 13,938 -> 668 N; mean speed 0.282 -> 0.020 km/h.
+At t=11.5–14.88, old run switches Fx sign 203 times; new switches
+zero times and mean speed is 0.004 km/h. Above 1m/s braking and
+max speed 42.96 km/h remain unchanged. There is no need to make another
+source physics change solely for this successful comparison.
+
+Remaining open: real EditMode Test Runner evidence, slope-hold tests,
+different road friction/axle layouts, before/after contact mode benchmark,
+airborne wheel overspeed with future powertrain. Preserve user's
+committed files and keep PR #2 Draft pending broad acceptance. Never
+add automatic rollover prevention; R-only manual recovery remains.

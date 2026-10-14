@@ -136,3 +136,76 @@ Do not add automatic rollover prevention.
 **Acceptance status:** Input data is real and read/aggregated successfully;
 the NEW v0.0.6 mitigation has not been compiled or tested in Unity Editor
 in this workspace. Preserve Draft PR #2 pending local acceptance.
+
+---
+
+## 2026-10-14 update: v0.0.6 **after** telemetry received — narrow brake fix validated
+
+**User commit:** [c278b42 — T3](https://github.com/progesor/KAVRA/commit/c278b426a6578bb6ae74b83d45a50f730c94c22d)
+adds `docs/Telemetry/kavra_m0_telemetry_20261014_132146.csv` and saves
+the updated Unity calibration scene. The CSV has **3,572 valid wheel
+samples**, **893 physics steps**, from `t=0.01667` to `t=14.88328` s.
+It uses the **StraightBrake** sequence, all four wheels, `M0_Asphalt`,
+Raycast, ApproximateAckermann and has `brake_limiter_enabled=1`.
+No malformed rows were detected. It does **not** cover the full nominal
+28-second calibration duration, but includes the full accelerate/brake
+transient and a sustained near-stop period.
+
+### Same-interval A/B comparison
+
+For comparability, compare the old `130227.csv` to the new `132146.csv`
+over the **overlapping period** `t≈10.433–14.883 s`, including only
+rows for physics steps where `brake_input>0.5` and `speed_mps<0.12`.
+Each value of `sum(Fx)` below sums the four wheel rows **once** per
+distinct fixed-time step; avoid summing duplicate per-wheel step totals.
+
+| Measure | 0.0.5 before (130227) | 0.0.6 after (132146) |
+|---|---:|---:|
+| Near-stop physics steps in common window | 256 | 254 |
+| Mean magnitude-style reported speed | 0.2816 km/h | 0.0201 km/h |
+| `sum(Fx)` min | -14,774.1 N | -6,312.3 N |
+| `sum(Fx)` max | +14,383.8 N | +1,187.3 N |
+| 95th percentile of `abs(sum(Fx))` | 13,938.1 N | 668.4 N |
+| Adjacent nontrivial (`abs(Fx)>1 N`) sign changes | 243 | 3 |
+
+For the common stable interval `t≈11.50–14.883 s` with brake held:
+
+| Measure | Before | After |
+|---|---:|---:|
+| Physics steps | 204 | 204 |
+| Mean recorded speed | 0.2883 km/h | 0.0040 km/h |
+| `sum(Fx)` min/max | -13,926.9 / +13,935.6 N | 0.0 / +0.7 N |
+| Fx sign changes above 1 N | 203 | 0 |
+
+**High-speed control:** Both versions have identical acceleration to
+**42.96 km/h at 8 s**, and matching data while braking above
+`1 m/s`: brake starts at 9 s, 79 matching high-speed-brake steps
+have the same force behavior and no sign reversal. The new limiter only
+activated in the near-stop regime, with **46 total physics steps**
+containing at least one limited wheel (**182 wheel rows**). The
+previous CSV has no limiter columns.
+
+### Conclusion / remaining limitations
+
+**The targeted low-speed brake-force chatter fix is accepted from real
+user Play Mode telemetry in the 4W flat-asphalt StraightBrake scenario.**
+In steady near-stop braking, the strong ±14 kN alternation is gone and
+the speed settles practically to zero. This is observational validation,
+not certification of tire physics. Existing Unity scenes/telemetry were
+preserved; a new code modification is not needed for this specific result.
+
+Do not interpret `speed_mps` as signed forward motion (it is magnitude),
+or infer a full stopping-distance proof from the available fields.
+The new capture ended before the nominal 28 s; this does not undermine
+its 11.5–14.88 s steady-brake comparison.
+
+**Still unverified:** `KavraPhysicsEditModeTests` Test Runner results,
+slope hold/creep under brake, other friction surfaces and multiple axle
+layouts, long-run oscillations, and separate Raycast/SphereCast performance.
+The `SteeringStep` data still identifies natural high-roll/contact-loss
+and airborne rotor overspeed; no auto-uprighting is desired or added.
+Keep overall PR #2 **Draft** until broader acceptance. Issue #6 should
+record the flat-asphalt A/B check as passed but keep non-tested criteria open.
+
+The previous section's request for one after-fix StraightBrake recording
+is now **fulfilled**. Do not request the same recording again.

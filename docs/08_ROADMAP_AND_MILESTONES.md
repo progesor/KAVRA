@@ -125,9 +125,13 @@ girdiyle çalışabilir.
 - [x] Four user telemetry CSVs inspected, numeric anomaly summarized in docs/17.
 - [x] Source code for near-stop brake impulse limiting, opt-in configuration
   and per-wheel telemetry; 3 new EditMode regression tests authored.
-- [ ] Unity 6000.3.x compiles & tests PASS.
-- [ ] New StraightBrake A/B CSV with limiter enabled confirms no huge
-  alternating forces at ~0.08 m/s. Compare with 13:02:27/13:02:57 baseline.
+- [x] Unity Play Mode produced real v0.0.6 CSV with new braking diagnostics.
+- [ ] Unity Test Runner EditMode suite PASS evidence (not yet provided).
+- [ ] Brake holding/creep on a slope verified (flat asphalt only so far).
+- [x] New StraightBrake A/B CSV with limiter enabled confirms elimination of
+  persistent near-stop high-force alternation on flat asphalt. User's T3
+  commit `c278b42` / `132146.csv`, verified in docs/17 (common-window
+  Fx p95 13.94 kN -> 0.67 kN, sign flips 243 -> 3).
 - [ ] SteeringStep repeated and airborne wheel RPM/grounded behavior assessed;
   no automatic roll or flip correction will be introduced.
 - [ ] Surface/multi-axle behavior acceptance, before M1 freeze.
