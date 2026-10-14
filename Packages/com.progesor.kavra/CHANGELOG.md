@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.6] — 2026-10-14
+
+- Real user CSV analysis showed recurring +/-14 kN braking force chatter
+  around 0.28 km/h; documented in docs/17.
+- Added experimental near-stop braking force impulse limit to the existing
+  velocity-slip solver, using chassis FixedUpdate delta and static wheel mass
+  shares (optional fields for backward compatibility).
+- New per-wheel brake-limiter telemetry + host CSV columns.
+- Added EditMode regression tests. Actual Unity compile/Play tests still
+  pending before PR acceptance.
+
+
 ## [0.0.5] — 2026-10-14
 
 - SteeringGeometrySolver with parallel and approximate Ackermann per-wheel

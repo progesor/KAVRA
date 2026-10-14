@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.6 — 2026-10-14 (first real telemetry review and brake jitter fix)
+
+- Reviewed four user-recorded PhysicsLab CSV sessions in `docs/Telemetry/`:
+  two StraightBrake, one SteeringStep, one CoastDown.
+- Findings documented in `docs/17_M05_TELEMETRY_REVIEW_2026-10-14.md`.
+  Identified strong +/-14kN longitudinal-force oscillation near zero speed
+  with brakes engaged; repeatable in both StraightBrake sessions.
+- Added opt-in/Inspector-enabled, default-on M0.5 low-speed brake impulse
+  limit, using nominal per-wheel chassis effective mass and **BODY**
+  FixedUpdate time, not the wheel rotor substep interval.
+- Added per-wheel BrakeImpulseLimited telemetry and corresponding CSV fields.
+- Added three EditMode regression tests (near stop, normal-speed unchanged,
+  no-brake/airborne unchanged). **Not run in Unity Editor yet.**
+- No auto-anti-flip, artificial roll lock, new powertrain or soil deformation.
+- Real Unity A/B acceptance pending; previous user files preserved.
+
+
 ## 0.0.5 — 2026-10-14 (M0.5 steering/slip calibration instrumentation)
 
 - Added optional approximate Ackermann steering computed from the positions

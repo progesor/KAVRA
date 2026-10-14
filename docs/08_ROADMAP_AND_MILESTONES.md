@@ -118,3 +118,16 @@ girdiyle çalışabilir.
 - [ ] Local Unity compilation, test runner acceptance and actual CSV plots.
 - [ ] Calibration of low-speed tire force, braking and load-transfer against
   real recorded measurements or explicitly chosen reference behavior.
+
+
+### M0.5 measured brake oscillation follow-up — issue #6
+
+- [x] Four user telemetry CSVs inspected, numeric anomaly summarized in docs/17.
+- [x] Source code for near-stop brake impulse limiting, opt-in configuration
+  and per-wheel telemetry; 3 new EditMode regression tests authored.
+- [ ] Unity 6000.3.x compiles & tests PASS.
+- [ ] New StraightBrake A/B CSV with limiter enabled confirms no huge
+  alternating forces at ~0.08 m/s. Compare with 13:02:27/13:02:57 baseline.
+- [ ] SteeringStep repeated and airborne wheel RPM/grounded behavior assessed;
+  no automatic roll or flip correction will be introduced.
+- [ ] Surface/multi-axle behavior acceptance, before M1 freeze.

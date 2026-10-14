@@ -55,3 +55,25 @@ front/rear simultaneous steering groups require a future explicit topology.
 `TireSlipDiagnostics` reports regularized slip ratio/angle but does not drive
 M0's provisional velocity-slip force model. Values are meaningful as internal
 comparison plots only, not validation against instrumented road tests.
+
+
+## M0.5 0.0.6 near-stop braking contract
+
+`WheelDynamicsInput.BrakeEffectiveMassKg` and
+`BodyFixedDeltaTime` and `LowSpeedBrakeThresholdMps` are optional new
+inputs (0 means disabled). The force limiter only applies when:
+- service brake torque dominates drive torque;
+- longitudinal and wheel peripheral speeds are below threshold;
+- tire longitudinal force opposes ground travel;
+- effective wheel mass and **full Rigidbody physics timestep** are positive.
+
+It caps the opposing Fx to no more than
+`BrakeEffectiveMassKg * abs(longitudinalSpeed) / BodyFixedDeltaTime`.
+Wheel rotor substep `DeltaTime` remains independent.
+
+`VehicleSimulationRoot.LimitNearStopBrakingImpulse` defaults true for new
+components, and nominal per-wheel effective mass comes from initial static
+load fractions. No profile or solver settings are silently changed. The
+braking force remains approximate for yawed, steep or multiple-ground-body
+situations; static friction/slope holding and exact effective mass resolution
+are future work. This is **not automatic roll or rollover prevention**.

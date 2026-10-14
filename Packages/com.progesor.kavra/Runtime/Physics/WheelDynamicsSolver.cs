@@ -22,6 +22,13 @@ namespace Progesor.Kavra
         public float LateralFriction;
         public float RollingResistanceCoefficient;
         public float DeltaTime;
+
+        // Optional near-stop brake impulse limiter. The chassis is stepped
+        // ONCE per FixedUpdate even if this rotor uses several substeps.
+        // Both fields default to zero for backward-compatible direct callers.
+        public float BrakeEffectiveMassKg;
+        public float BodyFixedDeltaTime;
+        public float LowSpeedBrakeThresholdMps;
     }
 
     public struct WheelDynamicsResult
@@ -31,6 +38,7 @@ namespace Progesor.Kavra
         public float LateralForceN;
         public float LongitudinalSlipSpeedMps;
         public float LateralSlipSpeedMps;
+        public bool NearStopBrakeImpulseLimited;
     }
 
     public static class WheelDynamicsSolver
@@ -99,8 +107,33 @@ namespace Progesor.Kavra
                 fy *= scale;
             }
 
-            // When saturated, the reaction torque must use the *actual* road
-            // force. When unsaturated this equals the semi-implicit solution.
+            // The v0.0.5 model applied ~mu*Fz even while a locked wheel was
+            // crawling at 0.08m/s. Four wheels could reverse a 1450kg chassis
+            // in a SINGLE Rigidbody step, leading to +14kN/-14kN chatter.
+            // Bound ONLY a near-stationary, brake-dominated longitudinal
+            // opposing force by the impulse needed to stop that wheel's
+            // nominal share of chassis velocity within one BODY time step.
+            //
+            // Rotor substeps DO NOT substep Rigidbody. Do not use rotor dt
+            // here or it will still over-brake the chassis. We intentionally
+            // do not change sliding friction at normal driving speeds.
+            bool nearStopLimited = false;
+            if (brakeTorque > Mathf.Abs(p.DriveTorqueNm) &&
+                p.BrakeEffectiveMassKg > 0f && p.BodyFixedDeltaTime > 0f &&
+                p.LowSpeedBrakeThresholdMps > 0f &&
+                Mathf.Abs(p.LongitudinalSpeedMps) < p.LowSpeedBrakeThresholdMps &&
+                Mathf.Abs(omega * radius) < p.LowSpeedBrakeThresholdMps &&
+                fx * p.LongitudinalSpeedMps < 0f)
+            {
+                float forceToStop = Mathf.Max(0f, p.BrakeEffectiveMassKg) *
+                    Mathf.Abs(p.LongitudinalSpeedMps) / p.BodyFixedDeltaTime;
+                float priorFx = fx;
+                fx = Mathf.Clamp(fx, -forceToStop, forceToStop);
+                nearStopLimited = Mathf.Abs(priorFx - fx) > 0.0001f;
+            }
+
+            // When saturated, reaction torque uses the applied road force.
+            // Near-stop limits therefore affect the rotor consistently too.
             float nextOmega = omega + dt * (netTorque - fx * radius) / inertia;
 
             // Model static brake lock without letting a stationary brake spin
@@ -115,7 +148,8 @@ namespace Progesor.Kavra
                 LongitudinalForceN = fx,
                 LateralForceN = fy,
                 LongitudinalSlipSpeedMps = nextOmega * radius - p.LongitudinalSpeedMps,
-                LateralSlipSpeedMps = p.LateralSpeedMps
+                LateralSlipSpeedMps = p.LateralSpeedMps,
+                NearStopBrakeImpulseLimited = nearStopLimited
             };
         }
     }

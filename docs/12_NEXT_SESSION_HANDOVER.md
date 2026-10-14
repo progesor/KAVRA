@@ -97,3 +97,29 @@ and input/maneuver labels. Interactive surface test remains separate.
 Run EditMode tests and the three scripted experiments locally, compare CSV,
 inspect 3W/4W/8W. Unity was not available during source authoring; avoid
 merging the Draft PR until actual tests pass.
+
+
+## 2026-10-14 M0.5 v0.0.6: USER TELEMETRY REVIEW
+
+User pushed commit `d98a683` titled `TTT2` to the SAME working branch,
+with four real CSVs under `docs/Telemetry/`, and generated
+`M0_DynamicLab.unity`, `M0_CalibrationLab.unity`, surface .assets/.mats.
+Keep these commits and files intact.
+
+Real data: two identical scripted braking schedules, one SteeringStep, one
+CoastDown. All use 4W, asphalt, Raycast, ApproximateAckermann, 60Hz.
+M0 static Fz sum ≈14224.5N for 1450kg, StraightBrake reaches 42.96 km/h.
+When speed falls to ~0.28 km/h at full brake, longitudinal tire force
+oscillates +14.4/-14.8 kN; this is numeric chatter, not plausible static
+friction. SteeringStep reaches 58.77deg roll, loses contacts, driven RPM
+~3200 (unbounded M0 test actuator); NO auto anti-flip per user's wishes.
+CoastDown 35.8→29.5 km/h over 14s (~0.126m/s²) near nominal rolling
+resistance. See `docs/17_M05_TELEMETRY_REVIEW_2026-10-14.md`.
+
+M0.5 v0.0.6 sources now include `LimitNearStopBrakingImpulse` and full
+body-timestep impulse cap for near-stationary brake-only Fx, with new CSV
+tracer columns `brake_impulse_limited`, `brake_limiter_enabled`.
+New EditMode tests added. **Unity Editor not run after the patch.**
+First next acceptance: compile/Test Runner, then compare a new
+StraightBrake CSV with user's two existing logs. Do not ask to re-run all
+four older tests, or mark PR as accepted without a new after-run.

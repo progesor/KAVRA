@@ -699,5 +699,122 @@ namespace Progesor.Kavra.Lab.Tests
             }
         }
 
+        [Test]
+        public void LowSpeedBrakingCannotReverseNominalChassisVelocityInOneBodyStep()
+        {
+            // 1450kg car / 4 equivalent tires at 0.08m/s, exactly the
+            // near-stop regime exhibiting +/-14kN telemetry oscillation.
+            const float bodyStep = 1f / 60f;
+            const float wheelShareKg = 362.5f;
+            const float startingSpeed = 0.08f;
+            const float radius = 0.36f;
+
+            var p = new WheelDynamicsInput
+            {
+                AngularVelocityRadPerSec = 0f,
+                LongitudinalSpeedMps = startingSpeed,
+                LateralSpeedMps = 0f,
+                NormalLoadN = 3556.125f,
+                WheelRadiusMeters = radius,
+                InertiaKgM2 = 1.62f,
+                DriveTorqueNm = 0f,
+                BrakeTorqueNm = 1710f,
+                LongitudinalStiffnessNsPerMeter = 6500f,
+                LateralStiffnessNsPerMeter = 8000f,
+                LongitudinalFriction = 1.05f,
+                LateralFriction = 1.05f,
+                RollingResistanceCoefficient = 0.014f,
+                BrakeEffectiveMassKg = wheelShareKg,
+                BodyFixedDeltaTime = bodyStep,
+                LowSpeedBrakeThresholdMps = 0.5f,
+                DeltaTime = bodyStep / 4f
+            };
+
+            float sumFx = 0f;
+            for (int i = 0; i < 4; i++)
+            {
+                WheelDynamicsResult result = WheelDynamicsSolver.Step(p);
+                Assert.LessOrEqual(Mathf.Abs(result.LongitudinalForceN),
+                    wheelShareKg * startingSpeed / bodyStep + 0.001f);
+                Assert.LessOrEqual(result.LongitudinalForceN, 0f);
+                Assert.IsTrue(result.NearStopBrakeImpulseLimited);
+                Assert.GreaterOrEqual(result.AngularVelocityRadPerSec, -0.001f);
+                sumFx += result.LongitudinalForceN;
+                p.AngularVelocityRadPerSec = result.AngularVelocityRadPerSec;
+            }
+
+            float averageWheelFx = sumFx / 4f;
+            float newBodySpeed = startingSpeed +
+                4f * averageWheelFx / (4f * wheelShareKg) * bodyStep;
+            Assert.GreaterOrEqual(newBodySpeed, -0.00001f);
+        }
+
+        [Test]
+        public void FastBrakingPreservesLegacyForceWithLimiterEnabled()
+        {
+            const float bodyStep = 1f / 60f;
+            var input = new WheelDynamicsInput
+            {
+                AngularVelocityRadPerSec = 10f / 0.36f,
+                LongitudinalSpeedMps = 10f,
+                NormalLoadN = 3556f,
+                WheelRadiusMeters = 0.36f,
+                InertiaKgM2 = 1.62f,
+                BrakeTorqueNm = 1710f,
+                LongitudinalStiffnessNsPerMeter = 6500f,
+                LateralStiffnessNsPerMeter = 8000f,
+                LongitudinalFriction = 1.05f,
+                LateralFriction = 1.05f,
+                RollingResistanceCoefficient = 0.014f,
+                BodyFixedDeltaTime = bodyStep,
+                LowSpeedBrakeThresholdMps = 0.5f,
+                DeltaTime = bodyStep / 4f
+            };
+            input.BrakeEffectiveMassKg = 0f;
+            WheelDynamicsResult legacy = WheelDynamicsSolver.Step(input);
+            input.BrakeEffectiveMassKg = 362.5f;
+            WheelDynamicsResult bounded = WheelDynamicsSolver.Step(input);
+
+            Assert.That(bounded.LongitudinalForceN,
+                Is.EqualTo(legacy.LongitudinalForceN).Within(0.0001f));
+            Assert.That(bounded.AngularVelocityRadPerSec,
+                Is.EqualTo(legacy.AngularVelocityRadPerSec).Within(0.0001f));
+            Assert.IsFalse(bounded.NearStopBrakeImpulseLimited);
+        }
+
+        [Test]
+        public void NoBrakeAndAirborneBehaviorUnaffectedByBrakeLimiter()
+        {
+            var p = new WheelDynamicsInput
+            {
+                AngularVelocityRadPerSec = 0f,
+                LongitudinalSpeedMps = 0.08f,
+                NormalLoadN = 3556f,
+                WheelRadiusMeters = 0.36f,
+                InertiaKgM2 = 1.62f,
+                BrakeTorqueNm = 0f,
+                DriveTorqueNm = 500f,
+                LongitudinalStiffnessNsPerMeter = 6500f,
+                LateralStiffnessNsPerMeter = 8000f,
+                LongitudinalFriction = 1.05f,
+                LateralFriction = 1.05f,
+                BodyFixedDeltaTime = 1f / 60f,
+                LowSpeedBrakeThresholdMps = 0.5f,
+                DeltaTime = 1f / 240f
+            };
+            p.BrakeEffectiveMassKg = 0f;
+            WheelDynamicsResult legacy = WheelDynamicsSolver.Step(p);
+            p.BrakeEffectiveMassKg = 362.5f;
+            WheelDynamicsResult bounded = WheelDynamicsSolver.Step(p);
+
+            Assert.That(bounded.LongitudinalForceN,
+                Is.EqualTo(legacy.LongitudinalForceN).Within(0.0001f));
+
+            p.NormalLoadN = 0f;
+            bounded = WheelDynamicsSolver.Step(p);
+            Assert.AreEqual(0f, bounded.LongitudinalForceN);
+            Assert.AreEqual(0f, bounded.LateralForceN);
+        }
+
     }
 }

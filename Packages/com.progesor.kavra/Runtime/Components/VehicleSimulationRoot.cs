@@ -26,6 +26,7 @@ namespace Progesor.Kavra
         public float NormalLoadN;
         public float LongitudinalForceN;
         public float LateralForceN;
+        public bool BrakeImpulseLimited;
         public float LongitudinalSlipMps;
         public float LateralSlipMps;
         public float SlipRatio;
@@ -89,6 +90,12 @@ namespace Progesor.Kavra
         [Min(0f)] public float ServiceBrakeTorquePerWheelNm = 1800f;
         [Min(0f)] public float ParkingBrakeTorquePerWheelNm = 2100f;
         [Range(0f, 65f)] public float MaximumSteerAngleDeg = 28f;
+
+        [Header("Low-speed brake stability — M0.5 experimental")]
+        [Tooltip("Limit near-stationary locked-wheel braking impulses. No automatic steering, yaw, or rollover assistance.")]
+        public bool LimitNearStopBrakingImpulse = true;
+        [Range(0f, 2f)] public float NearStopBrakeSpeedThresholdMps = 0.5f;
+
         [Tooltip("Parallel retains M0 steering; ApproximateAckermann accounts for wheel locations.")]
         public SteeringGeometryMode SteeringMode = SteeringGeometryMode.Parallel;
 
@@ -443,6 +450,7 @@ namespace Progesor.Kavra
                 float inertia = wheel.TunedTire.InertiaKgM2;
 
                 float sumFx = 0f, sumFy = 0f;
+                bool anyBrakeLimit = false;
                 WheelDynamicsResult tire = default(WheelDynamicsResult);
                 for (int step = 0; step < substeps; step++)
                 {
@@ -464,11 +472,16 @@ namespace Progesor.Kavra
                         LateralFriction = wheel.TunedTire.LateralFriction,
                         RollingResistanceCoefficient =
                             wheel.TunedTire.RollingResistanceCoefficient,
+                        BrakeEffectiveMassKg = LimitNearStopBrakingImpulse
+                            ? wheel.SprungMassKg : 0f,
+                        BodyFixedDeltaTime = dt,
+                        LowSpeedBrakeThresholdMps = NearStopBrakeSpeedThresholdMps,
                         DeltaTime = dt / substeps
                     });
                     wheel.OmegaRadPerSec = tire.AngularVelocityRadPerSec;
                     sumFx += tire.LongitudinalForceN;
                     sumFy += tire.LateralForceN;
+                    anyBrakeLimit |= tire.NearStopBrakeImpulseLimited;
                 }
 
                 float fx = sumFx / substeps;
@@ -549,6 +562,7 @@ namespace Progesor.Kavra
                     NormalLoadN = normalLoad,
                     LongitudinalForceN = fx,
                     LateralForceN = fy,
+                    BrakeImpulseLimited = anyBrakeLimit,
                     LongitudinalSlipMps = tire.LongitudinalSlipSpeedMps,
                     LateralSlipMps = tire.LateralSlipSpeedMps,
                     SlipRatio = slip.LongitudinalSlipRatio,

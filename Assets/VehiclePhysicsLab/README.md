@@ -161,3 +161,25 @@ Presets are not silently assigned to existing vehicle definitions.
 All scripts are written, but the Unity Editor compile/Test Runner/Play Mode
 acceptance must still be checked locally. Results will guide future low-speed
 tire-force stabilization and braking calibration.
+
+
+## v0.0.6 user telemetry analysis / near-stop brake force fix
+
+The initial four user CSV files are committed in `docs/Telemetry/` in
+commit `d98a683`. See `docs/17_M05_TELEMETRY_REVIEW_2026-10-14.md`
+for quantitative conclusions. The project generated actual calibration
+scenes, so there is no need to recreate old data.
+
+The `VehicleSimulationRoot` inspector now offers
+`LimitNearStopBrakingImpulse` (enabled by default on new components)
+and `NearStopBrakeSpeedThresholdMps` (initially 0.5 m/s).
+
+New CSV columns `brake_impulse_limited` and `brake_limiter_enabled`
+show when low-speed opposing brake force was clipped and whether the
+option was active. The limiter affects only near-stop locked-wheel brake
+impulses; normal road grip / braking above 0.5 m/s is unchanged.
+
+After Unity compiles and tests are run, ONE new StraightBrake
+A/B run with default limiter settings is sufficient for the first
+post-fix comparison. No automatic vehicle righting is ever invoked:
+the user must press R to request manual recovery.

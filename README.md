@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-13): M0 experimental physics source, package 0.0.5. Not yet verified in a Unity Editor.**
+**State (2026-10-13): M0 experimental physics source, package 0.0.6. Not yet verified in a Unity Editor.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -34,6 +34,11 @@ or paid vehicle asset dependency.
   calibration; no claim that the underlying force model is Pacejka.
 - Dedicated scripted calibration run (straight brake, steering step, coast-down)
   with a long asphalt surface and an extended per-wheel CSV.
+- Measured M0.5 brake issue: optional near-stop locked-wheel **impulse
+  limiter**, avoiding unrealistically strong alternating Fx near zero speed.
+  The limiter uses nominal wheel load shares and the **full Rigidbody time
+  step**, leaving braking at normal speeds unchanged. Each wheel reports
+  whether its braking force was limited.
 - Inspector per-wheel telemetry and contact debug rays.
 - Host keyboard adapter and chase camera; generated temporary laboratory scene.
 - EditMode test sources: 3/4/6/8/20 layouts, spring statics, slip cap, contact filter.
@@ -81,7 +86,9 @@ Dynamic chassis needs a suitable ground Collider to support its wheels.
 Do not mark tests passed without actual Unity Test Runner evidence.
 Capture Console errors, the results of EditMode tests, a 4W Play Mode trial,
 and at least 3W + 8W smoke checks. See
-`docs/13_M0_FIRST_PHYSICS_SLICE.md` and GitHub issue #1.
+`docs/13_M0_FIRST_PHYSICS_SLICE.md`, `docs/17_M05_TELEMETRY_REVIEW_2026-10-14.md`,
+and GitHub issues #1 and #6. Real user CSV evidence is available under
+`docs/Telemetry/`; the brake fix still requires an AFTER comparison.
 
 ## Physics assumptions
 

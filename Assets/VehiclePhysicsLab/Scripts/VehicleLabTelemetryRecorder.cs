@@ -36,7 +36,7 @@ public sealed class VehicleLabTelemetryRecorder : MonoBehaviour
         scripted = GetComponent<VehicleLabManeuverRunner>();
         if (!RecordOnPlay || Simulation == null) return;
         rows = new StringBuilder(16 * 1024);
-        rows.AppendLine("time_s,wheel_id,grounded,contact_mode,surface,mu_long,mu_lat,rolling_coeff,contact_cost_us_total,static_share,compression_m,bottomout_m,bump_n,antiroll_n,fz_n,fx_n,fy_n,slipx_mps,slipy_mps,wheel_rpm,speed_mps,tilt_deg,com_height_m,steer_deg,slip_ratio,slip_angle_deg,tire_profile,tire_kx,tire_ky,throttle_input,steer_input,brake_input,steer_mode,maneuver");
+        rows.AppendLine("time_s,wheel_id,grounded,contact_mode,surface,mu_long,mu_lat,rolling_coeff,contact_cost_us_total,static_share,compression_m,bottomout_m,bump_n,antiroll_n,fz_n,fx_n,fy_n,slipx_mps,slipy_mps,wheel_rpm,speed_mps,tilt_deg,com_height_m,steer_deg,slip_ratio,slip_angle_deg,tire_profile,tire_kx,tire_ky,throttle_input,steer_input,brake_input,steer_mode,maneuver,brake_impulse_limited,brake_limiter_enabled");
     }
 
     private void FixedUpdate()
@@ -87,7 +87,10 @@ public sealed class VehicleLabTelemetryRecorder : MonoBehaviour
                 .Append(F(Simulation.Steering)).Append(',')
                 .Append(F(Simulation.ServiceBrake)).Append(',')
                 .Append(Simulation.SteeringMode.ToString()).Append(',')
-                .Append(scripted != null ? scripted.Maneuver.ToString() : "Manual").AppendLine();
+                .Append(scripted != null ? scripted.Maneuver.ToString() : "Manual").Append(',')
+                .Append(w.BrakeImpulseLimited ? "1" : "0").Append(',')
+                .Append(Simulation.LimitNearStopBrakingImpulse ? "1" : "0")
+                .AppendLine();
         }
 
         if (elapsed >= RecordSeconds) Save();

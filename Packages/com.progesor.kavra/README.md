@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.0.5)
+# KAVRA embedded package (v0.0.6)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -35,6 +35,13 @@ independent of rendering or input assets.
   modifying the shared assets. Null means legacy/default handling.
 - `TireSlipDiagnostics` produces finite, bounded slip ratio and angle
   telemetry without changing the underlying provisional force formula.
+- `WheelDynamicsSolver` now accepts OPTIONAL `BrakeEffectiveMassKg`,
+  `BodyFixedDeltaTime` and `LowSpeedBrakeThresholdMps` for the near-stop
+  brake impulse cap. All default to zero for callers using its old API.
+- `VehicleSimulationRoot.LimitNearStopBrakingImpulse` (default true) only
+  changes near-stationary locked-wheel braking, not high-speed tire friction
+  or normal throttle behavior. Each wheel telemeters `BrakeImpulseLimited`.
+  No static-contact solver or slope-hold guarantee is claimed.
 
 ### Editor
 
