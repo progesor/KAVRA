@@ -1,0 +1,14 @@
+{
+  "name": "Progesor.Kavra.Lab.EditModeTests",
+  "rootNamespace": "Progesor.Kavra.Lab.Tests",
+  "references": [
+    "Progesor.Kavra.Runtime",
+    "Progesor.Kavra.Editor"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "allowUnsafeCode": false,
+  "autoReferenced": false,
+  "noEngineReferences": false
+}

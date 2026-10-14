@@ -2,8 +2,7 @@
 
 ## M0 — Bootstrap + fizik fizibilite deneyleri
 
-**Bu paket ile hazır (statik kontrol):** repo düzeni, dokümantasyon, UPM,
-C# definition/validator, Wizard temel iskeleti.
+**M0 v0.0.2 kodu önerildi, Unity doğrulaması bekleniyor:** repo, UPM, Wizard temel iskeleti; ilk dinamik raycast tekerlek, süspansiyon, basit lastik, lab generator, testler.
 
 **Unity'de doğrulanacak:**
 - [ ] Proje Unity 6.3 LTS'de Console Error olmadan açılıyor.
@@ -12,14 +11,14 @@ C# definition/validator, Wizard temel iskeleti.
 - [ ] ID/geometry validation yanlış konfigürasyonları engelliyor.
 - [ ] `M0_Scaffold.unity` commit edildi.
 
-**M0 fizik deneyleri (henüz başlanmadı):**
+**M0 fizik deneyleri (kod var, Unity fizik/derleme kabulü bekliyor):**
 - [ ] `Raycast`, `SphereCast` ve gerekli çoklu temas yaklaşımını karşılaştır.
-- [ ] Dikey yay–amortisör tek wheel test fixture çalışıyor.
-- [ ] Basit boylam/yanal lastik kuvvet modeli ve wheel angular speed.
-- [ ] Tek gövdeli dört tekerli düz zeminde ilk dinamik sürüş.
+- [ ] Dikey yay–amortisör tek wheel test fixture Unity Test Runner'da geçiyor (kaynak eklendi).
+- [ ] Basit boylam/yanal lastik kuvvet modeli ve wheel angular speed Unity'de doğrulandı (kaynak eklendi).
+- [ ] Tek gövdeli dört tekerli düz zeminde ilk dinamik sürüş Play Mode'da doğrulandı (lab generator eklendi).
 - [ ] Statik wheel load ≈ `m*g` testinin toleransı belirlendi.
-- [ ] Fizik telemetri logger ve grafik debug eklendi.
-- [ ] En az 3W, 4W, 8W tek gövdeli smoke test.
+- [ ] Telemetri grafiği ve uzun süreli CSV logger eklendi (Inspector snapshot ve debug ray var).
+- [ ] En az 3W, 4W, 8W tek gövdeli Play Mode smoke test.
 
 **M0 çıkış ölçütü:** Wheel dynamics ve Rigidbody entegrasyonunun teknik
 fizibilitesi ölçülmüş olacak; temel modelin birim/kararlılık hataları takip
@@ -58,7 +57,9 @@ girdiyle çalışabilir.
 
 - Surface provider, test patch, soft soil kuvvet modeli.
 - MudRunner'dan esinlenilmiş ayrı görsel iz/deformasyon adapter'ı.
-- Simulation/Sport/Arcade profilleri ve ESC/rollover yardım testleri.
+- Simulation/Sport/Arcade profilleri, giriş yumuşatma ve fiziksel ESC testleri;
+  kullanıcı talebiyle otomatik devrilme engelleme kullanılmayacak.
+  Devrilme sonrası manuel kurtarma M0 v0.0.4'te eklendi.
 
 ## M6 — Kalibrasyon ve performans
 
@@ -79,3 +80,58 @@ girdiyle çalışabilir.
 - `0.x` boyunca API deneysel; önemli rename'lerde serialized migration.
 - Fizik modülleri erken benchmark olmadan optimize edilmez.
 - Önce M0 kabul, ardından M1. İlk sürüme M4/M7'nin sahte kodu eklenmez.
+
+
+### M0 ride-height follow-up — issue #3
+
+- [x] Source for footprint/CoM nominal load estimate, bump-stop and anti-roll.
+- [x] Source for ray/sphere contact switch with fallback and bottom-out metrics.
+- [x] HUD and 20-second experimental lab CSV capture source.
+- [x] Pure/EditMode regression test sources added.
+- [ ] Unity 6000.3.18f1 compiles, all new tests PASS.
+- [ ] Turning on flat ground: acceptable bank without persistent wheel clipping.
+- [ ] Telemetry accepted across 3W / 4W / 8W / 20W.
+
+
+### M0 yüzey sürtünmesi / manuel kurtarma / ölçüm — issue #4
+
+- [x] `SurfaceZone` ve `SurfaceResponse` fizik entegrasyonu kaynak kodu.
+- [x] Lab asfalt / çakıl / çamur / buz zemin şablonları ve yüzey metrikleri.
+- [x] Kullanıcı tetiklemeli `R` kurtarma; otomatik anti-flip **yok**.
+- [x] Ray/sphere cast sorgu maliyetini isteğe bağlı ölçecek sayaç ve 90s CSV.
+- [x] Yüzey davranışları / kurtarma güvenliği için EditMode test kaynakları.
+- [ ] Unity derlemesi, EditMode testleri ve Play Mode yerel kabul.
+- [ ] Farklı yüzeylerde veri kayıtlarının nümerik karşılaştırması.
+- [ ] Cast CPU mikrosaniye istatistikleri gerçek donanımda karşılaştırıldı.
+
+
+### M0.5 steering/slip diagnostics / reproducible calibration — issue #5
+
+- [x] Steering geometry source: legacy Parallel / ApproximateAckermann for
+  variable wheel counts, rear steer, front steer and multi-axle layouts.
+- [x] Optional TireTuningProfile per wheel with null = legacy defaults.
+- [x] Bounded slip ratio / slip angle diagnostic output per wheel; M0 force
+  model remains the same velocity-slip approximation.
+- [x] Scripted M0 calibration-run source: brake, steering step and coast.
+- [x] Extended Inspector/HUD and CSV telemetry with input/tire/steer fields.
+- [x] Source for EditMode regression tests.
+- [ ] Local Unity compilation, test runner acceptance and actual CSV plots.
+- [ ] Calibration of low-speed tire force, braking and load-transfer against
+  real recorded measurements or explicitly chosen reference behavior.
+
+
+### M0.5 measured brake oscillation follow-up — issue #6
+
+- [x] Four user telemetry CSVs inspected, numeric anomaly summarized in docs/17.
+- [x] Source code for near-stop brake impulse limiting, opt-in configuration
+  and per-wheel telemetry; 3 new EditMode regression tests authored.
+- [x] Unity Play Mode produced real v0.0.6 CSV with new braking diagnostics.
+- [ ] Unity Test Runner EditMode suite PASS evidence (not yet provided).
+- [ ] Brake holding/creep on a slope verified (flat asphalt only so far).
+- [x] New StraightBrake A/B CSV with limiter enabled confirms elimination of
+  persistent near-stop high-force alternation on flat asphalt. User's T3
+  commit `c278b42` / `132146.csv`, verified in docs/17 (common-window
+  Fx p95 13.94 kN -> 0.67 kN, sign flips 243 -> 3).
+- [ ] SteeringStep repeated and airborne wheel RPM/grounded behavior assessed;
+  no automatic roll or flip correction will be introduced.
+- [ ] Surface/multi-axle behavior acceptance, before M1 freeze.

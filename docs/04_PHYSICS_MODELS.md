@@ -91,8 +91,9 @@ tork aktarımı ile wheel angular speed iteratif/alt-adımlı çözülmelidir.
 
 - Servis freni, el/park freni, motor freni, retarder (gelecek).
 - ABS/TCS/ESC fiziksel kontrolleri isteğe bağlı, ayrı sistemler.
-- Arcade steer/yaw stabilizer, rollover prevention ve input shaping,
-  gerçek sürüş desteklerinden ayrı isimlendirilir.
+- Arcade steer/yaw giriş filtreleme gibi yardımcılar fiziksel ABS/ESC'den
+  ayrı isimlendirilir; **otomatik devrilme önleme uygulanmaz**.
+  Kullanıcı isteğiyle manuel kurtarma (R) ayrı bir teleport hizmetidir.
 - Profile geçişi hareket halindeyken de parametre interpolasyonuyla yapılabilir.
 
 ## 9. Zaman adımı / numerik kararlılık
@@ -108,6 +109,7 @@ hata toleranslı regresyonla test edeceğiz.
 
 ## 10. Güvenlik / kullanıcıya açıklık
 
-Hiçbir M0 formülü şu anda araç hareketine uygulanmıyor. Projenin ilk çalışan
-fizik prototipi tamamlandığında sürüm, test verisi ve uygulama durumu burada
-açıkça işaretlenecek.
+M0 fizik prototipi kaynak kodu (v0.0.2) artık spring/damper, raycast temas, 
+tekerlek açısal dinamikleri ve basit hız-kayması lastik kuvvetlerini Rigidbody'ye
+uygular. Ancak gerçek Unity derlemesi ve Play Mode doğrulaması henüz yapılmadı;
+bu sürümde lastik modeli kalibre edilmemiştir. Detay: docs/13_M0_FIRST_PHYSICS_SLICE.md.

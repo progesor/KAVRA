@@ -1,18 +1,79 @@
-# Package contract (M0)
+# Package contract (M0 v0.0.2)
 
-The core assembly references UnityEngine only. The Editor assembly references
-UnityEditor plus the runtime assembly. No dependency on URP, Input System,
-Cinemachine, Terrain Tools, Burst or optional physics middleware exists in M0.
+Core `Progesor.Kavra.Runtime` references UnityEngine only. Editor assembly
+references UnityEditor plus runtime. **No** dependency on URP, Input System,
+Cinemachine, Terrain Tools, Burst or paid physics libraries in the UPM package.
 
-**Expected future dependencies:** keep rendering and input in optional adapters,
-not in `Progesor.Kavra.Runtime`.
+World convention: +X right / +Y up / +Z forward; SI (m, kg, s, N, N·m, rad/s).
+One `VehicleDefinition` is one rigid chassis, *not* a tractor-trailer.
+Composite multi-body coupling is reserved for a future assembly module.
 
-**Data directions:** +X right, +Y up, +Z forward. SI units: m, kg, s, N,
-N·m, rad/s internally; user interfaces may display km/h and rpm.
+### M0 dynamic prototype semantics
 
-**Single-chassis semantics:** one VehicleDefinition = one chassis. Tractor,
-trailer or articulated machines will use a composite VehicleAssembly with
-independent Rigidbody nodes and mechanical couplings.
+- `VehicleWheelAnchor` is a fixed mount. At full compression the wheel
+  center equals the mount; at free droop it lies `travel` downward.
+- `VehicleSimulationRoot` is opt-in and requires `VehicleRoot`, a
+  non-kinematic Rigidbody and one uniquely named anchor for every wheel.
+- Positive suspension travel is required in the **M0 prototype**.
+- Contact is a single downward nonalloc ray per wheel. Own colliders are
+  excluded. QueryTriggerInteraction.Ignore.
+- No WheelCollider or wheel collider friction; forces are computed separately
+  and applied through Rigidbody.AddForceAtPosition.
+- Internal wheel angular steps do not substep the Unity Rigidbody solver.
+- M0 assumes equal nominal sprung mass per wheel and linear springs; more
+  general axle loading, active suspension and load sharing are later work.
+- Direct drive torque applied per driven wheel is a **test actuator**, not a
+  differential, engine, transmission or final production control scheme.
+- `WheelTelemetry` array is read-only through the public Telemetry property
+  but mutable via C# array casting: consumers should treat it as a snapshot.
+- No guarantee of bit-for-bit determinism or physical calibration.
 
-**Public API:** pre-1.0 experimental. Serialization migrations must be explicitly
-planned before any field renames.
+### Boundaries
+
+Keyboard/chase camera/example lab generation live in the **host project**
+`Assets/VehiclePhysicsLab`, not in the reusable runtime package.
+
+Public API is experimental until 1.0. Serialized field renames require a
+migration policy. Unity compilation and Play Mode verification have not yet
+been completed. Track acceptance in GitHub issue #1.
+
+
+## M0.5 optional wheel tuning and steering (0.0.5)
+
+`WheelDefinition.TireProfile` may reference a `TireTuningProfile`
+ScriptableObject. Null is legal, backward compatible and applies no multipliers
+to the vehicle-wide defaults. Tire profile and road SurfaceProfile multipliers
+combine independently at each current contact; shared assets are never mutated.
+The prototype does not implement real tire pressure, thermal model or MF coefficients.
+
+`VehicleSimulationRoot.SteeringMode` defaults to legacy Parallel to preserve
+existing scenes. ApproximateAckermann geometry is inferred from the mean
+Z positions of steerable and nonsteerable wheels at vehicle initialization.
+No 4-wheel assumption or automatic roll/yaw correction is present. Mixed
+front/rear simultaneous steering groups require a future explicit topology.
+
+`TireSlipDiagnostics` reports regularized slip ratio/angle but does not drive
+M0's provisional velocity-slip force model. Values are meaningful as internal
+comparison plots only, not validation against instrumented road tests.
+
+
+## M0.5 0.0.6 near-stop braking contract
+
+`WheelDynamicsInput.BrakeEffectiveMassKg` and
+`BodyFixedDeltaTime` and `LowSpeedBrakeThresholdMps` are optional new
+inputs (0 means disabled). The force limiter only applies when:
+- service brake torque dominates drive torque;
+- longitudinal and wheel peripheral speeds are below threshold;
+- tire longitudinal force opposes ground travel;
+- effective wheel mass and **full Rigidbody physics timestep** are positive.
+
+It caps the opposing Fx to no more than
+`BrakeEffectiveMassKg * abs(longitudinalSpeed) / BodyFixedDeltaTime`.
+Wheel rotor substep `DeltaTime` remains independent.
+
+`VehicleSimulationRoot.LimitNearStopBrakingImpulse` defaults true for new
+components, and nominal per-wheel effective mass comes from initial static
+load fractions. No profile or solver settings are silently changed. The
+braking force remains approximate for yawed, steep or multiple-ground-body
+situations; static friction/slope holding and exact effective mass resolution
+are future work. This is **not automatic roll or rollover prevention**.

@@ -28,6 +28,8 @@ namespace Progesor.Kavra
         [Min(0.01f)] public float RadiusMeters = 0.38f;
         [Min(0.01f)] public float WidthMeters = 0.28f;
         [Min(0f)] public float SuspensionTravelMeters = 0.25f;
+        [Tooltip("Optional per-wheel tuning asset. Null keeps vehicle-wide tire defaults.")]
+        public TireTuningProfile TireProfile;
         public bool CanSteer;
         public bool CanDrive;
         public bool HasServiceBrake = true;

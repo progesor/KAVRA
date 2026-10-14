@@ -14,7 +14,7 @@
 - `T07_TractorTrailer`: ayrı gövdeli 18 tekerli taslak (M4).
 - `T08_SurfaceTransitions`: asfalt/çakıl/çamur (M5).
 
-Bunlar **planlanan** sahne adları; bu pakette fizik test sahnesi yok.
+Bu sahneler hâlâ **planlanan** kabul sahneleridir. v0.0.2 ile `Tools > KAVRA > Create M0 Physics Lab Scene` menüsü çalışan sahne nesneleri üretir, kullanıcı tarafından kaydedilip Play Mode'da doğrulanmalıdır. Kaydedilmiş ve doğrulanmış test sahnesi henüz bulunmuyor.
 
 ## Ölçülecek temel büyüklükler
 
@@ -75,3 +75,21 @@ kabul kriteri ilan edilmeyecek.
 `tests/reports/YYYY-MM-DD/` içine küçük JSON/CSV özetleri ve performans
 screenshot'ları. Büyük video ve binary test çıktıları Git LFS veya
 GitHub Release'lere taşınır; normal Git tarihçesi şişirilmez.
+
+
+## M0 v0.0.4 A/B contact and surface comparisons
+
+A generated PhysicsLab now has identical-height road pieces with
+`SurfaceZone` profile references. Per-wheel telemetry and the default
+90-second host CSV record `surface,mu_long,mu_lat,rolling_coeff` and optional
+`contact_cost_us_total` (for a *whole FixedUpdate*, repeated per wheel row).
+This timer counts only cast invocation time and includes Stopwatch overhead.
+
+Run a consistent route once with Raycast, once with
+SphereCastWithRayFallback. Do not assume higher query cost or physical quality
+without measurement. Compare rolling speed, slip, total normal load,
+grounded count and contact time; visual soil deforming remains out of scope.
+
+The explicit manual R recovery may interrupt a run, so annotate or exclude
+those CSV intervals from physics model comparisons. A natural rollover is
+allowed; manual recovery does not simulate vehicle dynamics.

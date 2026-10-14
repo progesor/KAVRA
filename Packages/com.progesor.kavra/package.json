@@ -1,8 +1,8 @@
 {
   "name": "com.progesor.kavra",
-  "version": "0.0.1",
+  "version": "0.0.6",
   "displayName": "KAVRA Vehicle Framework",
-  "description": "Modular wheeled-vehicle framework foundation. M0 includes configuration assets, validation and a non-drivable chassis scaffold wizard.",
+  "description": "Experimental M0.5 vehicle physics with telemetry-calibrated low-speed braking limit, tire profiles, Ackermann-like steering, surfaces and manual recovery.",
   "unity": "6000.3",
   "author": {
     "name": "Progesor Creating"

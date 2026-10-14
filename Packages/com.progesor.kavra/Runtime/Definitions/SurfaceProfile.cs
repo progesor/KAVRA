@@ -3,8 +3,9 @@ using UnityEngine;
 namespace Progesor.Kavra
 {
     /// <summary>
-    /// Configuration for future terrain/contact modules.
-    /// These values are descriptive placeholders, not yet wired into a solver.
+    /// Contact surface multipliers applied PER WHEEL to tire grip and rolling
+    /// resistance. Softness/Wetness remain descriptive values for future soil
+    /// response and are NOT automatically double-counted as extra friction.
     /// </summary>
     [CreateAssetMenu(fileName = "SurfaceProfile", menuName = "KAVRA/Surface Profile")]
     public sealed class SurfaceProfile : ScriptableObject
