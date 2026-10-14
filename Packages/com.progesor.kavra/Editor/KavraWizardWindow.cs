@@ -8,6 +8,7 @@ namespace Progesor.Kavra.Editor
         private VehicleTemplate template = VehicleTemplate.PassengerCar4;
         private VehicleDefinition configuration;
         private Vector2 scroll;
+        private Vector2 wholeWindowScroll;
 
         [MenuItem("Tools/KAVRA/Vehicle Setup Wizard")]
         public static void Open()
@@ -16,6 +17,15 @@ namespace Progesor.Kavra.Editor
         }
 
         private void OnGUI()
+        {
+            // The M1 asset and prefab workflow is taller than the old M0
+            // window. Keep all controls reachable without resizing Unity.
+            wholeWindowScroll = EditorGUILayout.BeginScrollView(wholeWindowScroll);
+            DrawWizardContents();
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawWizardContents()
         {
             GUILayout.Space(8f);
             EditorGUILayout.LabelField("KAVRA Vehicle Framework", EditorStyles.boldLabel);
@@ -68,7 +78,7 @@ namespace Progesor.Kavra.Editor
 
             using (new EditorGUI.DisabledScope(hasErrors))
             {
-                if (GUILayout.Button("3A. Build non-drivable preview scaffold", GUILayout.Height(29f)))
+                if (GUILayout.Button("4A. Build non-drivable preview scaffold", GUILayout.Height(29f)))
                 {
                     GameObject preview = VehicleScaffoldBuilder.Create(configuration);
                     Debug.Log("KAVRA: created kinematic preview " + preview.name);
@@ -117,6 +127,12 @@ namespace Progesor.Kavra.Editor
                 "Create M1 Simple Powertrain", "KAVRA_SimplePowertrain.asset",
                 "asset", "Save motor torque curve and gearbox settings.");
             if (string.IsNullOrEmpty(path)) return;
+            if (AssetDatabase.LoadMainAssetAtPath(path) != null)
+            {
+                EditorUtility.DisplayDialog("KAVRA",
+                    "An asset already exists at that path. Choose another name.", "OK");
+                return;
+            }
 
             var asset = ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
             AssetDatabase.CreateAsset(asset, path);
@@ -134,6 +150,12 @@ namespace Progesor.Kavra.Editor
                 "KAVRA_" + template + ".asset", "asset",
                 "Select a location in Assets/ for this configuration.");
             if (string.IsNullOrEmpty(path)) return;
+            if (AssetDatabase.LoadMainAssetAtPath(path) != null)
+            {
+                EditorUtility.DisplayDialog("KAVRA",
+                    "A vehicle definition already exists there. Choose a unique name.", "OK");
+                return;
+            }
             VehicleDefinition definition = VehicleTemplateFactory.Create(template);
             AssetDatabase.CreateAsset(definition, path);
             AssetDatabase.SaveAssets();
