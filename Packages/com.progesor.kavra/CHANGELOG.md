@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.6] — 2026-10-17
+
+- More forgiving manual assembly hitch defaults (0.5m / 55deg).
+- Versioned migration for older default tolerance values.
+- Shared read-only hitch assessment result and measurements, consistent
+  with active TryAttach preflight; no automatic attachment or
+  new physics corrections.
+- Editor-host PhysicsLab visuals (checker surface/colored chassis and
+  hitch guide) added outside UPM.
+- Added 4 EditMode capture/migration regression tests.
+- Source/static inspections completed; Unity actual tests pending.
+
+
 ## [0.1.5] — 2026-10-17
 
 - Added ordered chain definition/validator, N-body runtime/Editor builder

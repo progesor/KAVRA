@@ -59,10 +59,27 @@ public sealed class VehicleAssemblyChainLabHud : MonoBehaviour
                        " (breaks " + coupling.PhysicalBreakCount + ")";
         }
 
+        VehicleLabHitchGuide guide = GetComponent<VehicleLabHitchGuide>();
+        if (guide != null)
+        {
+            VehicleHitchAssessment assessment = guide.SelectedAssessment();
+            message += "\nCapture: " +
+                       (guide.SelectedHitchGapMeters() * 100f).ToString("F0") +
+                       " cm / " + (Chain.Definition != null &&
+                       Chain.Definition.Links != null &&
+                       Chain.SelectedLinkIndex < Chain.Definition.Links.Count
+                          ? (Chain.Definition.Links[Chain.SelectedLinkIndex]
+                              .MaximumAttachErrorMeters * 100f).ToString("F0")
+                          : "?") + " cm";
+            message += "\n" + guide.SelectedStatus();
+            message += "\nYaw: " + assessment.YawErrorDegrees.ToString("F0") +
+                       " deg   Relative speed: " +
+                       assessment.RelativeHitchSpeedMps.ToString("F2") + " m/s";
+        }
         message += "\nJ/L select link | H attach/detach | K physics stress" +
                    "\nR recovers lead-connected group ONLY (manual)";
 
-        float h = Mathf.Min(440f, 130f + 19f * Chain.LinkCount);
+        float h = Mathf.Min(480f, 215f + 19f * Chain.LinkCount);
         GUI.Box(new Rect(Mathf.Max(10f, Screen.width - 520f), 12f, 510f, h),
             message);
     }

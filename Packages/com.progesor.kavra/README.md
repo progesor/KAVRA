@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.1.5)
+# KAVRA embedded package (v0.1.6)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -221,3 +221,24 @@ lead prefix (never the disconnected suffix).
 An Editor-only `VehicleAssemblyChainBuilder` and chain Wizard build
 and save N-body prefabs; PhysicsLab remains outside UPM. No extra runtime
 packages. This is an ordered convoy rather than a branched coupling graph.
+
+### M1.5.1 easier H capture (rendering remains host-only)
+
+`VehicleAssemblyDefinition` new defaults:
+`MaximumAttachErrorMeters=0.5` and
+`MaximumAttachYawDegrees=55`. Preflight speed/yaw/distance
+checks and explicitly triggered one-time snap are still mandatory.
+Old unchanged M1.4 values 0.15/35 migrate to new defaults; different
+user-authored tolerances remain unchanged.
+
+`VehicleCoupling.AssessAttach(tractorBody, settings,
+out VehicleHitchAssessment)` exposes the SAME checks used by
+`TryAttach`, but never adds a joint or moves a Rigidbody. The struct
+reports gap, heading difference, relative hitch velocity, max body
+speed and reason/status. This enables optional UI highlight/ready
+guides for consumers without depending on host materials.
+
+All checker road textures, shaders, vehicle colors, marker rendering
+and speed-sensitive FOV are optional PhysicsLab host scripts under
+`Assets/VehiclePhysicsLab`; the KAVRA UPM runtime remains
+renderer-/render-pipeline-/input-system-independent.

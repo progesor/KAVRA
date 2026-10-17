@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-14): M1 vehicle framework foundation, package 0.1.5. New M1.1 source awaiting Unity Editor verification.**
+**State (2026-10-14): M1 vehicle framework foundation, package 0.1.6. New M1.1 source awaiting Unity Editor verification.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -308,3 +308,38 @@ The current implementation is a *linear chain*, not a free-form branching
 vehicle graph. See `docs/23_M15_MULTI_TRAILER_CHAIN.md`. Real imported
 truck models, coupling force calibration and a generalized attachment-port
 graph are later milestones. All earlier scenes/CSV captures are preserved.
+
+## M1.5.1 PhysicsLab usability — easier hitch capture and readable motion
+
+This is a **user-requested usability pass** on the same M1.5 modular
+physics framework, not another round of microscopic suspension tweaks.
+
+- Default manual `VehicleAssemblyDefinition.MaximumAttachErrorMeters`
+  expanded from **0.15 to 0.50 meters**; default yaw range from
+  **35 to 55 degrees**. The existing H command, safe body/relative
+  speeds, a one-time tiny trailer snap and physics breakForce/torque
+  remain intact — **no automatic coupling**.
+- Old M1.4 assembly assets migrate only original/default tolerance
+  values. Customized tolerances are preserved. These values are still
+  exposed in each link's ScriptableObject inspector.
+- `VehicleCoupling.AssessAttach` shares a non-mutating result and gap,
+  yaw and approach-speed diagnostics with the real `TryAttach` path.
+- The newly generated **M1.3 one-trailer** and **M1.5 two-trailer**
+  PhysicsLabs use a procedural dark/light checker road, stationary
+  15m lane/edge distance markers, blue tractor, orange trailer A,
+  red trailer B and dark tires. Ground texture/materials are generated
+  locally by Editor under `Assets/VehiclePhysicsLab/Generated/`.
+- Electric-cyan and yellow hitch endpoints are visible even in Editor.
+  While playing, the selected hitch is bigger and the colored guide
+  shows **green READY**, amber NEAR, red FAR, cyan ATTACHED;
+  a circular capture radius and HUD status explain whether H can couple.
+- Optional, subtle speed-based camera FOV makes forward motion easier
+  to read. It is enabled ONLY in newly generated articulated
+  demonstration scenes. Old PhysicsLab/M0 scenes are unchanged.
+
+Run `Tools > KAVRA > Create M1.5 Two-Trailer Lab Scene` again (it
+reuses and does not overwrite valid user-created vehicle/link assets),
+save the generated scene and Play. Press J/L to pick a link, align the
+highlighted colored spheres inside its catch ring, and press H. The
+road texture and metric reference marks make slip and backwards drift
+visible. See `docs/24_M151_PHYSICSLAB_VISIBILITY.md`.

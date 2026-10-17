@@ -49,6 +49,7 @@ public static class VehicleAssemblyLabSceneBuilder
         rig.transform.position = new Vector3(0f, 0f, -42f);
         Physics.SyncTransforms();
         VehicleAssemblyRoot assembly = rig.GetComponent<VehicleAssemblyRoot>();
+        VehicleLabArtUtility.DecorateTwoBody(assembly, ground);
         GameObject tractor = assembly.Tractor.gameObject;
         VehicleSimulationRoot drive = tractor.GetComponent<VehicleSimulationRoot>();
 
@@ -72,6 +73,8 @@ public static class VehicleAssemblyLabSceneBuilder
             cameraObject.AddComponent<VehicleLabChaseCamera>();
         cameraFollow.Target = tractor.transform;
         cameraFollow.LocalOffset = new Vector3(0f, 7f, -17f);
+        cameraFollow.SpeedReactiveFov = true;
+        cameraFollow.MaximumAdditionalFovDegrees = 6f;
         cameraObject.transform.position = tractor.transform.position +
                                           new Vector3(0f, 7f, -17f);
         cameraObject.transform.LookAt(tractor.transform.position);

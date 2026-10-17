@@ -1,8 +1,8 @@
 {
   "name": "com.progesor.kavra",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "displayName": "KAVRA Vehicle Framework",
-  "description": "M1.5 modular vehicle assembly chains: multiple independent trailer Rigidbodies, per-link couplings, brake relays and safe manual group recovery.",
+  "description": "M1.5.1 vehicle framework: easier manual hitch capture, shared attach assessment, and high-contrast checker PhysicsLab scene generation.",
   "unity": "6000.3",
   "author": {
     "name": "Progesor Creating"

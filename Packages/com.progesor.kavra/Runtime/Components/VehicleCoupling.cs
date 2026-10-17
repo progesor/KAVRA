@@ -17,6 +17,21 @@ namespace Progesor.Kavra
         VehicleSpeedTooHigh
     }
 
+    /// <summary>
+    /// Snapshot shared by manual coupling preflight and PhysicsLab visuals.
+    /// CanAttach is represented by Result == Connected, even before the
+    /// actual ConfigurableJoint is created by an explicit H request.
+    /// </summary>
+    public struct VehicleHitchAssessment
+    {
+        public VehicleCouplingResult Result;
+        public float HitchGapMeters;
+        public float YawErrorDegrees;
+        public float RelativeHitchSpeedMps;
+        public float FastestBodySpeedMps;
+        public bool ReadyToAttach => Result == VehicleCouplingResult.Connected;
+    }
+
     public enum VehicleHitchState
     {
         Detached = 0,
@@ -59,66 +74,85 @@ namespace Progesor.Kavra
                 recordedState = VehicleHitchState.Attached;
         }
 
-        public VehicleCouplingResult TryAttach(Rigidbody tractorBody,
-            VehicleAssemblyDefinition definition)
+        public VehicleCouplingResult AssessAttach(Rigidbody tractorBody,
+            VehicleAssemblyDefinition definition,
+            out VehicleHitchAssessment assessment)
         {
+            assessment = default(VehicleHitchAssessment);
             Rigidbody trailerBody = GetComponent<Rigidbody>();
             if (tractorBody == null || trailerBody == null)
-                return VehicleCouplingResult.MissingBody;
+                return assessment.Result = VehicleCouplingResult.MissingBody;
             if (tractorBody == trailerBody)
-                return VehicleCouplingResult.SameBody;
+                return assessment.Result = VehicleCouplingResult.SameBody;
             if (tractorBody.isKinematic || trailerBody.isKinematic)
-                return VehicleCouplingResult.BodyIsKinematic;
+                return assessment.Result = VehicleCouplingResult.BodyIsKinematic;
             if (definition == null || VehicleAssemblyValidator.HasErrors(definition))
-                return VehicleCouplingResult.InvalidConfiguration;
+                return assessment.Result = VehicleCouplingResult.InvalidConfiguration;
             if (IsAttached)
-                return VehicleCouplingResult.AlreadyAttached;
+                return assessment.Result = VehicleCouplingResult.AlreadyAttached;
 
-            // In Play Mode Destroy(joint) is deferred until end of frame.
-            // The old component must be physically gone before reattaching;
-            // otherwise Unity would create two constraints accidentally.
+            // Destroy(joint) is delayed in Play Mode. Do not put a second
+            // ConfigurableJoint on the same trailer before the first is gone.
             if (GetComponent<ConfigurableJoint>() != null)
-                return VehicleCouplingResult.JointRemovalPending;
+                return assessment.Result = VehicleCouplingResult.JointRemovalPending;
 
-            float maxBodySpeedSq = definition.MaximumManualCouplingBodySpeedMps *
-                                   definition.MaximumManualCouplingBodySpeedMps;
-            if (tractorBody.linearVelocity.sqrMagnitude > maxBodySpeedSq ||
-                trailerBody.linearVelocity.sqrMagnitude > maxBodySpeedSq)
-                return VehicleCouplingResult.VehicleSpeedTooHigh;
+            assessment.FastestBodySpeedMps = Mathf.Max(
+                tractorBody.linearVelocity.magnitude,
+                trailerBody.linearVelocity.magnitude);
 
             Vector3 tractorPoint = VehicleAssemblyMath.HitchWorldPosition(
                 tractorBody.position, tractorBody.rotation, definition.TractorHitchLocal);
             Vector3 trailerPoint = VehicleAssemblyMath.HitchWorldPosition(
                 trailerBody.position, trailerBody.rotation, definition.TrailerHitchLocal);
-
-            if (Vector3.Distance(tractorPoint, trailerPoint) >
-                definition.MaximumAttachErrorMeters)
-                return VehicleCouplingResult.AttachmentPointsSeparated;
+            assessment.HitchGapMeters = Vector3.Distance(tractorPoint, trailerPoint);
 
             Vector3 tractorHeading = Vector3.ProjectOnPlane(
                 tractorBody.rotation * Vector3.forward, Vector3.up);
             Vector3 trailerHeading = Vector3.ProjectOnPlane(
                 trailerBody.rotation * Vector3.forward, Vector3.up);
-            if (tractorHeading.sqrMagnitude < 0.00001f ||
-                trailerHeading.sqrMagnitude < 0.00001f ||
-                Vector3.Angle(tractorHeading, trailerHeading) >
-                    definition.MaximumAttachYawDegrees)
-                return VehicleCouplingResult.AttachmentYawMisaligned;
+            if (tractorHeading.sqrMagnitude > 0.00001f &&
+                trailerHeading.sqrMagnitude > 0.00001f)
+                assessment.YawErrorDegrees = Vector3.Angle(
+                    tractorHeading, trailerHeading);
+            else
+                assessment.YawErrorDegrees = 180f;
 
-            // Use hitch-point velocity rather than chassis center velocity:
-            // an aggressively rotating trailer nose can still be dangerous.
             Vector3 relativeHitchVelocity =
                 tractorBody.GetPointVelocity(tractorPoint) -
                 trailerBody.GetPointVelocity(trailerPoint);
-            if (relativeHitchVelocity.sqrMagnitude >
-                definition.MaximumAttachRelativeSpeedMps *
-                definition.MaximumAttachRelativeSpeedMps)
-                return VehicleCouplingResult.RelativeSpeedTooHigh;
+            assessment.RelativeHitchSpeedMps = relativeHitchVelocity.magnitude;
 
-            // Attach is already explicitly requested and speed/position/yaw
-            // were preflighted. Small positional snap prevents the PhysX
-            // joint solver from delivering a violent initial correction.
-            // This NEVER occurs automatically, and never exceeds tolerance.
+            if (assessment.FastestBodySpeedMps >
+                definition.MaximumManualCouplingBodySpeedMps)
+                return assessment.Result = VehicleCouplingResult.VehicleSpeedTooHigh;
+            if (assessment.HitchGapMeters > definition.MaximumAttachErrorMeters)
+                return assessment.Result = VehicleCouplingResult.AttachmentPointsSeparated;
+            if (assessment.YawErrorDegrees > definition.MaximumAttachYawDegrees)
+                return assessment.Result = VehicleCouplingResult.AttachmentYawMisaligned;
+            if (assessment.RelativeHitchSpeedMps >
+                definition.MaximumAttachRelativeSpeedMps)
+                return assessment.Result = VehicleCouplingResult.RelativeSpeedTooHigh;
+            return assessment.Result = VehicleCouplingResult.Connected;
+        }
+
+        public VehicleCouplingResult TryAttach(Rigidbody tractorBody,
+            VehicleAssemblyDefinition definition)
+        {
+            VehicleHitchAssessment assessment;
+            VehicleCouplingResult safety = AssessAttach(
+                tractorBody, definition, out assessment);
+            if (safety != VehicleCouplingResult.Connected)
+                return safety;
+
+            Rigidbody trailerBody = GetComponent<Rigidbody>();
+            Vector3 tractorPoint = VehicleAssemblyMath.HitchWorldPosition(
+                tractorBody.position, tractorBody.rotation, definition.TractorHitchLocal);
+            Vector3 trailerPoint = VehicleAssemblyMath.HitchWorldPosition(
+                trailerBody.position, trailerBody.rotation, definition.TrailerHitchLocal);
+
+            // Only after an H request and full preflight can the trailer
+            // move by the small configured capture gap. No proximity auto-
+            // attachment and no continuous magic steering correction.
             if (definition.AlignHitchesOnManualAttach)
             {
                 Vector3 correction = tractorPoint - trailerPoint;

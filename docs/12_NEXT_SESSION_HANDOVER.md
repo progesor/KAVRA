@@ -290,3 +290,27 @@ hitch frames, detached suffix untouched. It never runs automatically.
 Nine new EditMode source tests cover validation, two joints, brake
 disconnection, physical break event bookkeeping, selection and R safety.
 No Unity compile/Play acceptance yet. Read docs/23.
+
+
+## 2026-10-17 M1.5.1 hitch capture and PhysicsLab readability
+
+Same branch `feat/m15-multitrailer-chain` / PR #16; task issue #17.
+User stated that the original 15cm hitch catch is frustrating and
+vehicle/road both gray makes motion, drift and the hitch invisible.
+
+Raised default capture 0.15->0.50m and yaw 35->55 degrees. Version 1
+M1.4 asset defaults upgrade without overwriting custom manual values.
+Added pure observable `VehicleHitchAssessment` through the
+same preflight path used by `VehicleCoupling.TryAttach`.
+
+OPTIONAL host-only PhysicsLab Editor code now writes native checker
+texture/materials to `Assets/VehiclePhysicsLab/Generated/`, colors
+the tractor dark blue, Trailer A amber, B red, wheels graphite;
+marks fixed world distances every 15m. Guide component highlights
+hitch markers by selection, shows ready/near/far colors, a catch
+circle and exact status. M1.3 and M1.5 generators attach the guide.
+Camera speed-FOV is enabled only for new articulated labs.
+Old saved lab scenes, user CSV and real wheel physics untouched.
+
+Four regression EditMode sources created. Actual Unity 6000.3.x
+compiler/Test Runner and visual acceptance pending; keep Draft.

@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.1.6 — 2026-10-17 (M1.5.1 hitch usability / PhysicsLab visuals)
+
+- Made manual hitch capture easier: initial 0.15m -> 0.50m,
+  yaw 35deg -> 55deg; safe body/hitch approach velocities remain
+  required and all coupling is still explicitly triggered with H.
+- Versioned hitch settings migration updates only old default
+  tolerances, preserving user-customized link assets.
+- Added non-mutating VehicleCoupling.AssessAttach and runtime
+  VehicleHitchAssessment measurements for consistent UI diagnostics.
+- Added generated checker road material/texture, metric roadside/
+  centerline references, distinct matte vehicle colors and dark tires.
+- Added selected hitch-colored endpoints and connection guide lines,
+  circular capture radius and READY/TOO FAR/BAD ANGLE/TOO FAST readout.
+- Added optional subtle speed-dependent chase-camera FOV to articulated
+  PhysicsLab generators only. Prior saved M0/M1 scenes unchanged.
+- Added 4 new EditMode hitch capture/migration regression sources.
+- Generated assets live under Assets/VehiclePhysicsLab/Generated and
+  do not silently overwrite existing native .asset/.mat files.
+- Real Unity Editor import/Play Mode verification pending.
+
+
 ## 0.1.5 — 2026-10-17 (M1.5 multiple trailers / chain assemblies)
 
 - Added ordered `VehicleAssemblyChainDefinition` and validation

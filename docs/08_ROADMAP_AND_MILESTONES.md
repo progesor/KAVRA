@@ -265,3 +265,21 @@ not microscopic tire tuning; realistic meshes remain separate issue #9.
 - [ ] Prefab export/reimport and legacy M1.4 two-body compatibility.
 - [ ] Decide joint solver stability and nonadjacent collision policy
       from real field test, not guessed tuning.
+
+
+### M1.5.1 — hitch usability & PhysicsLab visibility — issue #17
+
+- [x] Source: more forgiving manual hitch capture, 0.50m / 55deg;
+  old default migration while preserving tuned definitions.
+- [x] Source: shared read-only hitch preflight for UI readiness.
+- [x] PhysicsLab: native procedural checker road texture/material,
+  15m world distance marks, distinct tractor/trailer colors.
+- [x] PhysicsLab: highlighted selected hitch markers, guide line,
+  catch radius and READY/TOO FAR/BAD ANGLE/TOO FAST diagnostics.
+- [x] Subtle opt-in speed-reactive camera FOV, no effect on old scenes.
+- [x] 4 hitch regression tests for defaults/migration/capture status.
+- [ ] Unity 6000.3.x import/compile and EditMode all PASS.
+- [ ] Manual H hookup visibly easier than old 0.15m range.
+- [ ] Checker visible in user's selected render pipeline, distinct
+  vehicle paint and hitch markers visible in saved scene and Play.
+- [ ] No hitch physics, automatic recovery, M0/M1 regression.

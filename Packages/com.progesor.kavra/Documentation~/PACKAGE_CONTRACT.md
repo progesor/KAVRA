@@ -271,3 +271,27 @@ The chain recovery does not automatically upright rolled vehicles.
 The entire path may be serialized as a Unity prefab by the Editor
 builder; the currently bundled primitive chassis visuals still have
 no imported real vehicle mesh dependence.
+
+
+## M1.5.1 manual hitch and presentation contract
+
+Default M1.4 alignment/capture tolerances were too narrow for a human
+controlling a primitive chassis without clear marker visuals. Updated
+`VehicleAssemblyDefinition.MaximumAttachErrorMeters=0.5m` and
+`MaximumAttachYawDegrees=55deg` apply to newly authored assets.
+Schema migration from older versions changes only untouched original
+0.15m and 35deg values; customized assets remain authoritative.
+
+`VehicleCoupling.AssessAttach(..., out VehicleHitchAssessment)` is
+a non-mutating preflight that returns `VehicleCouplingResult.Connected`
+when READY (not yet attached). It exposes body speed, hitch-point
+relative speed, physical hitch separation and forward heading delta.
+`TryAttach` runs that exact preflight before the user's optional
+one-shot snap and joint creation. Speed gates do not change.
+`OnJointBreak` still depends on real Unity solver thresholds;
+manual reattachment still requires an explicit H request.
+
+Rendering/speed-reference materials remain ONLY in
+`Assets/VehiclePhysicsLab` host generator, not the embedded UPM
+runtime package, so users may bind real materials/FBX meshes in
+production without depending on the demo's checker or colors.

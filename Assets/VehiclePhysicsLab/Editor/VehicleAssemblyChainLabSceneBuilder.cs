@@ -57,6 +57,9 @@ public static class VehicleAssemblyChainLabSceneBuilder
         rig.transform.position += new Vector3(0f, 0f, -30f);
         Physics.SyncTransforms();
         VehicleAssemblyChainRoot convoy = rig.GetComponent<VehicleAssemblyChainRoot>();
+        // Lab-only visual readability: generated 3m checker tiles,
+        // distinct chassis paint, bright selected hitch guides.
+        VehicleLabArtUtility.DecorateChain(convoy, ground);
 
         GameObject lead = convoy.Vehicles[0].gameObject;
         VehicleSimulationRoot sim = lead.GetComponent<VehicleSimulationRoot>();
@@ -79,6 +82,8 @@ public static class VehicleAssemblyChainLabSceneBuilder
             cameraObject.AddComponent<VehicleLabChaseCamera>();
         chase.Target = lead.transform;
         chase.LocalOffset = new Vector3(0f, 9f, -28f);
+        chase.SpeedReactiveFov = true;
+        chase.MaximumAdditionalFovDegrees = 7f;
         cameraObject.transform.position =
             lead.transform.position + new Vector3(0f, 9f, -28f);
         cameraObject.transform.LookAt(lead.transform.position);
@@ -94,7 +99,7 @@ public static class VehicleAssemblyChainLabSceneBuilder
         Debug.Log("KAVRA M1.5: 6x6 tractor + two 4W trailers = 3 Rigidbodies, " +
                   "14 wheels, 2 breakable hitches. Save as " +
                   "Assets/VehiclePhysicsLab/Scenes/M15_TwoTrailerChain.unity. " +
-                  "J/L selects hitch, H detaches/attaches selected hitch at low speed, " +
+                  "J/L selects hitch, H connects across a more forgiving 0.5m radius, " +
                   "K applies PHYSICAL impulse to selected hitch, R manual connected-" +
                   "prefix recovery.");
     }

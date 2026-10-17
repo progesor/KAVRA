@@ -364,3 +364,40 @@ Save a reusable N-body prefab via
 failure limits remain each link asset's own values (v0.1.4 subsystem).
 Unity 6000.3.x compile, Test Runner, actual towing/reverse/hitch break
 and prefab round-trip must be checked in Unity.
+
+
+## M1.5.1 — easy-to-read checker lab and visible hitch capture
+
+The **two** existing lab generation menus now decorate their generated
+scenes with a large high-contrast procedural checker road (3-meter
+squares), stationary 15m reference markers, blue tractor, orange
+trailer A, red trailer B, and dark tires. All such styling is
+EDITOR-only and does not change tire forces, collision geometry
+or the UPM solver. Assets are cached as native files under:
+`Assets/VehiclePhysicsLab/Generated/`.
+
+The H coupling default is **0.50m** instead of 0.15m, and allowed
+initial yaw is **55 degrees** instead of 35 degrees. It is still
+explicit and only works at safe low body/hitch speeds. A one-time
+small trailer snap finishes alignment after an accepted H request.
+
+A new `VehicleLabHitchGuide` presents a bright cyan/yellow pair,
+larger selected markers, a green/yellow/red colored guide line,
+a circular capture radius and a status message:
+`READY`, `TOO FAR`, `BAD ANGLE`, `TOO FAST`,
+`WAIT` or `CONNECTED`. In the multi-trailer scene, J/L selects
+the hitch to highlight and H operates it. The two-body scene
+has its own identical guide. The guide is visual only; it NEVER
+auto-attaches.
+
+An opt-in chase camera FOV effect adds at most 6–7 degrees as the
+vehicle reaches roughly 90 km/h. This and fixed checker squares help
+show whether the tractor is advancing, skidding or pulling the
+trailers backwards.
+
+**To see changes in the lab:** Pull the M1.5 branch in GitHub Desktop,
+run the M1.5 or M1.3 lab menu again and save the generated Unity scene.
+Existing scenes and custom assets are not overwritten. If a prior
+VehicleAssemblyDefinition uses the old exact default 0.15m / 35deg
+values, the version upgrade updates those; a custom manual value
+is left as it was. For exact scope, see docs/24.

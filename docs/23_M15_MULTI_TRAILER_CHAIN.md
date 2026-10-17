@@ -124,3 +124,14 @@ Next broaden the attachment system toward **ports and branching graph**,
 including rear-module identity/selection, power/brake line interfaces,
 more concrete trailer configurations and imported model binding.
 Avoid low-level tire/anti-roll tuning unless blocking the core.
+
+
+## M1.5.1 Lab usability continuation
+
+A visual / manual attachment quality pass has been added, tracked
+separately as issue #17. New M1.5 scenes regenerate with a checker
+road, fixed 15m reference points, colored tractor and trailers and
+clearly marked selected link. Manual H capture radius/yaw defaults
+grow to 0.50m / 55deg without bypassing low-speed requirements.
+See `docs/24_M151_PHYSICSLAB_VISIBILITY.md`. Earlier generated
+M1.5 scenes are not modified automatically; generate a fresh lab.
