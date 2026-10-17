@@ -115,3 +115,26 @@ a purely visual change.
   6000.3.x Editor compile/render/Play Mode is **not yet run** here.
 - No auto-rollover correction. R is still manually initiated, and
   M1.5 chain-only lead recovery unchanged.
+
+
+## Unity Editor hotfix — hitch guide Setup NullReferenceException
+
+On 2026-10-17 a user reported:
+`VehicleLabHitchGuide.TintRenderer` line 266 ->
+`StyleMarker` line 260 -> `Setup` line 70 ->
+`VehicleLabArtUtility.DecorateChain` during scene generation.
+
+**Root cause**: `Setup` styled the first marker before running
+`EnsureArrays`, while `Awake` is not guaranteed to execute when
+a component is added to a scene being generated in Unity Editor.
+Therefore `colorBlock` was null at `colorBlock.Clear()`.
+
+**Fix**: `Setup` calls `EnsureArrays()` before allocating visual
+lines / styling markers, and `TintRenderer` has an independent
+lazy MaterialPropertyBlock initialization guard. A focused EditMode
+regression recreates an uninitialized component then runs Setup.
+
+The fix is limited to PhysicsLab visual components; existing
+vehicle physics, joint constraints and generated material assets
+are not modified. User should pull the latest M1.5 branch and
+regenerate the test scene, then inspect Console and Play Mode.

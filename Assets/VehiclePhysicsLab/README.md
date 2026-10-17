@@ -401,3 +401,13 @@ Existing scenes and custom assets are not overwritten. If a prior
 VehicleAssemblyDefinition uses the old exact default 0.15m / 35deg
 values, the version upgrade updates those; a custom manual value
 is left as it was. For exact scope, see docs/24.
+
+
+### M1.5.1 hitch guide hotfix (Editor setup)
+
+If the M1.5 lab generator previously threw
+`NullReferenceException at VehicleLabHitchGuide.TintRenderer`,
+update the branch: `Setup()` now initializes `MaterialPropertyBlock`
+before rendering hitch markers in the Editor. No need to recreate
+or delete the generated checker/material assets. Regenerate the lab
+scene after the pull and verify it opens with visible markers.

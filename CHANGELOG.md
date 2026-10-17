@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.6 hotfix — 2026-10-17 (HitchGuide scene creation NRE)
+
+- Fixed a real Unity NullReferenceException reported during
+  `Tools > KAVRA > Create M1.5 Two-Trailer Lab Scene`.
+- `VehicleLabHitchGuide.Setup()` now creates its MaterialPropertyBlock
+  BEFORE coloring the first tractor/trailer hitch marker, even when
+  Unity Editor invokes Setup before MonoBehaviour.Awake.
+- `TintRenderer` also lazily initializes the block for domain-reload
+  or alternate setup paths.
+- Added a reproducer EditMode test forcibly resetting the color block
+  before Setup; verifies marker and line/capture-ring initialization.
+- Does not change hitch physics, road colors, CSV data or existing
+  saved Unity scenes. **Local Unity compiler/test verification pending.**
+
+
 ## 0.1.6 — 2026-10-17 (M1.5.1 hitch usability / PhysicsLab visuals)
 
 - Made manual hitch capture easier: initial 0.15m -> 0.50m,

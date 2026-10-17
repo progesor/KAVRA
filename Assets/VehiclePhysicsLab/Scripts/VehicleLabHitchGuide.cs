@@ -37,6 +37,11 @@ public sealed class VehicleLabHitchGuide : MonoBehaviour
         TractorMarkers = tractorMarkers;
         TrailerMarkers = trailerMarkers;
 
+        // Setup() also runs from Editor scene builders, where Awake() is
+        // NOT guaranteed to have run. Initialize the material block BEFORE
+        // the first StyleMarker -> TintRenderer call below.
+        EnsureArrays();
+
         Lines = new LineRenderer[LinkCount];
         CaptureRings = new LineRenderer[LinkCount];
         for (int i = 0; i < LinkCount; i++)
@@ -263,6 +268,9 @@ public sealed class VehicleLabHitchGuide : MonoBehaviour
     private void TintRenderer(Renderer renderer, Color tint)
     {
         if (renderer == null) return;
+        // Defense in depth for Editor-created components and domain reloads.
+        if (colorBlock == null)
+            colorBlock = new MaterialPropertyBlock();
         colorBlock.Clear();
         colorBlock.SetColor(BaseColor, tint);
         colorBlock.SetColor(LegacyColor, tint);

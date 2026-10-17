@@ -352,5 +352,50 @@ namespace Progesor.Kavra.Lab.Tests
                 assembly.Coupling.AssessAttach(a, definition, out result));
         }
 
+        [Test]
+        public void M151EditorHitchGuideSetupWorksBeforeAwakeInitializesMaterialBlock()
+        {
+            var root = new GameObject("HitchGuide_EditMode_Test");
+            GameObject tractorMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            GameObject trailerMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            try
+            {
+                tractorMarker.transform.position = Vector3.zero;
+                trailerMarker.transform.position = Vector3.right * 0.4f;
+                VehicleLabHitchGuide guide = root.AddComponent<VehicleLabHitchGuide>();
+
+                // Even if AddComponent triggers Awake on some Unity versions,
+                // reproduce the precise user's scene-generator ordering:
+                // Setup is called with an UNINITIALIZED colorBlock.
+                var blockField = typeof(VehicleLabHitchGuide).GetField(
+                    "colorBlock",
+                    System.Reflection.BindingFlags.NonPublic |
+                    System.Reflection.BindingFlags.Instance);
+                Assert.IsNotNull(blockField);
+                blockField.SetValue(guide, null);
+
+                Assert.DoesNotThrow(() => guide.Setup(
+                    null, null,
+                    new[] { tractorMarker.transform },
+                    new[] { trailerMarker.transform },
+                    null));
+
+                Assert.AreEqual(1, guide.LinkCount);
+                Assert.IsNotNull(blockField.GetValue(guide));
+                Assert.IsNotNull(guide.Lines);
+                Assert.AreEqual(1, guide.Lines.Length);
+                Assert.IsNotNull(guide.Lines[0]);
+                Assert.IsNotNull(guide.CaptureRings[0]);
+                Assert.That(guide.SelectedHitchGapMeters(),
+                    Is.EqualTo(0.4f).Within(0.001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+                Object.DestroyImmediate(tractorMarker);
+                Object.DestroyImmediate(trailerMarker);
+            }
+        }
+
     }
 }
