@@ -157,3 +157,24 @@ overwrites user-adjusted powertrain, trailer, hitch or axle settings.
 pair into configurable articulated graph, and expose attach/detach
 controls and compound prefab/module binding. Do not stall this progress
 on microscopic tire/suspension tweaks.
+
+
+## 2026-10-17 Unity compiler fix: ConfigurableJoint is not Behaviour
+
+In Unity 6000.3.x, `ConfigurableJoint : Joint : Component`, **not**
+`Behaviour`, so it has **no `enabled` property**. Removed the two incorrect
+uses in `VehicleCoupling.IsAttached` and `VehicleCoupling.Detach`.
+`IsAttached` now checks that a live joint has a connected Rigidbody.
+`Detach()` clears the C# reference and destroys the actual joint component
+(`Destroy` in Play Mode, `DestroyImmediate` only in Edit Mode).
+Importantly, it must **NOT** set `connectedBody = null`: Unity treats
+that as a WORLD-ANCHORED joint rather than disconnecting a constraint.
+
+EditMode regression now also asserts that the ConfigurableJoint is
+removed when detaching, and that a fresh attach/detach is possible.
+Actual Unity compilation/Test Runner and physics acceptance after this
+source fix remain the user's next check; do not declare them passed.
+
+Unity references:
+- https://docs.unity.cn/6000.7/Documentation/ScriptReference/ConfigurableJoint.html
+- https://docs.unity3d.com/cn/current/ScriptReference/Joint-connectedBody.html

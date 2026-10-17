@@ -176,6 +176,14 @@ namespace Progesor.Kavra.Lab.Tests
                     coupling.TryAttach(bodyA, config));
                 Assert.IsTrue(coupling.Detach());
                 Assert.IsFalse(coupling.IsAttached);
+                // Unity ConfigurableJoint is a Component, not a Behaviour.
+                // Detach must remove it; clearing connectedBody would
+                // instead constrain the trailer to a fixed world point.
+                Assert.IsNull(b.GetComponent<ConfigurableJoint>());
+                Assert.IsTrue(coupling.TryAttach(bodyA, config) ==
+                    VehicleCouplingResult.Connected);
+                Assert.IsTrue(coupling.Detach());
+                Assert.IsNull(b.GetComponent<ConfigurableJoint>());
             }
             finally
             {

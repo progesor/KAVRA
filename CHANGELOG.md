@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3 hotfix — 2026-10-17
+
+- Fixed CS1061 in VehicleCoupling: Unity's ConfigurableJoint does not
+  expose Behaviour.enabled; attachment state checks a live connected body.
+- Detach now destroys the joint component rather than setting connectedBody
+  to null, which would unintentionally constrain the trailer to WORLD.
+- Strengthened EditMode coverage for detach and reattach.
+- Unity Editor compilation and runtime verification still pending.
+
+
 ## 0.1.3 — 2026-10-17 (M1.3 actual multi-body tractor/trailer)
 
 - Added VehicleAssemblyDefinition and validation for **two independent**

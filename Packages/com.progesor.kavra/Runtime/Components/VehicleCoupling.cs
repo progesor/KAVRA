@@ -24,7 +24,10 @@ namespace Progesor.Kavra
     {
         [SerializeField, HideInInspector] private ConfigurableJoint activeJoint;
         public ConfigurableJoint Joint => activeJoint;
-        public bool IsAttached => activeJoint != null && activeJoint.enabled &&
+        // ConfigurableJoint inherits Joint -> Component (NOT Behaviour),
+        // therefore it has NO 'enabled' property. A live joint with a
+        // connected Rigidbody is considered attached.
+        public bool IsAttached => activeJoint != null &&
                                   activeJoint.connectedBody != null;
         public Rigidbody ConnectedBody => IsAttached ? activeJoint.connectedBody : null;
 
@@ -89,8 +92,10 @@ namespace Progesor.Kavra
             if (!IsAttached) return false;
             ConfigurableJoint old = activeJoint;
             activeJoint = null;
-            old.connectedBody = null;
-            old.enabled = false;
+            // DO NOT set connectedBody = null: in Unity, that makes a Joint
+            // constrain its body to the WORLD, rather than disconnect it.
+            // Removing the Component is the correct way to release a hitch.
+            // In Play Mode Destroy is deferred until the end of the frame.
             if (Application.isPlaying) Destroy(old);
             else DestroyImmediate(old);
             return true;
