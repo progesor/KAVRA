@@ -2,15 +2,28 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-14): M1 vehicle framework foundation, package 0.1.6. New M1.1 source awaiting Unity Editor verification.**
+**State (2026-10-17): M1.5.1 multi-trailer framework source, package v0.1.6. The most recent HitchVisuals EditMode assembly fix awaits actual Unity Editor acceptance; M1.4 hitch operations were reported working by the user.**
 Repository: https://github.com/progesor/KAVRA
+
+### Current documentation — read these first
+
+- **[Current handover and technical status](docs/25_2026-10-17_CURRENT_STATE_AND_HANDOVER.md)** — branches/PRs, verified vs pending, last Unity errors, immediate next action, new-chat prompt.
+- **[Prioritized roadmap and acceptance criteria](docs/08_ROADMAP_AND_MILESTONES.md)** — P0–P6, release gates and priorities.
+- **[Updated product goals and scope](docs/00_SCOPE_AND_GOALS.md)** — modular vehicle architecture, boundaries and user decisions.
+- **[Fast new-chat handover](docs/12_NEXT_SESSION_HANDOVER.md)** — quick context without re-reading the accumulated old history.
+
+The original goal/roadmap/handover notes are preserved in named archive files.
+**Last source hotfix:** `48d8528` (EditMode test / HitchVisuals assembly reference).
+Do not mark the new M1.5.1 visual lab or EditMode suite as accepted
+until the user's Unity 6000.3.18f1 Console/Test Runner confirms it.
+The chained Draft PRs remain unmerged: **#2 → #8 → #13 → #16**.
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
 plus a separate `Assets/VehiclePhysicsLab` sample host. Its physics assembly
 depends on UnityEngine only: no forced URP, Input System, Cinemachine, Burst,
 or paid vehicle asset dependency.
 
-## What works in source (NOT yet Play Mode accepted)
+## Implemented in source (Unity acceptance differs by milestone)
 
 - VehicleDefinition assets and layouts: 3W, 4W, 6x6, 8x8, 20W **single chassis**.
 - Wheel/axle ID and geometry validation; Editor wizard with visual-only mode.
