@@ -138,3 +138,29 @@ The fix is limited to PhysicsLab visual components; existing
 vehicle physics, joint constraints and generated material assets
 are not modified. User should pull the latest M1.5 branch and
 regenerate the test scene, then inspect Console and Play Mode.
+
+
+## Editor test assembly CS0246 — follow-up hotfix (2026-10-17)
+
+A user found three compile errors in
+`KavraHitchLifecycleEditModeTests.cs` when the new test referenced
+`VehicleLabHitchGuide`. The test assembly's only source references
+were `Progesor.Kavra.Runtime` and `Progesor.Kavra.Editor`, whereas
+the visual guide was being compiled into predefined `Assembly-CSharp`.
+
+**Solution:** isolate exactly the hitch guide into
+`Progesor.Kavra.Lab.HitchVisuals.asmdef` (depends on KAVRA Runtime),
+and add this assembly name to
+`Progesor.Kavra.Lab.EditModeTests.asmdef`. Relocate its .cs/.meta
+into `Assets/VehiclePhysicsLab/Scripts/HitchVisuals/` with the
+unchanged GUID `ca1c5b2c99ab46b6b141000000000002`.
+Both predefined host scripts and Editor generators can access the
+guide via the new autoReferenced assembly without forcing the rest
+of the sample (including optional Input System controllers) into
+a new assembly. The focused test retains compile-time type references
+and exercises the exact previous NullReferenceException.
+
+The UPM package dependencies and hitch physics are unchanged.
+The source/asmdef/GUID mapping has been statically checked, but an
+actual Unity Editor recompilation / Test Runner outcome remains
+unverified until user runs the branch.

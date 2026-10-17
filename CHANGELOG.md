@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.6 assembly hotfix — 2026-10-17
+
+- Fixed CS0246 from KavraHitchLifecycleEditModeTests trying to reference
+  VehicleLabHitchGuide in the predefined Assembly-CSharp assembly.
+- Moved VehicleLabHitchGuide.cs into an isolated auto-referenced
+  Progesor.Kavra.Lab.HitchVisuals assembly definition that references
+  the KAVRA UPM runtime, then added this assembly to EditModeTests.asmdef.
+- Preserved the original MonoScript .meta GUID during the move so
+  serialized scenes retain their script component references.
+- No added UPM dependencies, Input System assembly requirements,
+  physics solver modifications or texture reimports.
+- Static assembly-reference graph and source/file GUID checks completed.
+  Actual Unity 6000.3.x recompile and EditMode Test Runner still pending.
+
+
 ## 0.1.6 hotfix — 2026-10-17 (HitchGuide scene creation NRE)
 
 - Fixed a real Unity NullReferenceException reported during

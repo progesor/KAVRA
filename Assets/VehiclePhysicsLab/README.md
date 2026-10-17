@@ -411,3 +411,26 @@ update the branch: `Setup()` now initializes `MaterialPropertyBlock`
 before rendering hitch markers in the Editor. No need to recreate
 or delete the generated checker/material assets. Regenerate the lab
 scene after the pull and verify it opens with visible markers.
+
+
+### Editor test assembly hotfix (CS0246, 2026-10-17)
+
+The new hitch-guide regression originally referenced
+`VehicleLabHitchGuide` from `Progesor.Kavra.Lab.EditModeTests.asmdef`,
+but the guide still lived in Unity's predefined `Assembly-CSharp`
+assembly. Explicit asmdef assemblies cannot use that type directly.
+
+The guide now lives at:
+`Assets/VehiclePhysicsLab/Scripts/HitchVisuals/VehicleLabHitchGuide.cs`
+in an isolated `Progesor.Kavra.Lab.HitchVisuals` assembly, which only
+references `Progesor.Kavra.Runtime`. The EditModeTests asmdef explicitly
+references this assembly. The script's original .meta GUID is preserved,
+so already saved scenes/prefabs should retain its component reference.
+
+The other host example Scripts intentionally remain in Assembly-CSharp
+to preserve optional Input System support. The UPM runtime remains
+independent of host assembly/assets.
+
+Pull the latest branch, allow Unity to recompile, then run the EditMode
+Test Runner. If no Console compile errors, regenerate the M1.5 scene
+and check the checker ground and hitch marker colors.

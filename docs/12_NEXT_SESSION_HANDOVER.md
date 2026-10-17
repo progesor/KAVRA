@@ -314,3 +314,20 @@ Old saved lab scenes, user CSV and real wheel physics untouched.
 
 Four regression EditMode sources created. Actual Unity 6000.3.x
 compiler/Test Runner and visual acceptance pending; keep Draft.
+
+
+## 2026-10-17 M1.5.1 CS0246: hitch guide test assembly
+
+The user reported Unity CS0246 on 3 lines of
+`KavraHitchLifecycleEditModeTests.cs` referencing a host
+`VehicleLabHitchGuide` in predefined Assembly-CSharp.
+The hitch guide source was moved, preserving its exact script GUID,
+into `Assets/VehiclePhysicsLab/Scripts/HitchVisuals/` with an
+autoReferenced `Progesor.Kavra.Lab.HitchVisuals.asmdef` referencing
+`Progesor.Kavra.Runtime`. EditModeTests asmdef now references that
+assembly explicitly. This is required because asmdef test assemblies
+cannot directly reference predefined Assembly-CSharp code.
+
+Next action: Pull M1.5 branch, let Unity compile, then run EditMode
+tests and regenerate M1.5 checker/hitch lab. No runtime physics,
+manual H, generated shader settings or saved scene/CSV changed.
