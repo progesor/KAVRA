@@ -2,15 +2,28 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-14): M1 vehicle framework foundation, package 0.1.4. New M1.1 source awaiting Unity Editor verification.**
+**State (2026-10-17): M1.5.1 multi-trailer framework source, package v0.1.6. The most recent HitchVisuals EditMode assembly fix awaits actual Unity Editor acceptance; M1.4 hitch operations were reported working by the user.**
 Repository: https://github.com/progesor/KAVRA
+
+### Current documentation — read these first
+
+- **[Current handover and technical status](docs/25_2026-10-17_CURRENT_STATE_AND_HANDOVER.md)** — branches/PRs, verified vs pending, last Unity errors, immediate next action, new-chat prompt.
+- **[Prioritized roadmap and acceptance criteria](docs/08_ROADMAP_AND_MILESTONES.md)** — P0–P6, release gates and priorities.
+- **[Updated product goals and scope](docs/00_SCOPE_AND_GOALS.md)** — modular vehicle architecture, boundaries and user decisions.
+- **[Fast new-chat handover](docs/12_NEXT_SESSION_HANDOVER.md)** — quick context without re-reading the accumulated old history.
+
+The original goal/roadmap/handover notes are preserved in named archive files.
+**Last source hotfix:** `48d8528` (EditMode test / HitchVisuals assembly reference).
+Do not mark the new M1.5.1 visual lab or EditMode suite as accepted
+until the user's Unity 6000.3.18f1 Console/Test Runner confirms it.
+The chained Draft PRs remain unmerged: **#2 → #8 → #13 → #16**.
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
 plus a separate `Assets/VehiclePhysicsLab` sample host. Its physics assembly
 depends on UnityEngine only: no forced URP, Input System, Cinemachine, Burst,
 or paid vehicle asset dependency.
 
-## What works in source (NOT yet Play Mode accepted)
+## Implemented in source (Unity acceptance differs by milestone)
 
 - VehicleDefinition assets and layouts: 3W, 4W, 6x6, 8x8, 20W **single chassis**.
 - Wheel/axle ID and geometry validation; Editor wizard with visual-only mode.
@@ -273,3 +286,73 @@ into position and presses H; trailer brake commands no longer follow
 the tractor. The original R remains a manual recovery request only.
 No automatic rollover/auto-upright or autonomous reattachment.
 See `docs/22_M14_HITCH_LIFECYCLE.md`.
+
+## M1.5 — Variable-length tractor / multi-trailer chains
+
+KAVRA now has a separate, **opt-in** ordered assembly chain for more than
+two independent vehicle bodies. Every link is a standard
+`VehicleAssemblyDefinition` with its own physical `VehicleCoupling`,
+reusable hitch geometry and force/torque break limits. The next link's
+Tractor definition must be the previous link's Trailer definition.
+Cycles, repeated chassis assets and missing links are rejected.
+
+The logical `VehicleAssemblyChainRoot` holds the vehicles and hitch
+components. It relays service/parking brakes **only through the
+continuous connected prefix from the lead tractor**. A broken hitch
+does not fake an engine-driven trailer, reattach itself or preserve stale
+brake values on separated segments.
+
+In the dedicated PhysicsLab, choose
+`Tools > KAVRA > Create M1.5 Two-Trailer Lab Scene`.
+This creates a 6x6 powered tractor + TWO passive four-wheel trailers:
+**3 independent Rigidbodies, 14 independent wheels, 2 breakable joints**.
+Original M1.4 single-trailer test remains unchanged.
+
+Lab controls: **J/L** selects a hitch, **H** explicitly detaches/attaches
+the selected hitch, and **K** applies physical stress to that hitch's
+downstream body. **R** only manually recovers the lead-connected subset
+of the convoy, leaving separated rear trailers untouched. Normal
+W/S/A/D/Space/Q/E/T drivetrain controls remain on the tractor.
+The UI reports each link's Attached/Detached/Broken state.
+
+A new `Tools > KAVRA > Vehicle Chain Wizard` builds/saves an actual
+N-Rigidbody Unity prefab from an ordered list of link assets.
+The current implementation is a *linear chain*, not a free-form branching
+vehicle graph. See `docs/23_M15_MULTI_TRAILER_CHAIN.md`. Real imported
+truck models, coupling force calibration and a generalized attachment-port
+graph are later milestones. All earlier scenes/CSV captures are preserved.
+
+## M1.5.1 PhysicsLab usability — easier hitch capture and readable motion
+
+This is a **user-requested usability pass** on the same M1.5 modular
+physics framework, not another round of microscopic suspension tweaks.
+
+- Default manual `VehicleAssemblyDefinition.MaximumAttachErrorMeters`
+  expanded from **0.15 to 0.50 meters**; default yaw range from
+  **35 to 55 degrees**. The existing H command, safe body/relative
+  speeds, a one-time tiny trailer snap and physics breakForce/torque
+  remain intact — **no automatic coupling**.
+- Old M1.4 assembly assets migrate only original/default tolerance
+  values. Customized tolerances are preserved. These values are still
+  exposed in each link's ScriptableObject inspector.
+- `VehicleCoupling.AssessAttach` shares a non-mutating result and gap,
+  yaw and approach-speed diagnostics with the real `TryAttach` path.
+- The newly generated **M1.3 one-trailer** and **M1.5 two-trailer**
+  PhysicsLabs use a procedural dark/light checker road, stationary
+  15m lane/edge distance markers, blue tractor, orange trailer A,
+  red trailer B and dark tires. Ground texture/materials are generated
+  locally by Editor under `Assets/VehiclePhysicsLab/Generated/`.
+- Electric-cyan and yellow hitch endpoints are visible even in Editor.
+  While playing, the selected hitch is bigger and the colored guide
+  shows **green READY**, amber NEAR, red FAR, cyan ATTACHED;
+  a circular capture radius and HUD status explain whether H can couple.
+- Optional, subtle speed-based camera FOV makes forward motion easier
+  to read. It is enabled ONLY in newly generated articulated
+  demonstration scenes. Old PhysicsLab/M0 scenes are unchanged.
+
+Run `Tools > KAVRA > Create M1.5 Two-Trailer Lab Scene` again (it
+reuses and does not overwrite valid user-created vehicle/link assets),
+save the generated scene and Play. Press J/L to pick a link, align the
+highlighted colored spheres inside its catch ring, and press H. The
+road texture and metric reference marks make slip and backwards drift
+visible. See `docs/24_M151_PHYSICSLAB_VISIBILITY.md`.

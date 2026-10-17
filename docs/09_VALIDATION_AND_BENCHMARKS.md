@@ -1,5 +1,11 @@
 # 09 — Fizik doğrulama, tekrar oynatma ve performans planı
 
+> Bu doküman **test metodolojisinin geçmişini** açıklar. Ürünün
+> güncel kilometre taşı listesi ve Unity kabul durumu için
+> [docs/08](08_ROADMAP_AND_MILESTONES.md),
+> [docs/25](25_2026-10-17_CURRENT_STATE_AND_HANDOVER.md).
+> Kaynak kodunda test yazılması `PASS` sonucuyla karıştırılmaz.
+
 ## Test altyapısı
 
 `VehiclePhysicsLab` sahneleri:
@@ -14,7 +20,17 @@
 - `T07_TractorTrailer`: ayrı gövdeli 18 tekerli taslak (M4).
 - `T08_SurfaceTransitions`: asfalt/çakıl/çamur (M5).
 
-Bu sahneler hâlâ **planlanan** kabul sahneleridir. v0.0.2 ile `Tools > KAVRA > Create M0 Physics Lab Scene` menüsü çalışan sahne nesneleri üretir, kullanıcı tarafından kaydedilip Play Mode'da doğrulanmalıdır. Kaydedilmiş ve doğrulanmış test sahnesi henüz bulunmuyor.
+**17 Ekim 2026 güncellemesi:** Bu ilk T01–T08 adları tarihsel bir
+benchmark taslağıdır; mevcut PhysicsLab'ın tamamı aynı adlarda hazır sahne
+dosyası değildir. Kullanıcı `M0_DynamicLab.unity` ve
+`M0_CalibrationLab.unity` sahnelerini ve
+`docs/Telemetry/` altına gerçek M0.5 CSV kayıtlarını commitledi.
+Bir straight-brake A/B ölçümü kullanıcı Unity Play Mode verisiyle
+karşılaştırıldı; [docs/17](17_M05_TELEMETRY_REVIEW_2026-10-14.md).
+M1/M1.4/M1.5 jeneratörleriyse yeni lab sahnesi oluşturabiliyor,
+ancak son M1.5.1 Unity derleme/TestRunner ve checker/hitch görünüm
+kabulü henüz paylaşılmadı. Güncel test kapısı:
+[docs/08](08_ROADMAP_AND_MILESTONES.md) P0.
 
 ## Ölçülecek temel büyüklükler
 

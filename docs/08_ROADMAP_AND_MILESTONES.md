@@ -1,248 +1,242 @@
-# 08 — Proje yol haritası / milestone ve kabul koşulları
+# KAVRA — Güncel yol haritası, teslim hedefleri ve kabul kriterleri
 
-## M0 — Bootstrap + fizik fizibilite deneyleri
+**Tek güncel roadmap — 17 Ekim 2026**  
+**Aktif dal:** `feat/m15-multitrailer-chain` · **Kaynak paket:** v0.1.6  
+**Bağlantılar:** [Vizyon](00_SCOPE_AND_GOALS.md) ·
+[Yeni sohbet/devir](25_2026-10-17_CURRENT_STATE_AND_HANDOVER.md)
 
-**M0 v0.0.2 kodu önerildi, Unity doğrulaması bekleniyor:** repo, UPM, Wizard temel iskeleti; ilk dinamik raycast tekerlek, süspansiyon, basit lastik, lab generator, testler.
+> **Hedef değişimi:** Tek tek küçük lastik/süspansiyon ayrıntılarını sonsuza
+> kadar incelemek yerine **modüler ve kullanılabilir ana Vehicle Framework**'ü
+> tamamla. Fiziksel olarak bariz hatalı veya derlemeyi engelleyen meseleler
+> istisnadır; bunlar gecikmeden düzeltilir.
+>
+> **Durum anahtarı:** **Kaynakta var** = kod yazılıp commitlenmiş;
+> **Kullanıcı tarafından gözlendi** = yerel bir davranışa ilişkin doğrudan
+> geribildirim/CSV var; **Unity kabulü bekliyor** = gerçek derleme, test veya
+> Play Mode sonucu elde edilmedi. İşaretli kaynak görevi,
+> Unity acceptance PASS anlamına **gelmez**.
 
-**Unity'de doğrulanacak:**
-- [ ] Proje Unity 6.3 LTS'de Console Error olmadan açılıyor.
-- [ ] UPM embedded package görünüyor.
-- [ ] Wizard sahneye 3/4/6/8/20 tekerlek anchor layout'u ekliyor.
-- [ ] ID/geometry validation yanlış konfigürasyonları engelliyor.
-- [ ] `M0_Scaffold.unity` commit edildi.
+## 0. Güncel karar tablosu
 
-**M0 fizik deneyleri (kod var, Unity fizik/derleme kabulü bekliyor):**
-- [ ] `Raycast`, `SphereCast` ve gerekli çoklu temas yaklaşımını karşılaştır.
-- [ ] Dikey yay–amortisör tek wheel test fixture Unity Test Runner'da geçiyor (kaynak eklendi).
-- [ ] Basit boylam/yanal lastik kuvvet modeli ve wheel angular speed Unity'de doğrulandı (kaynak eklendi).
-- [ ] Tek gövdeli dört tekerli düz zeminde ilk dinamik sürüş Play Mode'da doğrulandı (lab generator eklendi).
-- [ ] Statik wheel load ≈ `m*g` testinin toleransı belirlendi.
-- [ ] Telemetri grafiği ve uzun süreli CSV logger eklendi (Inspector snapshot ve debug ray var).
-- [ ] En az 3W, 4W, 8W tek gövdeli Play Mode smoke test.
+| Düzey | Ne yapılacak? | Bu aşamanın önüne geçmeyecekler |
+|---|---|---|
+| **P0 — hemen** | M1.5.1 son Unity/asmdef derleme kabulü, EditMode, checker/hitch görünümü, eski sistem regresyonu | Yeni zincir grafiği, karmaşık shader ve fizikte ince tune |
+| **P1 — temel mimariyi sağlamlaştır** | Core/runtime/host sözleşmeleri, powertrain & assembly API, sabit kimlikler, veri doğrulama, prefab roundtrip | Tam diferansiyel kilit mekaniği, lastik FEM |
+| **P2 — Wizard ve görsel model bağlama** | Imported mesh/pivot/seçilebilir modeller, kalıcı prefab, kullanım akışı, üretim sahnesi | Sanat içeriğinde sınırsız çeşit, gerçek mühendislik amortisörü |
+| **P3 — oyun için gerekli mekanikler** | Engine/gearbox/diff/brake temel kalitesi, yük transferi, ağır araç/aktif aks seçenekleri | Şimdiden tüm araç markalarının birebir doğruluğu |
+| **P4 — genişleyen modül topolojisi** | Daha genel hitch portları, zincirden modül kompozisyonuna evrilme, hedef gerçek 18W | Dallanan bağlantı grafiğini P0 tamamlanmadan yazmak |
+| **P5 — performans ve ürünleşme** | 4W–20W+ ölçüm, çok gövde profil, allocation, Unity UPM release/örnekler | Ölçülmemiş FPS/araç sayısı vaatleri |
+| **P6 — sonraki opsiyonel eklentiler** | Soil, deformasyon, hasar, özel araçlar, opt-in Arcade, ağ adapterleri | Core'u bu sistemlere bağımlı kılmak |
 
-**M0 çıkış ölçütü:** Wheel dynamics ve Rigidbody entegrasyonunun teknik
-fizibilitesi ölçülmüş olacak; temel modelin birim/kararlılık hataları takip
-edilebilecek. İlk sürümde tam motor/şanzıman gerekmez; kontrollü wheel torque
-girdiyle çalışabilir.
+Bunlar **iş sırası**, teslim tarihi/hafta taahhüdü değil. İşin
+ilk sırası gerçek Unity feedback'ine göre değişebilir.
 
-## M1 — Genel amaçlı sürülebilir tek gövdeli sistem
+## 1. Şimdiye kadar neler üretildi?
 
-- Değişken wheel count, aks grupları, steering, servis freni.
-- Tire/suspension model parametre varlıkları.
-- Kontrolcü soyutlaması, bir default input adapter.
-- Statik/dinamik ağırlık transferi ve devrilme testleri.
-- Basit playable lab aracı + physics performance ölçümleri.
+| Faz | Kodda olan | Kullanıcı/Unity delili | Açık kalan |
+|---|---|---|---|
+| **M0 0.0.1–0.0.4** | Unity UPM, tekerlek/aks veri modeli, yay/sönüm, temas, fren, R manual recovery, PhysicsLab | İlk araç Play Mode ve M0 asset/sahne kayıtları | Sistematik tüm teker sayıları ve zemin acceptance |
+| **M0.5 0.0.5–0.0.6** | Ackermann-benzeri steering, slip telemetry, tester, düşük hız fren impuls limiti | **4 eski CSV + 1 A/B CSV**, düz asfalt fren salınımı çok azaldı | Farklı lastik/zemin/aks kompozisyonlarında regresyon |
+| **M1 0.1.0–0.1.1** | SimplePowertrain motor eğrisi, vites, aks bazlı tork paylaşımı, Wizard M1/prefab, 3–20W örnekler | Kaynak/test dosyaları var | Gerçek her layout'un TestRunner + Play kabulü |
+| **M1.2 0.1.2** | Vites state machine, manuel/otomatik, wheel rig / shock görselleri | Kaynak var | Editor mesh-binding/prefab smoke |
+| **M1.3–M1.4 0.1.3–0.1.4** | İki Rigidbody, gerçek ConfigurableJoint, H attach/detach, breakForce/torque, trailer brakes, R whole-body | Kullanıcı **bağlama/ayırma/kopmanın çalıştığını** bildirdi | Reimport/sistematik test, farklı kütle/joint stabilitesi |
+| **M1.5 0.1.5** | 1–16 linkli zincir, N-body root, frenlerin bağlı zincirle sınırlanması, R connected prefix, 14W lab | Kaynak + EditMode testleri | Gerçek 14W towing, R ve kırılan link testi |
+| **M1.5.1 v0.1.6** | 0.5m/55° H, checksum değil asset migration, checker texture, renkler, hitch guide, FOV, asmdef fix | Hata geri bildirimi üzerine **NRE e30c** ve **CS0246 48d85** kaynakta düzeltildi | **Son commit sonrası Unity compile/TestRunner ve görsel kabul** |
 
-## M2 — Aktarma organları ve sürüş modları
+**PR bağımlılık sırası:**
+[PR #2](https://github.com/progesor/KAVRA/pull/2) (M0 → `main`)
+→ [PR #8](https://github.com/progesor/KAVRA/pull/8) (M1 → M0)
+→ [PR #13](https://github.com/progesor/KAVRA/pull/13) (M1.4 → M1)
+→ [PR #16](https://github.com/progesor/KAVRA/pull/16) (M1.5 → M1.4).
 
-- ICE/elektrik power source, torque curve, inertia.
-- Manuel/otomatik vites, clutch, open/locked/LSD diferansiyel.
-- ABS/TCS tasarım ve temel uygulama.
-- Torque graph validation.
+Tüm PR'lar **Draft**, henüz merge yok. Akıllı test/merge
+sırası dışına çıkılmamalı.
 
-## M3 — Vehicle Wizard üretim sürümü
+## 2. P0 — Kırmızı derleme engellerini kapat, sürüşünü doğrula
 
-- Mesh detection, wheel pivot calibration, scene gizmos.
-- Input/visual binders, runtime prefab generation.
-- Quick setup ve Engineering Mode, settings inspectors.
-- Undo, prefab variant ve asset migration politika testleri.
+**Çıkış ölçütü:** v0.1.6 son kaynak, Unity 6000.3.18f1'de açılıp
+testlerden geçiyor ve lab sürüşünde fonksiyonel görünüyor.
 
-## M4 — Çok gövdeli / ağır taşıt desteği
+- [x] `e30c32c`: `VehicleLabHitchGuide.Setup()` önce
+  `MaterialPropertyBlock` oluşturacak şekilde düzeltildi.
+- [x] `48d8528`: `VehicleLabHitchGuide` bağımsız
+  `Progesor.Kavra.Lab.HitchVisuals.asmdef` assembly'sine taşındı;
+  script GUID korundu, EditMode test referansı eklendi.
+- [ ] Unity Console'da `CS0246`, `NullReferenceException` veya başka
+  derleme/başlatma hatası yok.
+- [ ] EditMode Test Runner: `KavraPhysicsEditModeTests`,
+  `KavraAssemblyEditModeTests`,
+  `KavraHitchLifecycleEditModeTests`,
+  `KavraAssemblyChainEditModeTests` PASS.
+- [ ] `Tools > KAVRA > Create M1.5 Two-Trailer Lab Scene` üretirken
+  checker zemin, 15 m referanslar, ayrı araç renkleri ve
+  seçili hitch marker/ring/line görünüyor.
+- [ ] Geri düşük hızda H ile yaklaşık 0.40 m mesafeden bağlanma;
+  0.5 m dışı, fazla açı veya fazla hızda reddetme.
+- [ ] J/L seçimi, H manuel linki ayırıp tekrar bağlama,
+  K gerçek solver kopması; bağlı fren akışı/doğru kopma.
+- [ ] R yalnızca çekiciye bağlı grup için, kullanıcının isteğiyle;
+  römork kopmuşsa kopuk bölüm sabit kalır.
+- [ ] Aynı branch'te M1.4 tek römork laboratuvarı ve eski M0
+  test sahnesi bozulmadan açılır.
+- [ ] **Yalnızca test delili varsa** sonucu docs/25 ve issue #17'ye işleyip
+  P0'ı kapat. Tekrar tüm eski CSV'leri isteme.
 
-- Çekici+römork: ayrı Rigidbody/coupling ve römork frenleri.
-- Çift tekerlek, farklı aks topolojileri, lift axle, bogie.
-- Forklift arka direksiyon ve yük merkezi örneği.
+İlgili: [#17](https://github.com/progesor/KAVRA/issues/17) ·
+[docs/24](24_M151_PHYSICSLAB_VISIBILITY.md) ·
+[docs/25](25_2026-10-17_CURRENT_STATE_AND_HANDOVER.md).
 
-## M5 — Zemin etkileşimi ve arcade erişilebilirlik
+## 3. P1 — Çekirdeği ve modül arabirimlerini sağlamlaştır
 
-- Surface provider, test patch, soft soil kuvvet modeli.
-- MudRunner'dan esinlenilmiş ayrı görsel iz/deformasyon adapter'ı.
-- Simulation/Sport/Arcade profilleri, giriş yumuşatma ve fiziksel ESC testleri;
-  kullanıcı talebiyle otomatik devrilme engelleme kullanılmayacak.
-  Devrilme sonrası manuel kurtarma M0 v0.0.4'te eklendi.
+**Ürün hedefi:** Başka bir Unity projesi KAVRA'yı ekleyip, kopyalanmış
+host test sınıflarına mecbur kalmadan mevcut otomobil/çok akslı
+araç/çekici prefabını kullanabilmeli.
 
-## M6 — Kalibrasyon ve performans
+- [ ] Runtime/Editor/host asmdef sınırlarını ve referans grafiğini test et;
+  her yeni test sınıfını yanlışlıkla `Assembly-CSharp`a bağlama.
+- [ ] `VehicleDefinition`, `SimplePowertrainDefinition`,
+  `VehicleAssemblyDefinition`, zincir asset'leri için
+  migration/validator ve düzenleme güvenliği kabul testleri.
+- [ ] Basit PowertrainRuntime → WheelSolver tork API'si net;
+  3W, 4W, 6W, 8W, 20W teker sayısı koduna sabit varsayım ekleme.
+- [ ] `VehicleAssemblyRoot` iki-gövde ve
+  `VehicleAssemblyChainRoot` çok-gövde uyumunu koruyarak
+  daha ortak `VehicleAssembly` kontrol API'si tasarla.
+- [ ] `H`/kopma/yeniden bağlama, yerinde kalmış stale joint,
+  Linked Rigidbody ve prefab serileştirme sorunları için
+  küçük tekrarlanabilir kabul senaryosu.
+- [ ] Başarılı kabulden sonra PR zincirinin merge planı
+  (M0 → M1 → M1.4 → M1.5); hiçbiri körlemesine `main`e itilmez.
 
-- Lastik modellerinde seçenekler ve referans testleri.
-- Profiling, Jobs/Burst yalnızca bottleneck görüldüğünde.
-- Çok araçlı sahne, kalite düzeyleri ve replay/regression.
+**Çıkış:** En az bir yeni temiz Unity proje/sahnede reused prefab
+assetleri bozulmadan çalışıyor; Unity/UPM bağımlılıkları belgeli.
 
-## M7+ — Hasar ve ileri sistemler
+### P1 kaynak ilerlemesi — 17 Ekim 2026
 
-- Fonksiyonel lastik/fren/şanzıman hasarı.
-- Detachable physical parts, kütle güncelleme.
-- İsteğe bağlı geometry deformation / soft-body adapter.
-- Platform export, release package / semver sözleşmeleri.
+- **Kaynakta eklendi:** `IVehicleAssemblyController`; iki gövdeli ve
+  sıralı çok-römork köklerinin ortak, geriye uyumlu link/attach API'si.
+- **Kaynakta eklendi:** iki EditMode regresyon testi, yeni Python
+  asmdef/GUID preflight kontrolü ve GitHub Actions statik doğrulama.
+- **Açık:** gerçek Unity derleme, EditMode PASS, prefab yeniden importu,
+  sahne görünümü ve Play Mode. P0 kabulü ve issue #17 kapanmadı;
+  PR #16 Draft. Ayrıntı: [docs/26](26_P1_COMMON_ASSEMBLY_CONTROL_API.md).
 
-## Sürekli çalışma disiplinleri
+## 4. P2 — Vehicle Wizard üretim akışı ve model bağlama
 
-- Her milestone için issue, checklist, telemetri ekran görüntüsü ve test kaydı.
-- `0.x` boyunca API deneysel; önemli rename'lerde serialized migration.
-- Fizik modülleri erken benchmark olmadan optimize edilmez.
-- Önce M0 kabul, ardından M1. İlk sürüme M4/M7'nin sahte kodu eklenmez.
+Kullanıcı isteği: ileride gerçek bir **açık şasi** otomobil, 4x4 ve
+6x6/8x8 araçlar bulalım; farklı tekerlek/diferansiyel/süspansiyon
+parçaları görsel olarak hareket etsin. **Düşük öncelik modeller**
+[#9](https://github.com/progesor/KAVRA/issues/9).
 
+- [ ] Wizard'da yeni araç türü + aks/süspansiyon setup, monte edilen
+  pivotların görsel önizlemesi ve hızlı hata açıklaması.
+- [ ] FBX/GLB/Blender mesh import: ön/arka/right/left wheel pivot,
+  yerel +X/+Y/+Z konvansiyonları ve drive/suspension kalibrasyonu.
+- [ ] Son kullanıcı meshleri ile mevcut
+  `TravelPivot/SteeringPivot/SpinPivot` ve
+  `VehicleSuspensionVisualLink` esnek bağlaması.
+- [ ] Prefab, prefab variant, ScriptableObject referanslarının sahne
+  değiştirip yeniden import edildiğinde korunması.
+- [ ] Renderer/URP/HDRP ve Input System bağımsız core; lab art
+  `Assets/VehiclePhysicsLab` altında kalmalı.
+- [ ] Model lisanslarının tekrar dağıtım yetkisi; lisanslı raw
+  assetleri açık repoya gömmeme.
 
-### M0 ride-height follow-up — issue #3
+**Çıkış:** Kullanıcı kendi modelini içe alıp makul, sınırlı sayıda
+Wizard adımıyla tekerlekli çalışan araç prefabı üretebiliyor.
 
-- [x] Source for footprint/CoM nominal load estimate, bump-stop and anti-roll.
-- [x] Source for ray/sphere contact switch with fallback and bottom-out metrics.
-- [x] HUD and 20-second experimental lab CSV capture source.
-- [x] Pure/EditMode regression test sources added.
-- [ ] Unity 6000.3.18f1 compiles, all new tests PASS.
-- [ ] Turning on flat ground: acceptable bank without persistent wheel clipping.
-- [ ] Telemetry accepted across 3W / 4W / 8W / 20W.
+## 5. P3 — Basit tahrikten genişletilebilir araç mekaniğine
 
+- [ ] Mevcut `SimplePowertrainRuntime`ın yanına gerçek
+  clutch/torque-converter/gear response için değiştirilebilir
+  aktarma organı sözleşmesi (önce sürülebilirlik blockerları).
+- [ ] Gerçek open / kilitli / limited-slip diferansiyel, hız
+  kısıtı/reaksiyonları açısından açık ayrı modüller.
+- [ ] ABS/TCS (opsiyonel), servis/park freni, römorklarda
+  basit fren gecikmesi/komut iletimi, yüklü araç ivme/fren testi.
+- [ ] CoM, yük, trailer ağırlık dağılımı ve farklı axle counts.
+- [ ] Optional sim/arcade ayar profili; **gizli oto-upright yok**.
 
-### M0 yüzey sürtünmesi / manuel kurtarma / ölçüm — issue #4
+**Çıkış:** Sim/Road/Truck profillerinin neyin fizik, neyin kullanıcı
+kontrol/yardım olduğunu ayrıştırması; kabul testleri kaynak ve Play Mode.
 
-- [x] `SurfaceZone` ve `SurfaceResponse` fizik entegrasyonu kaynak kodu.
-- [x] Lab asfalt / çakıl / çamur / buz zemin şablonları ve yüzey metrikleri.
-- [x] Kullanıcı tetiklemeli `R` kurtarma; otomatik anti-flip **yok**.
-- [x] Ray/sphere cast sorgu maliyetini isteğe bağlı ölçecek sayaç ve 90s CSV.
-- [x] Yüzey davranışları / kurtarma güvenliği için EditMode test kaynakları.
-- [ ] Unity derlemesi, EditMode testleri ve Play Mode yerel kabul.
-- [ ] Farklı yüzeylerde veri kayıtlarının nümerik karşılaştırması.
-- [ ] Cast CPU mikrosaniye istatistikleri gerçek donanımda karşılaştırıldı.
+## 6. P4 — Ağır araç ve daha genel bağlantı topolojisi
 
+- [ ] Gerçek 18 tekerli articulated rig; teker ve aks sayıları
+  gerçek iki/çok gövdeye dağıtılacak, **tek 18W rigidbody gibi gösterilmeyecek**.
+- [ ] M1.5 lineer zincir üzerinden seçilebilir hitch portları ve
+  farklı trailer çekme başlıkları; gerçekten gerekirse branching graph.
+- [ ] Çoklu trailer tipi, modüler fren/güç/sinyal bağlantısı
+  (basit network modeli daha sonra).
+- [ ] Kingpin/drawbar ayrımı, uygun limit/bağlantı gücü validasyonu.
+- [ ] Gerçek loader/tractor/forklift yönlendirme varyantları.
 
-### M0.5 steering/slip diagnostics / reproducible calibration — issue #5
+**Çıkış:** İkinci bir gövdeli araç tipi, düzgün ayrılma/kopma
+ve prefab yeniden kullanımından başarıyla geçiyor.
 
-- [x] Steering geometry source: legacy Parallel / ApproximateAckermann for
-  variable wheel counts, rear steer, front steer and multi-axle layouts.
-- [x] Optional TireTuningProfile per wheel with null = legacy defaults.
-- [x] Bounded slip ratio / slip angle diagnostic output per wheel; M0 force
-  model remains the same velocity-slip approximation.
-- [x] Scripted M0 calibration-run source: brake, steering step and coast.
-- [x] Extended Inspector/HUD and CSV telemetry with input/tire/steer fields.
-- [x] Source for EditMode regression tests.
-- [ ] Local Unity compilation, test runner acceptance and actual CSV plots.
-- [ ] Calibration of low-speed tire force, braking and load-transfer against
-  real recorded measurements or explicitly chosen reference behavior.
+## 7. P5 — Ölçüm, paket kalitesi ve ilk sürüm adayı
 
+- [ ] Karşılaştırmalı Unity Profiler: 4W, 6W, 20W tek gövde ve
+  çok trailer; tek araç ve çoğaltılmış lab senaryoları.
+- [ ] Contact query ve FixedUpdate CPU bütçesi, GC/frame
+  allocation ve component lifecycle hataları raporlanır.
+- [ ] EditMode+PlayMode regresyon altyapısı, mümkünse Unity batchmode
+  veya GitHub Actions CI. CI kurulmadan `PASS` iddia edilmez.
+- [ ] Unity 6.3+ paket/version/asmdef/UPM dağıtım kalitesi, örnek prefab
+  ve örnek host'ların ayrılığı.
+- [ ] Release-notes, basit tutorial, kontroller,
+  her özellik için bilinen sınırlamalar.
 
-### M0.5 measured brake oscillation follow-up — issue #6
+**Çıkış:** Test runner temiz, örnek projelerde kurulum tariflenebilir,
+ölçülmüş (uydurulmamış) performans; güvenli release candidate.
 
-- [x] Four user telemetry CSVs inspected, numeric anomaly summarized in docs/17.
-- [x] Source code for near-stop brake impulse limiting, opt-in configuration
-  and per-wheel telemetry; 3 new EditMode regression tests authored.
-- [x] Unity Play Mode produced real v0.0.6 CSV with new braking diagnostics.
-- [ ] Unity Test Runner EditMode suite PASS evidence (not yet provided).
-- [ ] Brake holding/creep on a slope verified (flat asphalt only so far).
-- [x] New StraightBrake A/B CSV with limiter enabled confirms elimination of
-  persistent near-stop high-force alternation on flat asphalt. User's T3
-  commit `c278b42` / `132146.csv`, verified in docs/17 (common-window
-  Fx p95 13.94 kN -> 0.67 kN, sign flips 243 -> 3).
-- [ ] SteeringStep repeated and airborne wheel RPM/grounded behavior assessed;
-  no automatic roll or flip correction will be introduced.
-- [ ] Surface/multi-axle behavior acceptance, before M1 freeze.
+## 8. P6 — bilinçli olarak şimdilik ertelenenler
 
+- Derin lastik deformasyon / yüksek ayrıntı brush/FEM,
+  gerçek zamanlı toprak çamuru deformasyonu.
+- Komple mekanik suspension-joint grafı ve soft-body hasar.
+- Tam network replication/multiplayer deterministic lockstep.
+- Her araç modelinin bitmiş animasyon/ses ve marka/model dataları.
+- Tam donanım platform matrisi ve PC dışı yüksek ölçekli benchmark.
 
-## M1 — Reordered implementation focus: core vehicle power path
+Bu maddeler gerçek ürün ihtiyacı doğurursa ayrı milestone/issue
+olarak açılabilir; çekirdek bağımlılığına zorunlu olarak girmez.
 
-Based on the user's request, we now prioritize the **functioning reusable
-vehicle system** before tiny near-limit physics tuning details.
+## 9. Definition of Done — her kilometre taşında
 
-- [x] Source: SimplePowertrainDefinition (torque/RPM + gears + final drive).
-- [x] Source: reusable SimplePowertrainRuntime with axle-ID torque splits and
-      no 4-wheel hardcoding; direct M0 drive mode remains optional/default.
-- [x] Source: Wizard create/attach powertrain asset, build M1 chassis
-      and save a placeholder reusable powered Unity prefab.
-- [x] Source: M1 host scene generator, input/gear handling, HUD/CSV and tests.
-- [ ] Unity 6000.3.x imports and compiles new M1 sources.
-- [ ] EditMode tests pass, 3/4/6/8/20 wheels allocate motor torque correctly.
-- [ ] M1 Play Mode W/S, Q/E, brakes, R manual recovery and gear RPM telemetry.
-- [ ] Save actual M1 lab scene and minimum smoke results in repo.
-- [ ] Confirm older M0 scenes and user telemetry behavior are unchanged.
+Bir görev **tamamlandı** diye işaretlenebilmesi için:
 
-Next: move forward with a basic explicit open differential and optional
-multi-axle weighting, better Wizard prefab binding, then M2 clutch/gearbox
-reaction models. Do NOT block main framework development on minuscule tire
-force refinements. Natural rollover and R-only manual recovery remain.
+1. Hedeflenen feature ve öncesinin kaynakları güncel feature dalına
+   commitlenmiştir; kullanıcı assetleri ve önceki veri kaydı korunur.
+2. EditMode/API seviyesinde anlamlı regresyon testleri kaynakta vardır.
+3. Unity derleyici/API uyumluluğu gerçek Unity ortamında doğrulanmış,
+   Console kırmızı hata yoktur.
+4. Gerekiyorsa örnek sahnede Play Mode davranışı gözlenmiş ve
+   zorlanan senaryoda başarısızlık açıkça yazılmıştır.
+5. Doküman ve kullanım tarifinin karşılığı çalışan menü/komutla
+   eşleşmektedir. PR hâlâ doğrulanmamışsa **Draft** kalır.
+6. Sürüm numarası, kaynak README, changelog ve bu roadmap tutarlıdır.
+7. Yeni bir dal açılmadan önce önceki kabul engeli bilerek
+   kapatılmış veya açık risk olarak devredilmiştir.
 
+Mevcut **source complete** kutuları, gerçek Unity kabulünün yerine
+geçmez.
 
-### M1.1 reusable driveline and multi-axle demos — issue #10
+## 10. Takip kaynakları ve tarihçe
 
-- [x] Source: AxleDefinition extended with backward-compatible drive torque
-  weighting and clearly labeled approximation mode.
-- [x] Source: SimplePowertrainRuntime distributes total engine output by
-  axle weights and wheel-level relative-speed bias when requested.
-- [x] Source: Wizard can toggle powered axles and modify group torque modes.
-- [x] Source: separate M1 labs for 3W/4W/6x6/8x8/20W (one rigid body each).
-- [x] Source: six EditMode regression tests, old constructor retained.
-- [ ] Unity 6000.3.x compile and EditMode tests actually PASS.
-- [ ] M1 truck 6x6 and 8x8 scenes drive, reverse and show wheel torques.
-- [ ] M0 .unity scenes and previously recorded user telemetry remain intact.
-- [ ] Actual gear/torque behavior and performance evaluated in Play Mode.
+- Ürün vizyonu: [docs/00](00_SCOPE_AND_GOALS.md)
+- Kapsam/ilk gereksinimler: [docs/02](02_REQUIREMENTS_AND_USE_CASES.md)
+- Gerçek M0 fren telemetrisi: [docs/17](17_M05_TELEMETRY_REVIEW_2026-10-14.md)
+- Fizik kalite planı: [docs/09](09_VALIDATION_AND_BENCHMARKS.md)
+- M1.5 kaynak ayrıntısı: [docs/23](23_M15_MULTI_TRAILER_CHAIN.md)
+- M1.5.1 checker/hitch + Unity hotfix: [docs/24](24_M151_PHYSICSLAB_VISIBILITY.md)
+- En güncel devir: [docs/25](25_2026-10-17_CURRENT_STATE_AND_HANDOVER.md)
+- M1.4 [Issue #14](https://github.com/progesor/KAVRA/issues/14),
+  M1.5 [#15](https://github.com/progesor/KAVRA/issues/15),
+  M1.5.1 [#17](https://github.com/progesor/KAVRA/issues/17)
+- Önceki art arda eklemeli milestone notları kaybolmasın diye
+  `docs/08_ROADMAP_ARCHIVE_TO_2026-10-17.md` altında arşivlendi.
 
-Next foundational step: basic real gearbox state/shift control and simpler
-reusable model/visual binding; full mechanical differential lock remains
-deferred. Realistic mechanical demo 3D models are tracked separately #9.
-
-
-### M1.2 gearbox and wheel presentation — issue #11
-
-- [x] Source: per-vehicle manual/automatic gearbox state, shift torque
-  interruption, requested/engaged gear and speed-aware direction safety.
-- [x] Source: explicit Travel/Steer/Spin pivot presentation and visual
-  suspension link that do not affect Rigidbody forces or contacts.
-- [x] Source: generated M1 prefab/scaffold rigs and Editor binding menu
-  for previously selected vehicle wheel meshes; old M0 visuals unaffected.
-- [x] Host HUD/CSV and EditMode test sources for new behavior.
-- [ ] Unity 6.3.x compile and Test Runner pass.
-- [ ] Actual manual/automatic shift, gear change at speed, and R recovery.
-- [ ] Imported model wheel pivot and preview shock update in Play Mode.
-- [ ] Existing user's M0 scenes/csvs and M1 prior presets remain intact.
-
-Next **core** milestone: first VehicleAssembly coupling (multi-body
-tractor and trailer, physically separate rigidbodies) and reusable
-scene/prefab construction; then more complete drivetrain or loading
-mechanics. Realistic demo model search remains backlog #9.
-
-
-### M1.3 — multi-body assemblies (issue #12)
-
-- [x] Source: VehicleAssemblyDefinition referencing two independent
-  chassis, validation and pose math for coincident hitch points.
-- [x] Source: ConfigurableJoint coupling with locked translation,
-  free yaw and tunable limited pitch/roll, detach function.
-- [x] Source: trailer own Rigidbody/VehicleSimulationRoot and optional
-  brake command relay; no powered trailer or pneumatic model.
-- [x] Source: separate assembly Wizard + prefab save with two bodies,
-  6x6 tractor / passive 4W trailer PhysicsLab and hitch telemetry.
-- [x] Source: manual R assembly-safe two-body recovery, no auto-upright.
-- [x] Eight new assembly EditMode regression tests source.
-- [ ] Unity 6000.3.x compilation and Test Runner all pass.
-- [ ] 6x6+4W trailer linked, moves/turns/reverses, two bodies stay coupled,
-      no excessive joint drift or instability over flat asphalt.
-- [ ] Basic service/park-braking verified on both vehicles in Play Mode.
-- [ ] Manual R restores BOTH bodies safely; still refuses moving at speed.
-- [ ] Save assembly prefab and re-instantiate from a separate Unity scene.
-- [ ] Previous M0/M1 scene and experimental user telemetries remain untouched.
-
-Next foundational milestones: generalized multi-body graph,
-tractor-trailer coupling workflow / attach-detach UI, suspension visual
-binding to real chassis assets, and a fuller differential/drivetrain.
-Do not postpone main module development for microscopic tire tuning.
-
-
-### M1.4 — manual hitch and physical overload break — issue #14
-
-- [x] Source: attach geometry/yaw/velocity guards; optional short manual
-  trailer hitch snap; manual slow-speed detach and reattach.
-- [x] Source: Unity ConfigurableJoint.breakForce/breakTorque configuration
-  and OnJointBreak(float) physical-break state/diagnostics; no fake break
-  and NO automatic reconnection.
-- [x] Source: stale trailer brake relay clears on disconnect; legacy
-  M1.3 ScriptableObject hitch-settings migration.
-- [x] Host H hitch toggle / K real physics impulse diagnostic, HUD state.
-- [x] 9 new hitch EditMode test methods; old stale-brake test updated.
-- [ ] Unity 6000.3.x compile + EditMode and M1.3 tests actually PASS.
-- [ ] In Play Mode, H detaches and reconnects after hitch alignment;
-  speed/yaw/distance restrictions work as specified.
-- [ ] Physics solver actually triggers OnJointBreak at finite thresholds,
-  K test logs a break and H allows reconnection when safe.
-- [ ] Reimported saved assembly prefab retains hitch strength settings.
-- [ ] Older M0/M1 scenes and telemetry unaffected.
-
-Next: generalized attachment ports/assembly chain and trailer modules,
-not microscopic tire tuning; realistic meshes remain separate issue #9.
+**Özet:** Bir sonraki gerçek adım yeni feature kodu değil,
+**son M1.5.1 assembly düzeltmesini Unity Editor'da kabul etmek**.
+Sonrasında P1/P2 alanlarının öncelikli geliştirmelerine dönülecek.

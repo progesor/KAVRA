@@ -46,6 +46,19 @@ namespace Progesor.Kavra
             if (simulation == null)
                 return VehicleRecoveryResult.MissingVehicleOrConfiguration;
 
+            // A multi-trailer lead vehicle recovers ONLY the connected
+            // lead prefix as one group. Detached suffixes are not moved.
+            // This check must precede legacy two-body assembly membership.
+            VehicleAssemblyChainMember chainMember =
+                simulation.GetComponent<VehicleAssemblyChainMember>();
+            if (chainMember != null && chainMember.Chain != null)
+            {
+                if (!chainMember.IsLead)
+                    return VehicleRecoveryResult.MissingVehicleOrConfiguration;
+                return VehicleAssemblyChainRecovery.TryRecover(chainMember.Chain,
+                    maximumSpeedMetersPerSecond);
+            }
+
             // Whole-assembly R recovery: never teleport one connected body
             // alone, which would violently stretch its ConfigurableJoint.
             VehicleAssemblyMember member = simulation.GetComponent<VehicleAssemblyMember>();

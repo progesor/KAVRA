@@ -1,0 +1,16 @@
+name: KAVRA source-only preflight
+
+on:
+  push:
+    branches: ["feat/**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  source-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Validate source contracts (not Unity compilation)
+        run: python3 scripts/validate_bootstrap.py

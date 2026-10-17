@@ -1,5 +1,13 @@
 # 02 — Gereksinimler ve kullanıcı senaryoları
 
+> **Tarihsel gereksinim listesi:** Aşağıdaki eski MUST/SHOULD kontrol
+> kutularının işaretli olmaması, ilgili kodun henüz yazılmadığı anlamına
+> **gelmez**. 17 Ekim 2026 itibarıyla güncel kaynak/kullanıcı kabulü
+> ayrımı ve iş sırası için [docs/08](08_ROADMAP_AND_MILESTONES.md) ile
+> [docs/25](25_2026-10-17_CURRENT_STATE_AND_HANDOVER.md) esas alınır.
+> Özellikle 3–20W layout, basic Powertrain, ilk two-body/chain bileşenleri
+> ve HitchLifecycle kaynakta bulunuyor; son Unity kabulü ayrı izleniyor.
+
 Etiketler: **MUST**, **SHOULD**, **LATER**. Her özellik geliştirme aşamasında
 ölçülebilir kabul kriterine bağlanmalı.
 

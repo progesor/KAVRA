@@ -68,12 +68,23 @@ public sealed class VehicleAssemblyLabHud : MonoBehaviour
         float forceKiloNewtons = settings.BreakForceNewtons * 0.001f;
         float torqueKiloNm = settings.BreakTorqueNewtonMeters * 0.001f;
 
-        string report = "KAVRA M1.4 — REAL HITCH LIFECYCLE" +
+        VehicleLabHitchGuide guide = GetComponent<VehicleLabHitchGuide>();
+        VehicleHitchAssessment reading = guide != null
+            ? guide.SelectedAssessment() : default(VehicleHitchAssessment);
+        string guidance = guide != null ? guide.SelectedStatus()
+            : "H: manual connect/disconnect";
+
+        string report = "KAVRA M1.5.1 — TRAILER HITCH LAB" +
                         "\nState: " + hitch.State +
                         "   Breaks: " + hitch.PhysicalBreakCount +
                         "   Last break: " + hitch.LastBreakForceNewtons.ToString("F0") + " N" +
                         "\nHitch gap: " + (gap * 100f).ToString("F1") + " cm" +
+                        " / " + (settings.MaximumAttachErrorMeters * 100f).ToString("F0") +
+                        " cm capture" +
                         "   Relative yaw: " + yaw.ToString("F1") + " deg" +
+                        "\n" + guidance +
+                        "  | Approach speed: " +
+                        reading.RelativeHitchSpeedMps.ToString("F2") + " m/s" +
                         "\nForce break: " +
                         (settings.BreakForceNewtons > 0f
                             ? forceKiloNewtons.ToString("F1") + " kN" : "disabled") +
@@ -90,6 +101,6 @@ public sealed class VehicleAssemblyLabHud : MonoBehaviour
                         "\nR = manual BOTH-body recovery while connected";
 
         float x = Mathf.Max(12f, Screen.width - 465f);
-        GUI.Box(new Rect(x, 12f, 455f, 212f), report);
+        GUI.Box(new Rect(x, 12f, 455f, 242f), report);
     }
 }

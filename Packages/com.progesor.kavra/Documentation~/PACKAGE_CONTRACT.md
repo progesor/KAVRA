@@ -238,3 +238,60 @@ Disconnection releases the basic tractor-to-trailer service/park brake
 relay and clears last mirrored brake values. User's R-only recovery
 remains assembly-aware while still connected, and individual-body-only
 when uncoupled. No implicit auto-coupling or auto-rollover logic exists.
+
+
+## M1.5 ordered chain contracts
+
+`VehicleAssemblyChainDefinition` references an ORDERED list of existing
+`VehicleAssemblyDefinition` assets, not a hard-coded truck mesh list.
+For edge i>0, edge i.Tractor MUST equal edge i-1.Trailer; no chassis
+definition can appear twice as a physical node (no cycles). Validator
+limits 1..16 edges. This is a directed path, not a branching graph.
+
+`VehicleAssemblyChainRoot` is a non-Rigidbody logical parent. It
+tracks N independent VehicleRoot objects and N-1 VehicleCoupling
+objects. Each ConfigurableJoint is owned on its downstream vehicle
+and has its own force/torque thresholds and state. H/J/L controls are
+host examples; the runtime API accepts link indices directly.
+Repeated key presses are explicit only: **no auto-attach**.
+
+Brake propagation is sequential from the lead through every connected
+edge. Once an edge is detached or physically broken, no downstream
+body receives inherited lead braking, even if two trailers remain
+attached to each other. Previously mirrored commands are cleared.
+This is still a basic command relay, not pneumatic/line-pressure physics.
+
+`VehicleAssemblyChainMember` routes R-only recovery from the LEAD to
+`VehicleAssemblyChainRecovery`. It preflights all vehicles in the
+connected lead prefix (position/speed, road under wheels and primitive
+collision-box clearance) before relocating ANY of them. A detached
+suffix's position, velocity and joint state are left unchanged.
+The chain recovery does not automatically upright rolled vehicles.
+
+The entire path may be serialized as a Unity prefab by the Editor
+builder; the currently bundled primitive chassis visuals still have
+no imported real vehicle mesh dependence.
+
+
+## M1.5.1 manual hitch and presentation contract
+
+Default M1.4 alignment/capture tolerances were too narrow for a human
+controlling a primitive chassis without clear marker visuals. Updated
+`VehicleAssemblyDefinition.MaximumAttachErrorMeters=0.5m` and
+`MaximumAttachYawDegrees=55deg` apply to newly authored assets.
+Schema migration from older versions changes only untouched original
+0.15m and 35deg values; customized assets remain authoritative.
+
+`VehicleCoupling.AssessAttach(..., out VehicleHitchAssessment)` is
+a non-mutating preflight that returns `VehicleCouplingResult.Connected`
+when READY (not yet attached). It exposes body speed, hitch-point
+relative speed, physical hitch separation and forward heading delta.
+`TryAttach` runs that exact preflight before the user's optional
+one-shot snap and joint creation. Speed gates do not change.
+`OnJointBreak` still depends on real Unity solver thresholds;
+manual reattachment still requires an explicit H request.
+
+Rendering/speed-reference materials remain ONLY in
+`Assets/VehiclePhysicsLab` host generator, not the embedded UPM
+runtime package, so users may bind real materials/FBX meshes in
+production without depending on the demo's checker or colors.

@@ -329,3 +329,108 @@ threshold transfer, attach prerequisites, manual unlink/relink,
 OnJointBreak status notification simulation and legacy asset
 migration. Actual physical overload breaking requires Unity Play Mode;
 a synthetic EditMode callback does not claim to prove solver breaking.
+
+
+## M1.5 — true multi-trailer lab (6x6 + 4W + 4W)
+
+`Tools > KAVRA > Create M1.5 Two-Trailer Lab Scene` generates three
+independent Rigidbody objects and two ConfigurableJoints:
+**6-wheel powered truck + two passive four-wheel trailers**, 14 total.
+Save as `Assets/VehiclePhysicsLab/Scenes/M15_TwoTrailerChain.unity`.
+
+Reused/created data under `Assets/VehiclePhysicsLab/Assemblies/`:
+M15 tractor definition, two DIFFERENT 4W trailer definition assets,
+separate M15_Link0_TractorToA and M15_Link1_AToB hitch assets, one
+M15_MultiTrailerChain asset and the truck motor profile.
+Existing assets are reused without silent overwrites.
+
+Controls: W/S forward/reverse, A/D steering, Q/E shifting, T
+manual/automatic gearbox, Space brake, R EXPLICIT manual recovery.
+**J/L** chooses a hitch index (0 tractor→A, 1 A→B).
+**H** manually attaches/detaches THAT hitch only (requires low speed,
+small aligned gap); **K** physically stresses the selected hitch
+without directly invoking a break. The HUD shows each hitch's
+Attached/Detached/Broken status.
+
+Example: detach link 1 via J/L→H. The tractor still tows trailer A,
+but trailer B is independent and loses inherited brake signals. When
+link 0 is broken, the still-attached A→B pair does not receive tractor
+brakes. Only an intentional H can reattach a valid link.
+**R** recovers ONLY the lead-connected vehicles together after a
+full preflight, without moving any disconnected rear convoy.
+
+Save a reusable N-body prefab via
+`Tools > KAVRA > Vehicle Chain Wizard`. ConfigurableJoint force/torque
+failure limits remain each link asset's own values (v0.1.4 subsystem).
+Unity 6000.3.x compile, Test Runner, actual towing/reverse/hitch break
+and prefab round-trip must be checked in Unity.
+
+
+## M1.5.1 — easy-to-read checker lab and visible hitch capture
+
+The **two** existing lab generation menus now decorate their generated
+scenes with a large high-contrast procedural checker road (3-meter
+squares), stationary 15m reference markers, blue tractor, orange
+trailer A, red trailer B, and dark tires. All such styling is
+EDITOR-only and does not change tire forces, collision geometry
+or the UPM solver. Assets are cached as native files under:
+`Assets/VehiclePhysicsLab/Generated/`.
+
+The H coupling default is **0.50m** instead of 0.15m, and allowed
+initial yaw is **55 degrees** instead of 35 degrees. It is still
+explicit and only works at safe low body/hitch speeds. A one-time
+small trailer snap finishes alignment after an accepted H request.
+
+A new `VehicleLabHitchGuide` presents a bright cyan/yellow pair,
+larger selected markers, a green/yellow/red colored guide line,
+a circular capture radius and a status message:
+`READY`, `TOO FAR`, `BAD ANGLE`, `TOO FAST`,
+`WAIT` or `CONNECTED`. In the multi-trailer scene, J/L selects
+the hitch to highlight and H operates it. The two-body scene
+has its own identical guide. The guide is visual only; it NEVER
+auto-attaches.
+
+An opt-in chase camera FOV effect adds at most 6–7 degrees as the
+vehicle reaches roughly 90 km/h. This and fixed checker squares help
+show whether the tractor is advancing, skidding or pulling the
+trailers backwards.
+
+**To see changes in the lab:** Pull the M1.5 branch in GitHub Desktop,
+run the M1.5 or M1.3 lab menu again and save the generated Unity scene.
+Existing scenes and custom assets are not overwritten. If a prior
+VehicleAssemblyDefinition uses the old exact default 0.15m / 35deg
+values, the version upgrade updates those; a custom manual value
+is left as it was. For exact scope, see docs/24.
+
+
+### M1.5.1 hitch guide hotfix (Editor setup)
+
+If the M1.5 lab generator previously threw
+`NullReferenceException at VehicleLabHitchGuide.TintRenderer`,
+update the branch: `Setup()` now initializes `MaterialPropertyBlock`
+before rendering hitch markers in the Editor. No need to recreate
+or delete the generated checker/material assets. Regenerate the lab
+scene after the pull and verify it opens with visible markers.
+
+
+### Editor test assembly hotfix (CS0246, 2026-10-17)
+
+The new hitch-guide regression originally referenced
+`VehicleLabHitchGuide` from `Progesor.Kavra.Lab.EditModeTests.asmdef`,
+but the guide still lived in Unity's predefined `Assembly-CSharp`
+assembly. Explicit asmdef assemblies cannot use that type directly.
+
+The guide now lives at:
+`Assets/VehiclePhysicsLab/Scripts/HitchVisuals/VehicleLabHitchGuide.cs`
+in an isolated `Progesor.Kavra.Lab.HitchVisuals` assembly, which only
+references `Progesor.Kavra.Runtime`. The EditModeTests asmdef explicitly
+references this assembly. The script's original .meta GUID is preserved,
+so already saved scenes/prefabs should retain its component reference.
+
+The other host example Scripts intentionally remain in Assembly-CSharp
+to preserve optional Input System support. The UPM runtime remains
+independent of host assembly/assets.
+
+Pull the latest branch, allow Unity to recompile, then run the EditMode
+Test Runner. If no Console compile errors, regenerate the M1.5 scene
+and check the checker ground and hitch marker colors.

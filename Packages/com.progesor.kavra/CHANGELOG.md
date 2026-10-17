@@ -1,5 +1,37 @@
 # Changelog
 
+## Unreleased — shared host-facing assembly API
+
+- Additive `IVehicleAssemblyController` implemented by M1.4 and M1.5
+  roots; consistent link queries and explicit manual control.
+- No serialized field changes, assembly physics changes or new package
+  dependency. Unity compiler and Test Runner acceptance pending.
+
+
+## [0.1.6] — 2026-10-17
+
+- More forgiving manual assembly hitch defaults (0.5m / 55deg).
+- Versioned migration for older default tolerance values.
+- Shared read-only hitch assessment result and measurements, consistent
+  with active TryAttach preflight; no automatic attachment or
+  new physics corrections.
+- Editor-host PhysicsLab visuals (checker surface/colored chassis and
+  hitch guide) added outside UPM.
+- Added 4 EditMode capture/migration regression tests.
+- Source/static inspections completed; Unity actual tests pending.
+
+
+## [0.1.5] — 2026-10-17
+
+- Added ordered chain definition/validator, N-body runtime/Editor builder
+  and per-link coupling selection with existing breakable hitch components.
+- Added braking relay through lead-connected prefix and manual recovery
+  of that prefix without moving any detached suffix vehicle.
+- Added 14-wheel, 3-Rigidbody multi-trailer PhysicsLab and source tests.
+- Preserved all previous scenes and UPM dependencies.
+- Unity Editor compilation/Play Mode still needs user verification.
+
+
 ## [0.1.4] — 2026-10-17
 
 - Added position/yaw/speed-limited manual hitch attachment and detachment.

@@ -294,5 +294,48 @@ namespace Progesor.Kavra.Lab.Tests
             }
             finally { Cleanup(instance, config, tractor, trailer, motor); }
         }
+        [Test]
+        public void M13CommonControlApiPreservesExplicitHitchCommands()
+        {
+            VehicleDefinition tractor, trailer;
+            SimplePowertrainDefinition motor;
+            VehicleAssemblyDefinition config =
+                MakeAssembly(out tractor, out trailer, out motor);
+            GameObject instance = null;
+            try
+            {
+                instance = VehicleAssemblyBuilder.Build(config);
+                var assembly = instance.GetComponent<VehicleAssemblyRoot>();
+                IVehicleAssemblyController api = assembly;
+                Assert.AreEqual(2, api.VehicleCount);
+                Assert.AreEqual(1, api.LinkCount);
+                Assert.AreSame(assembly.Tractor, api.GetVehicle(0));
+                Assert.AreSame(assembly.Trailer, api.GetVehicle(1));
+                Assert.AreSame(assembly.Coupling, api.GetCoupling(0));
+                Assert.IsNull(api.GetVehicle(-1));
+                Assert.IsNull(api.GetCoupling(1));
+                Assert.AreEqual(2, api.ConnectedLeadVehicleCount());
+                VehicleHitchAssessment assessment;
+                Assert.AreEqual(VehicleCouplingResult.AlreadyAttached,
+                    api.AssessAttachLink(0, out assessment));
+                Assert.IsTrue(api.DetachLink(0));
+                Assert.AreEqual(1, api.ConnectedLeadVehicleCount());
+                Assert.AreEqual(VehicleHitchState.Detached, api.GetLinkState(0));
+                Assert.AreEqual(VehicleCouplingResult.Connected,
+                    api.AssessAttachLink(0, out assessment));
+                Assert.IsTrue(assessment.ReadyToAttach);
+                Assert.IsFalse(api.IsLinkAttached(0)); // query cannot reattach
+                Assert.AreEqual(VehicleCouplingResult.Connected,
+                    api.TryAttachLink(0));
+                Assert.IsTrue(api.IsLinkAttached(0));
+                Assert.AreEqual(VehicleCouplingResult.InvalidConfiguration,
+                    api.TryAttachLink(1));
+                Assert.AreEqual(VehicleCouplingResult.InvalidConfiguration,
+                    api.AssessAttachLink(-1, out assessment));
+                Assert.IsFalse(api.DetachLink(1));
+            }
+            finally { Cleanup(instance, config, tractor, trailer, motor); }
+        }
+
     }
 }

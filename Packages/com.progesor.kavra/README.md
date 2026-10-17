@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.1.4)
+# KAVRA embedded package (v0.1.6)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -195,3 +195,50 @@ commands instead of repeatedly applying the tractor's controls.
 `VehicleAssemblyDefinition` upgrades old M1.3 serialized settings.
 The zero-value break thresholds mean Infinity/unbreakable on new
 definition assets.
+
+### M1.5 ordered multi-body vehicle chains
+
+`VehicleAssemblyChainDefinition` lists 1..16 ordered
+`VehicleAssemblyDefinition` edges. Each has a distinct tractor/trailer
+pair; edge i+1 reuses edge i's Trailer as its Tractor. Vehicle assets
+for different chassis nodes must be separate objects.
+
+Runtime `VehicleAssemblyChainRoot` holds arrays of separate VehicleRoot
+and VehicleCoupling objects. A fully connected chain has N vehicles
+and N-1 real ConfigurableJoint components. No fixed truck/wheel count.
+`TryAttachLink(i)`, `DetachLink(i)`, `SelectLink(i)`,
+`TryAttachSelected()`, `DetachSelected()` provide user-controlled
+lifecycle. A physically broken joint on one edge does not affect
+other joint ownership/state automatically.
+
+Basic service/parking brake signals propagate from the lead only
+through continuously connected links. All trailer wheel contact and
+suspension simulation still occurs independently per Rigidbody.
+`VehicleAssemblyChainRecovery` is reached only from deliberate R on
+lead driver input; it preflights and repositions ONLY the connected
+lead prefix (never the disconnected suffix).
+
+An Editor-only `VehicleAssemblyChainBuilder` and chain Wizard build
+and save N-body prefabs; PhysicsLab remains outside UPM. No extra runtime
+packages. This is an ordered convoy rather than a branched coupling graph.
+
+### M1.5.1 easier H capture (rendering remains host-only)
+
+`VehicleAssemblyDefinition` new defaults:
+`MaximumAttachErrorMeters=0.5` and
+`MaximumAttachYawDegrees=55`. Preflight speed/yaw/distance
+checks and explicitly triggered one-time snap are still mandatory.
+Old unchanged M1.4 values 0.15/35 migrate to new defaults; different
+user-authored tolerances remain unchanged.
+
+`VehicleCoupling.AssessAttach(tractorBody, settings,
+out VehicleHitchAssessment)` exposes the SAME checks used by
+`TryAttach`, but never adds a joint or moves a Rigidbody. The struct
+reports gap, heading difference, relative hitch velocity, max body
+speed and reason/status. This enables optional UI highlight/ready
+guides for consumers without depending on host materials.
+
+All checker road textures, shaders, vehicle colors, marker rendering
+and speed-sensitive FOV are optional PhysicsLab host scripts under
+`Assets/VehiclePhysicsLab`; the KAVRA UPM runtime remains
+renderer-/render-pipeline-/input-system-independent.

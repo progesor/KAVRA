@@ -1,0 +1,16 @@
+{
+  "name": "Progesor.Kavra.Lab.HitchVisuals",
+  "rootNamespace": "",
+  "references": [
+    "Progesor.Kavra.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

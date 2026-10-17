@@ -1,7 +1,14 @@
-# Bootstrap checks
+# Source-only preflight
 
-`python scripts/validate_bootstrap.py`
+Run `python3 scripts/validate_bootstrap.py` from the repository root.
+No third-party Python packages are required.
 
-Checks JSON syntax, UPM identity, assembly references, minimal docs and
-absence of accidental Unity-generated folders. Does **not** compile C# or
-open the Unity Editor. Use only as a preflight check.
+Checks UPM version syntax (not the obsolete 0.0.1 value), package
+dependencies, host Unity version, asmdef names/references and Editor-only
+boundaries, HitchVisuals moved-script GUID, hitch MaterialPropertyBlock
+initialization ordering, shared P1 assembly control API presence, JSON
+syntax and accidental generated Unity folders.
+
+**Static checks are not Unity compiler tests.** This script cannot execute
+NUnit/Test Runner, PhysX joints or the visual PhysicsLab acceptance. Those
+results must come from Unity 6000.3.18f1 and remain open on issue #17.

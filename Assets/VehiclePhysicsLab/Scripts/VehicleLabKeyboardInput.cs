@@ -55,28 +55,64 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
 
         if (!AcceptDrivingKeys) return; // Scripted runner owns input during calibration.
 
+        Progesor.Kavra.VehicleAssemblyChainMember chainMember =
+            GetComponent<Progesor.Kavra.VehicleAssemblyChainMember>();
+        Progesor.Kavra.VehicleAssemblyChainRoot convoy =
+            chainMember != null && chainMember.IsLead ? chainMember.Chain : null;
+        if (convoy != null)
+        {
+            if (keyboard.jKey.wasPressedThisFrame)
+                convoy.SelectRelativeLink(-1);
+            if (keyboard.lKey.wasPressedThisFrame)
+                convoy.SelectRelativeLink(1);
+        }
+
         // H is a conscious hitch command: never auto-connect in proximity.
         // Attached H detaches; detached/broken H retries only when position,
         // yaw and relative hitch speed pass VehicleCoupling.TryAttach.
         if (keyboard.hKey.wasPressedThisFrame)
         {
-            Progesor.Kavra.VehicleAssemblyMember member =
-                GetComponent<Progesor.Kavra.VehicleAssemblyMember>();
-            if (member != null && member.IsTractor && member.Assembly != null)
+            // P1 shared contract: host controls M1.4 and M1.5 by the same
+            // explicit API, without changing either runtime implementation.
+            bool selectedChain = convoy != null && convoy.LinkCount > 0;
+            Progesor.Kavra.IVehicleAssemblyController hitchControl = null;
+            if (selectedChain)
+                hitchControl = convoy;
+            else
             {
-                Progesor.Kavra.VehicleAssemblyRoot assembly = member.Assembly;
-                if (assembly.IsAttached)
+                Progesor.Kavra.VehicleAssemblyMember member =
+                    GetComponent<Progesor.Kavra.VehicleAssemblyMember>();
+                if (member != null && member.IsTractor)
+                    hitchControl = member.Assembly;
+            }
+
+            if (hitchControl != null && hitchControl.LinkCount > 0)
+            {
+                int selected = selectedChain ? convoy.SelectedLinkIndex : 0;
+                if (hitchControl.IsLinkAttached(selected))
                 {
-                    recoveryStatus = assembly.Detach()
-                        ? "Trailer uncoupled manually."
-                        : "Trailer could not be disconnected.";
+                    bool detached = hitchControl.DetachLink(selected);
+                    if (selectedChain)
+                        recoveryStatus = detached
+                            ? "Chain link " + selected + " manually disconnected."
+                            : "Chain link " + selected + " cannot disconnect at this speed.";
+                    else
+                        recoveryStatus = detached
+                            ? "Trailer uncoupled manually."
+                            : "Trailer could not be disconnected.";
                 }
                 else
                 {
-                    Progesor.Kavra.VehicleCouplingResult result = assembly.TryAttach();
-                    recoveryStatus = result == Progesor.Kavra.VehicleCouplingResult.Connected
-                        ? "Trailer coupled."
-                        : "Coupling refused: " + result;
+                    Progesor.Kavra.VehicleCouplingResult result =
+                        hitchControl.TryAttachLink(selected);
+                    if (selectedChain)
+                        recoveryStatus = result == Progesor.Kavra.VehicleCouplingResult.Connected
+                            ? "Chain link " + selected + " connected."
+                            : "Link " + selected + ": " + result;
+                    else
+                        recoveryStatus = result == Progesor.Kavra.VehicleCouplingResult.Connected
+                            ? "Trailer coupled."
+                            : "Coupling refused: " + result;
                 }
                 recoveryStatusUntil = Time.unscaledTime + 4f;
             }
@@ -242,11 +278,16 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
         if (assemblyMember != null && assemblyMember.IsTractor &&
             assemblyMember.Assembly != null)
             message += "\nH: manually connect/disconnect trailer";
+        Progesor.Kavra.VehicleAssemblyChainMember convoyMember =
+            GetComponent<Progesor.Kavra.VehicleAssemblyChainMember>();
+        if (convoyMember != null && convoyMember.IsLead &&
+            convoyMember.Chain != null)
+            message += "\nJ/L: choose hitch   H: attach/detach   K: load selected joint";
 #else
         message += "\nInput System unavailable: use VehicleSimulationRoot Inspector controls.";
 #endif
         if (Time.unscaledTime < recoveryStatusUntil)
             message += "\n" + recoveryStatus;
-        GUI.Box(new Rect(12f, 12f, 690f, 340f), message);
+        GUI.Box(new Rect(12f, 12f, 690f, 360f), message);
     }
 }
