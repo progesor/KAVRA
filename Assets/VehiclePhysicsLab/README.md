@@ -264,3 +264,31 @@ target, shifting status, and selected mode. CSV adds
 This is a starter visual binding, not realistic suspension linkage
 geometry or automatic mesh discovery. Neither gearbox changes nor the
 visual hierarchy have been verified in actual Unity Play Mode yet.
+
+
+## M1.3 two-body tractor-trailer (ten wheels)
+
+Menu: `Tools > KAVRA > Create M1.3 Tractor Trailer Lab Scene`.
+Save the generated scene to
+`Assets/VehiclePhysicsLab/Scenes/M13_TractorTrailer.unity`.
+
+Dedicated editable asset folder `Assets/VehiclePhysicsLab/Assemblies/`:
+`M13_Truck6x6.asset`, `M13_Trailer4W.asset`,
+`M13_TractorPowertrain.asset` and `M13_TractorTrailer.asset`.
+A valid existing asset is reused and never overwritten.
+
+The demonstration is a **6x6 powered tractor plus 4W passive trailer**:
+two separate Rigidbody components, 10 independent wheel sensor/rotor
+states, one ConfigurableJoint with free yaw/limited pitch+roll.
+Basic brake commands are propagated to the trailer; the engine does
+not send shaft torque to it. A simple drawbar/hitch marker and HUD
+show coupling alignment and relative yaw; neither changes physics.
+
+Use W/S forward/reverse, Q/E gears, T auto/manual, Space brakes, R
+to manually reposition **both vehicles** when near stopped and
+preflight safe. User input is the only recovery trigger. There is no
+automatic rollover prevention or auto-upright. The assembled prefab
+can be saved through `Tools > KAVRA > Vehicle Assembly Wizard`.
+
+Actual Unity Editor verification is still needed for joint drift,
+turning/reversing, collision behavior, and two-body manual recovery.

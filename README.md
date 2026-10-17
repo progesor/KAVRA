@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-14): M1 vehicle framework foundation, package 0.1.2. New M1.1 source awaiting Unity Editor verification.**
+**State (2026-10-14): M1 vehicle framework foundation, package 0.1.3. New M1.1 source awaiting Unity Editor verification.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -209,3 +209,38 @@ existing rig and does not alter the physical contact mount. The shared
 runtime assembly remains independent of URP/Input System/Blender.
 
 See `docs/20_M12_GEARBOX_AND_VISUAL_BINDING.md`.
+
+## M1.3 — Actual tractor/trailer assemblies (two Unity Rigidbodies)
+
+The first *multi-body* foundation is an optional
+`VehicleAssemblyDefinition` referencing **two different**
+`VehicleDefinition` assets. Each remains a complete independent
+rigid chassis with its own ray/sphere wheel contact, tire response,
+suspension and wheel visual rigs. A `VehicleCoupling` puts a genuine
+`ConfigurableJoint` on the trailer connecting it to the tractor.
+
+- Three linear axes LOCKED at a shared local hitch point.
+- Relative yaw around the joint's Y axis FREE.
+- Pitch and roll LIMITED (configurable in the assembly asset).
+- Joint projection OFF by default; it can violate physics conservation.
+- Basic service/park-brake commands shared from tractor to trailer.
+- **Manual R** is assembly-aware: when nearly stopped, checks both
+  vehicles' ground and free space, then repositions them TOGETHER with
+  hitch points coincident. It is never an automatic rollover fix.
+
+For a working-source sample use
+`Tools > KAVRA > Create M1.3 Tractor Trailer Lab Scene`. This makes
+a 6x6 powered tractor and separate passive four-wheel trailer, with
+**two Rigidbody components and ten wheel contacts**. Save the generated
+scene under `Assets/VehiclePhysicsLab/Scenes/M13_TractorTrailer.unity`.
+
+`Tools > KAVRA > Vehicle Assembly Wizard` supports arbitrary pairs of
+existing VehicleDefinition assets, editable local hitch anchors and
+saving a two-Rigidbody reusable Unity prefab. The prefab uses the same
+existing primitive placeholder models until actual vehicle meshes are
+introduced in separate backlog issue #9.
+
+Technical reference: `docs/21_M13_MULTIBODY_ASSEMBLY.md`.
+All M0 scenes, M1 single-body presets and user's prior CSV data remain
+unchanged. This feature is experimental until Unity Editor compile and
+actual connected driving tests pass.

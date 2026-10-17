@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.1.3 — 2026-10-17 (M1.3 actual multi-body tractor/trailer)
+
+- Added VehicleAssemblyDefinition and validation for **two independent**
+  VehicleDefinitions and Rigidbody vehicle simulations.
+- Added VehicleCoupling using real ConfigurableJoint with coincident
+  anchors, locked XYZ, yaw free, limited pitch/roll. No hidden yaw or
+  anti-rollover steering forces.
+- Added VehicleAssemblyRoot + VehicleAssemblyMember: independent
+  tractor/trailer physics with a small commanded trailer-brake relay.
+- Added assembly-aware explicit R recovery: checks both bodies, road and
+  clearance before repositioning either body; zero velocities, preserve
+  coincident hitch, **no automatic recovery**.
+- Added VehicleAssemblyMath (pose/hitch checks), Validator and Editor
+  builder, dedicated assembly Wizard and two-body prefab save.
+- Added M1.3 host PhysicsLab generating a 6x6 tractor + passive four-wheel
+  trailer, joint overlay, follow camera and existing M1 controls.
+- Added eight EditMode regression test sources and docs/21.
+- Existing M0 scenes, M1 demos, physics data and package dependencies
+  preserved. Real Unity compile and Play Mode acceptance **pending**.
+
+
 ## 0.1.2 — 2026-10-17 (gearbox state + transform-based wheel rigs)
 
 - Added allocation-free VehicleGearboxController with manual/automatic

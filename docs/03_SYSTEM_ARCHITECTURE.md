@@ -159,3 +159,24 @@ travel, steering and wheel spin, while
 `VehicleSuspensionVisualLink` tracks visible shock geometry by endpoints.
 The runtime core knows nothing of Blender, FBX/GLB or rendering pipeline;
 only optional Unity Transforms, preserving portability.
+
+
+## M1.3 actual multi-body architecture
+
+`VehicleAssemblyDefinition` references two independent
+`VehicleDefinition` assets. Each has its own `VehicleRoot`,
+`VehicleSimulationRoot` and Rigidbody. The assembly parent is
+logical only: NO single oversized Rigidbody spanning a tractor and
+trailer. `VehicleCoupling` is installed on the towed body and
+creates a ConfigurableJoint connected to the tractor.
+`VehicleAssemblyMath` aligns hitch markers before starting physics.
+The assembly can detach explicitly.
+
+The initial command bus consists only of a trailer service/parking
+brake relay. Future versions can extend this to powered trailers,
+multiple modules, electrical/pneumatic connections and more physical
+brake lag, while preserving a compositional scene/prefab contract.
+
+Assembly-safe manual recovery is user-triggered only and computes a
+safe aligned two-body pose before teleporting both. It does not
+continuously right vehicles or apply hidden stabilizing forces.

@@ -197,3 +197,29 @@ Next **core** milestone: first VehicleAssembly coupling (multi-body
 tractor and trailer, physically separate rigidbodies) and reusable
 scene/prefab construction; then more complete drivetrain or loading
 mechanics. Realistic demo model search remains backlog #9.
+
+
+### M1.3 — multi-body assemblies (issue #12)
+
+- [x] Source: VehicleAssemblyDefinition referencing two independent
+  chassis, validation and pose math for coincident hitch points.
+- [x] Source: ConfigurableJoint coupling with locked translation,
+  free yaw and tunable limited pitch/roll, detach function.
+- [x] Source: trailer own Rigidbody/VehicleSimulationRoot and optional
+  brake command relay; no powered trailer or pneumatic model.
+- [x] Source: separate assembly Wizard + prefab save with two bodies,
+  6x6 tractor / passive 4W trailer PhysicsLab and hitch telemetry.
+- [x] Source: manual R assembly-safe two-body recovery, no auto-upright.
+- [x] Eight new assembly EditMode regression tests source.
+- [ ] Unity 6000.3.x compilation and Test Runner all pass.
+- [ ] 6x6+4W trailer linked, moves/turns/reverses, two bodies stay coupled,
+      no excessive joint drift or instability over flat asphalt.
+- [ ] Basic service/park-braking verified on both vehicles in Play Mode.
+- [ ] Manual R restores BOTH bodies safely; still refuses moving at speed.
+- [ ] Save assembly prefab and re-instantiate from a separate Unity scene.
+- [ ] Previous M0/M1 scene and experimental user telemetries remain untouched.
+
+Next foundational milestones: generalized multi-body graph,
+tractor-trailer coupling workflow / attach-detach UI, suspension visual
+binding to real chassis assets, and a fuller differential/drivetrain.
+Do not postpone main module development for microscopic tire tuning.

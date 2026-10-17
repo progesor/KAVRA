@@ -1,8 +1,8 @@
 {
   "name": "com.progesor.kavra",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "displayName": "KAVRA Vehicle Framework",
-  "description": "M1.2 vehicle foundation: manual/optional auto gearbox state, axle torque routing, configurable wheel visual pivots and shock links.",
+  "description": "M1.3 modular vehicle assemblies: independently simulated tractor and trailer Rigidbodies, configurable hitch joint, assembly prefabs and manual recovery.",
   "unity": "6000.3",
   "author": {
     "name": "Progesor Creating"

@@ -213,3 +213,28 @@ Unity Editor compilation/Test Runner and Play Mode remain unverified here.
 The next tests should be **M1 lab drive + manual/auto T shift + a wheel
 rig/shock preview**, not four long repeat CSV runs. No automatic rollover
 prevention is ever introduced.
+
+
+## 2026-10-17 M1.3: the first real articulated VehicleAssembly
+
+Issue #12; work branch `feat/m13-vehicle-assembly-coupling` based on
+`feat/m1-core-powertrain-foundation`; separate Draft PR.
+
+Added assembly ScriptableObject, math/validator, ConfigurableJoint coupling,
+logical non-Rigidbody assembly parent and vehicle membership. Host M1.3
+lab creates reusable 6x6 tractor + 4W trailer assets with 2 separate
+Rigidbody/VehicleSimulationRoot components and an articulated yaw joint.
+Both vehicles use KAVRA suspension/tire runtime; only the tractor has
+a motor; brake commands are mirrored to the trailer.
+
+R key from the existing host input now checks membership and, for
+an attached assembly, attempts an explicit *two-body* preflighted
+teleport/recovery. Do not create automatic rollover prevention.
+The connected root can detach the coupling explicitly. A separate
+Vehicle Assembly Wizard saves a two-body prefab for other projects.
+
+Eight assembly EditMode test scripts plus docs/21. Need actual Unity
+6.3.x compile, Test Runner and towing/reversing tests before merge.
+Preserve all prior M0/M1 scenes/CSV captures and the single-body
+powertrain feature. 18-wheel articulated target requires additional
+layouts; current demo is 10-wheel (6+4).

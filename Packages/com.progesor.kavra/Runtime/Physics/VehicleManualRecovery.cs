@@ -46,6 +46,13 @@ namespace Progesor.Kavra
             if (simulation == null)
                 return VehicleRecoveryResult.MissingVehicleOrConfiguration;
 
+            // Whole-assembly R recovery: never teleport one connected body
+            // alone, which would violently stretch its ConfigurableJoint.
+            VehicleAssemblyMember member = simulation.GetComponent<VehicleAssemblyMember>();
+            if (member != null && member.IsCoupled)
+                return VehicleAssemblyRecovery.TryRecover(member.Assembly,
+                    maximumSpeedMetersPerSecond);
+
             Rigidbody body = simulation.GetComponent<Rigidbody>();
             VehicleRoot root = simulation.GetComponent<VehicleRoot>();
             VehicleDefinition definition = root != null ? root.Definition : null;
