@@ -9,7 +9,7 @@ namespace Progesor.Kavra
     /// </summary>
     [DefaultExecutionOrder(-100)]
     [DisallowMultipleComponent]
-    public sealed class VehicleAssemblyRoot : MonoBehaviour
+    public sealed class VehicleAssemblyRoot : MonoBehaviour, IVehicleAssemblyController
     {
         public VehicleAssemblyDefinition Definition;
         public VehicleRoot Tractor;
@@ -21,6 +21,38 @@ namespace Progesor.Kavra
         public bool IsAttached => Coupling != null && Coupling.IsAttached;
         public VehicleHitchState HitchState => Coupling != null
             ? Coupling.State : VehicleHitchState.Detached;
+
+        // P1 additive API: original M1.4 commands, brake relay and R
+        // manual recovery remain unchanged.
+        public int VehicleCount => Tractor == null ? 0 : Trailer == null ? 1 : 2;
+        public int LinkCount => Coupling == null ? 0 : 1;
+        public VehicleRoot GetVehicle(int vehicleIndex) =>
+            vehicleIndex == 0 ? Tractor : vehicleIndex == 1 ? Trailer : null;
+        public VehicleCoupling GetCoupling(int linkIndex) =>
+            linkIndex == 0 ? Coupling : null;
+        public bool IsLinkAttached(int linkIndex) =>
+            linkIndex == 0 && IsAttached;
+        public VehicleHitchState GetLinkState(int linkIndex) =>
+            linkIndex == 0 ? HitchState : VehicleHitchState.Detached;
+        public int ConnectedLeadVehicleCount() =>
+            Tractor == null ? 0 : (IsAttached && Trailer != null ? 2 : 1);
+
+        public VehicleCouplingResult AssessAttachLink(int linkIndex,
+            out VehicleHitchAssessment assessment)
+        {
+            assessment = default(VehicleHitchAssessment);
+            if (linkIndex != 0 || Definition == null || Tractor == null ||
+                Trailer == null || Coupling == null)
+                return assessment.Result = VehicleCouplingResult.InvalidConfiguration;
+            return Coupling.AssessAttach(
+                Tractor.GetComponent<Rigidbody>(), Definition, out assessment);
+        }
+
+        public VehicleCouplingResult TryAttachLink(int linkIndex) =>
+            linkIndex == 0 ? TryAttach() : VehicleCouplingResult.InvalidConfiguration;
+
+        public bool DetachLink(int linkIndex) =>
+            linkIndex == 0 && Detach();
 
         /// <summary>Explicit player/API command. Never auto-connects nearby trailers.</summary>
         public VehicleCouplingResult TryAttach()

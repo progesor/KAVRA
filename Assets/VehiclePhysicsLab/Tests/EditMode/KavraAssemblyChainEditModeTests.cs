@@ -280,5 +280,40 @@ namespace Progesor.Kavra.Lab.Tests
                 Assert.Less(gap, 0.0005f);
             }
         }
+        [Test]
+        public void M15CommonControlApiOperatesOnlyRequestedLink()
+        {
+            var chain = Build();
+            IVehicleAssemblyController api = chain;
+            Assert.AreEqual(3, api.VehicleCount);
+            Assert.AreEqual(2, api.LinkCount);
+            Assert.AreSame(chain.Vehicles[2], api.GetVehicle(2));
+            Assert.AreSame(chain.Couplings[1], api.GetCoupling(1));
+            Assert.IsNull(api.GetVehicle(3));
+            Assert.IsNull(api.GetCoupling(-1));
+            Assert.AreEqual(3, api.ConnectedLeadVehicleCount());
+
+            VehicleHitchAssessment assessment;
+            Assert.AreEqual(VehicleCouplingResult.AlreadyAttached,
+                api.AssessAttachLink(1, out assessment));
+            Assert.IsTrue(api.DetachLink(1));
+            Assert.AreEqual(2, api.ConnectedLeadVehicleCount());
+            Assert.IsTrue(api.IsLinkAttached(0));
+            Assert.IsFalse(api.IsLinkAttached(1));
+            Assert.AreEqual(VehicleHitchState.Detached, api.GetLinkState(1));
+            Assert.AreEqual(VehicleCouplingResult.Connected,
+                api.AssessAttachLink(1, out assessment));
+            Assert.IsTrue(assessment.ReadyToAttach);
+            Assert.IsFalse(api.IsLinkAttached(1)); // no automatic coupling
+            Assert.AreEqual(VehicleCouplingResult.Connected,
+                api.TryAttachLink(1));
+            Assert.AreEqual(3, api.ConnectedLeadVehicleCount());
+            Assert.AreEqual(VehicleCouplingResult.InvalidConfiguration,
+                api.AssessAttachLink(2, out assessment));
+            Assert.AreEqual(VehicleCouplingResult.InvalidConfiguration,
+                api.TryAttachLink(-1));
+            Assert.IsFalse(api.DetachLink(-1));
+        }
+
     }
 }

@@ -9,7 +9,7 @@ namespace Progesor.Kavra
     /// </summary>
     [DefaultExecutionOrder(-120)]
     [DisallowMultipleComponent]
-    public sealed class VehicleAssemblyChainRoot : MonoBehaviour
+    public sealed class VehicleAssemblyChainRoot : MonoBehaviour, IVehicleAssemblyController
     {
         public VehicleAssemblyChainDefinition Definition;
         public VehicleRoot[] Vehicles;
@@ -19,6 +19,33 @@ namespace Progesor.Kavra
         private bool[] linkedLastPhysicsStep;
 
         public int LinkCount => Couplings != null ? Couplings.Length : 0;
+        public int VehicleCount => Vehicles != null ? Vehicles.Length : 0;
+        public VehicleRoot GetVehicle(int vehicleIndex) =>
+            Vehicles != null && vehicleIndex >= 0 &&
+            vehicleIndex < Vehicles.Length ? Vehicles[vehicleIndex] : null;
+        public VehicleCoupling GetCoupling(int linkIndex) =>
+            Couplings != null && linkIndex >= 0 &&
+            linkIndex < Couplings.Length ? Couplings[linkIndex] : null;
+        public VehicleHitchState GetLinkState(int linkIndex)
+        {
+            VehicleCoupling coupling = GetCoupling(linkIndex);
+            return coupling != null ? coupling.State : VehicleHitchState.Detached;
+        }
+
+        public VehicleCouplingResult AssessAttachLink(int linkIndex,
+            out VehicleHitchAssessment assessment)
+        {
+            assessment = default(VehicleHitchAssessment);
+            if (Definition == null || Definition.Links == null ||
+                linkIndex < 0 || linkIndex >= LinkCount ||
+                linkIndex >= Definition.Links.Count ||
+                GetVehicle(linkIndex) == null || GetVehicle(linkIndex + 1) == null ||
+                GetCoupling(linkIndex) == null)
+                return assessment.Result = VehicleCouplingResult.InvalidConfiguration;
+            return Couplings[linkIndex].AssessAttach(
+                Vehicles[linkIndex].GetComponent<Rigidbody>(),
+                Definition.Links[linkIndex], out assessment);
+        }
         public int SelectedLinkIndex => LinkCount > 0
             ? Mathf.Clamp(selectedLinkIndex, 0, LinkCount - 1) : 0;
 
