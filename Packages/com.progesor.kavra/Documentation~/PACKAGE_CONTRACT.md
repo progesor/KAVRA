@@ -202,3 +202,39 @@ VehicleAssembly graphs can reuse the coupling component for multiple
 trailers and powered modules. This simple 6x6+4W rig is **not** a finished
 18-wheel tractor-trailer, nor a calibrated real-world fifth-wheel/
 pneumatic-brake model. No new package dependency.
+
+
+## M1.4 breakable hitch lifecycle
+
+`VehicleAssemblyDefinition` adds:
+- `MaximumAttachErrorMeters` (already existed; world hitch separation);
+- `MaximumAttachYawDegrees` (projected forward heading limit);
+- `MaximumAttachRelativeSpeedMps` (velocity difference at hitch points);
+- `MaximumManualCouplingBodySpeedMps` (absolute speed bound for BOTH
+  manual attachment and manual detachment);
+- `AlignHitchesOnManualAttach` (optional one-time small trailer Rigidbody
+  correction before creating the joint);
+- `BreakForceNewtons` and `BreakTorqueNewtonMeters`; 0 maps to
+  `Mathf.Infinity` when constructing the live joint.
+
+Versioned ScriptableObject defaults migrate older M1.3 assets to M1.4
+when loading; newer explicitly unbreakable values remain unchanged.
+
+`VehicleCoupling` records Detached, Attached, Broken. It is the owner of
+`ConfigurableJoint`. Breaks are driven by **Unity physics** exceeding
+Joint.breakForce or breakTorque; Unity notifies
+`OnJointBreak(float)` and removes the joint. Torque break only applies
+to angular axes with Locked/Limited constraints (yaw is Free here).
+The controller does not apply a fake damage event or scripted detach.
+
+`VehicleAssemblyRoot.TryAttach/Detach` are explicit commands.
+Manual release is only allowed near standstill; physical overload
+breaks can happen at ANY vehicle speed. Destroying a manually released
+joint is deferred to end-of-frame in Play Mode; a same-frame attempt to
+reconnect returns JointRemovalPending. Do NOT set Joint.connectedBody
+to null because that anchors the joint to the WORLD.
+
+Disconnection releases the basic tractor-to-trailer service/park brake
+relay and clears last mirrored brake values. User's R-only recovery
+remains assembly-aware while still connected, and individual-body-only
+when uncoupled. No implicit auto-coupling or auto-rollover logic exists.

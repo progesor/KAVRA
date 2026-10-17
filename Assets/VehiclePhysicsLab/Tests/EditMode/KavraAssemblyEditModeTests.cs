@@ -219,7 +219,9 @@ namespace Progesor.Kavra.Lab.Tests
                 assembly.Coupling.Detach();
                 tow.SetInputs(0f, 0f, 0.2f, 0f);
                 assembly.PropagateBrakes();
-                Assert.That(towed.ServiceBrake, Is.EqualTo(0.6f).Within(0.0001f));
+                // Uncoupled trailers should not retain a stale brake input.
+                Assert.That(towed.ServiceBrake, Is.EqualTo(0f).Within(0.0001f));
+                Assert.That(towed.ParkingBrake, Is.EqualTo(0f).Within(0.0001f));
             }
             finally { Cleanup(instance, config, tractor, trailer, motor); }
         }

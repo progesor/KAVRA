@@ -178,3 +178,13 @@ source fix remain the user's next check; do not declare them passed.
 Unity references:
 - https://docs.unity.cn/6000.7/Documentation/ScriptReference/ConfigurableJoint.html
 - https://docs.unity3d.com/cn/current/ScriptReference/Joint-connectedBody.html
+
+
+## M1.4 extension (2026-10-17)
+
+M1.3's fixed sample joint has been extended with actual driver-commanded
+unhitch/rehitch and configurable PhysX overload break behavior. See
+`docs/22_M14_HITCH_LIFECYCLE.md`. The M1.3 scene-generation menu is
+retained; M1.4 adds H (manual coupling) and K (lab-only physical load).
+No automatic reconnection, no fake damage-state change when stressed,
+no automatic rollover prevention.

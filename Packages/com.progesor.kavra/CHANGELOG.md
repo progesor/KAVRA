@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.4] — 2026-10-17
+
+- Added position/yaw/speed-limited manual hitch attachment and detachment.
+- Added physical joint breakForce/breakTorque and OnJointBreak tracking.
+- Added explicit assembly APIs, brake release on disconnect and legacy
+  asset-migration defaults; zero thresholds disable mechanical breaking.
+- Host H reconnect/unhitch, K physical break-load demo, status HUD.
+- Added 9 hitch lifecycle EditMode tests; Play Mode verification pending.
+
+
 ## [0.1.3] — 2026-10-17
 
 - Runtime VehicleAssemblyDefinition/Root/Member, VehicleCoupling,

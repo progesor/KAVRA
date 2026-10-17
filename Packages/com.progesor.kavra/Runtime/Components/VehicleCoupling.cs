@@ -10,31 +10,53 @@ namespace Progesor.Kavra
         BodyIsKinematic,
         AlreadyAttached,
         AttachmentPointsSeparated,
-        InvalidConfiguration
+        InvalidConfiguration,
+        AttachmentYawMisaligned,
+        RelativeSpeedTooHigh,
+        JointRemovalPending,
+        VehicleSpeedTooHigh
+    }
+
+    public enum VehicleHitchState
+    {
+        Detached = 0,
+        Attached = 1,
+        Broken = 2
     }
 
     /// <summary>
-    /// Real two-body joint installed on the towed vehicle Rigidbody.
-    /// Linear motion locked, yaw free, pitch/roll limited. No continuous
-    /// auto-alignment, wheel-force hacks or artificial anti-rollover torque.
+    /// Actual physics hitch on the TRAILER Rigidbody. The user explicitly
+    /// requests attachment/detachment; solver breakForce/breakTorque can
+    /// disconnect it automatically when overstressed. Never auto-attaches.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Rigidbody))]
     public sealed class VehicleCoupling : MonoBehaviour
     {
         [SerializeField, HideInInspector] private ConfigurableJoint activeJoint;
+        [SerializeField, HideInInspector] private VehicleHitchState recordedState;
+
         public ConfigurableJoint Joint => activeJoint;
-        // ConfigurableJoint inherits Joint -> Component (NOT Behaviour),
-        // therefore it has NO 'enabled' property. A live joint with a
-        // connected Rigidbody is considered attached.
         public bool IsAttached => activeJoint != null &&
                                   activeJoint.connectedBody != null;
         public Rigidbody ConnectedBody => IsAttached ? activeJoint.connectedBody : null;
 
+        public VehicleHitchState State => IsAttached
+            ? VehicleHitchState.Attached
+            : recordedState == VehicleHitchState.Broken
+                ? VehicleHitchState.Broken : VehicleHitchState.Detached;
+
+        /// <summary>Recorded by Unity's OnJointBreak callback, NOT computed from velocity.</summary>
+        public float LastBreakForceNewtons { get; private set; }
+        public int PhysicalBreakCount { get; private set; }
+
         private void Awake()
         {
+            // Rebuild a serialized reference if an assembly prefab was loaded.
             if (activeJoint == null)
                 activeJoint = GetComponent<ConfigurableJoint>();
+            if (IsAttached)
+                recordedState = VehicleHitchState.Attached;
         }
 
         public VehicleCouplingResult TryAttach(Rigidbody tractorBody,
@@ -49,14 +71,63 @@ namespace Progesor.Kavra
                 return VehicleCouplingResult.BodyIsKinematic;
             if (definition == null || VehicleAssemblyValidator.HasErrors(definition))
                 return VehicleCouplingResult.InvalidConfiguration;
-            if (IsAttached || GetComponent<ConfigurableJoint>() != null)
+            if (IsAttached)
                 return VehicleCouplingResult.AlreadyAttached;
 
-            float error = VehicleAssemblyMath.CalculateHitchErrorMeters(
-                tractorBody.position, tractorBody.rotation, definition.TractorHitchLocal,
+            // In Play Mode Destroy(joint) is deferred until end of frame.
+            // The old component must be physically gone before reattaching;
+            // otherwise Unity would create two constraints accidentally.
+            if (GetComponent<ConfigurableJoint>() != null)
+                return VehicleCouplingResult.JointRemovalPending;
+
+            float maxBodySpeedSq = definition.MaximumManualCouplingBodySpeedMps *
+                                   definition.MaximumManualCouplingBodySpeedMps;
+            if (tractorBody.linearVelocity.sqrMagnitude > maxBodySpeedSq ||
+                trailerBody.linearVelocity.sqrMagnitude > maxBodySpeedSq)
+                return VehicleCouplingResult.VehicleSpeedTooHigh;
+
+            Vector3 tractorPoint = VehicleAssemblyMath.HitchWorldPosition(
+                tractorBody.position, tractorBody.rotation, definition.TractorHitchLocal);
+            Vector3 trailerPoint = VehicleAssemblyMath.HitchWorldPosition(
                 trailerBody.position, trailerBody.rotation, definition.TrailerHitchLocal);
-            if (error > definition.MaximumAttachErrorMeters)
+
+            if (Vector3.Distance(tractorPoint, trailerPoint) >
+                definition.MaximumAttachErrorMeters)
                 return VehicleCouplingResult.AttachmentPointsSeparated;
+
+            Vector3 tractorHeading = Vector3.ProjectOnPlane(
+                tractorBody.rotation * Vector3.forward, Vector3.up);
+            Vector3 trailerHeading = Vector3.ProjectOnPlane(
+                trailerBody.rotation * Vector3.forward, Vector3.up);
+            if (tractorHeading.sqrMagnitude < 0.00001f ||
+                trailerHeading.sqrMagnitude < 0.00001f ||
+                Vector3.Angle(tractorHeading, trailerHeading) >
+                    definition.MaximumAttachYawDegrees)
+                return VehicleCouplingResult.AttachmentYawMisaligned;
+
+            // Use hitch-point velocity rather than chassis center velocity:
+            // an aggressively rotating trailer nose can still be dangerous.
+            Vector3 relativeHitchVelocity =
+                tractorBody.GetPointVelocity(tractorPoint) -
+                trailerBody.GetPointVelocity(trailerPoint);
+            if (relativeHitchVelocity.sqrMagnitude >
+                definition.MaximumAttachRelativeSpeedMps *
+                definition.MaximumAttachRelativeSpeedMps)
+                return VehicleCouplingResult.RelativeSpeedTooHigh;
+
+            // Attach is already explicitly requested and speed/position/yaw
+            // were preflighted. Small positional snap prevents the PhysX
+            // joint solver from delivering a violent initial correction.
+            // This NEVER occurs automatically, and never exceeds tolerance.
+            if (definition.AlignHitchesOnManualAttach)
+            {
+                Vector3 correction = tractorPoint - trailerPoint;
+                if (correction.sqrMagnitude > 0.000001f)
+                {
+                    trailerBody.position += correction;
+                    Physics.SyncTransforms();
+                }
+            }
 
             ConfigurableJoint created = gameObject.AddComponent<ConfigurableJoint>();
             created.autoConfigureConnectedAnchor = false;
@@ -79,26 +150,52 @@ namespace Progesor.Kavra
             created.angularZLimit = new SoftJointLimit
                 { limit = Mathf.Clamp(definition.MaximumRollDegrees, 0f, 45f) };
 
-            // Projection can violate momentum and collision constraints.
-            // Leave it OFF by default. Tune only after real joint profiling.
+            // Real Unity physics break thresholds. Zero means deliberately
+            // unbreakable. The thresholds are sample values, not calibrated
+            // fifth-wheel hardware. Joint angular torque breaking requires
+            // an axis to be locked/limited (yaw is free).
+            created.breakForce = definition.BreakForceNewtons > 0f
+                ? definition.BreakForceNewtons : Mathf.Infinity;
+            created.breakTorque = definition.BreakTorqueNewtonMeters > 0f
+                ? definition.BreakTorqueNewtonMeters : Mathf.Infinity;
+
             created.projectionMode = JointProjectionMode.None;
             created.enableCollision = false;
             activeJoint = created;
+            recordedState = VehicleHitchState.Attached;
             return VehicleCouplingResult.Connected;
         }
 
+        /// <summary>
+        /// Manual disconnect. Destroy is deferred to end of frame in Play
+        /// Mode; trying to reattach that same frame returns JointRemovalPending.
+        /// Never null connectedBody: that would WORLD-anchor a live joint.
+        /// </summary>
         public bool Detach()
         {
             if (!IsAttached) return false;
             ConfigurableJoint old = activeJoint;
             activeJoint = null;
-            // DO NOT set connectedBody = null: in Unity, that makes a Joint
-            // constrain its body to the WORLD, rather than disconnect it.
-            // Removing the Component is the correct way to release a hitch.
-            // In Play Mode Destroy is deferred until the end of the frame.
+            recordedState = VehicleHitchState.Detached;
             if (Application.isPlaying) Destroy(old);
             else DestroyImmediate(old);
             return true;
+        }
+
+        // Unity sends this message only when the actual physics joint
+        // exceeds its breakForce/breakTorque. It removes the joint itself.
+        // This is NOT called by the driver or any rollover/angle check.
+        private void OnJointBreak(float breakForce)
+        {
+            if (recordedState != VehicleHitchState.Attached)
+                return; // Ignore late events from an explicitly removed joint.
+
+            activeJoint = null;
+            recordedState = VehicleHitchState.Broken;
+            LastBreakForceNewtons = breakForce;
+            PhysicalBreakCount++;
+            Debug.LogWarning("KAVRA: trailer hitch BROKE under solver load (reported " +
+                             breakForce.ToString("F0") + " N). Driver must reconnect manually.", this);
         }
     }
 }

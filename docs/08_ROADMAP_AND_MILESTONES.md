@@ -223,3 +223,26 @@ Next foundational milestones: generalized multi-body graph,
 tractor-trailer coupling workflow / attach-detach UI, suspension visual
 binding to real chassis assets, and a fuller differential/drivetrain.
 Do not postpone main module development for microscopic tire tuning.
+
+
+### M1.4 — manual hitch and physical overload break — issue #14
+
+- [x] Source: attach geometry/yaw/velocity guards; optional short manual
+  trailer hitch snap; manual slow-speed detach and reattach.
+- [x] Source: Unity ConfigurableJoint.breakForce/breakTorque configuration
+  and OnJointBreak(float) physical-break state/diagnostics; no fake break
+  and NO automatic reconnection.
+- [x] Source: stale trailer brake relay clears on disconnect; legacy
+  M1.3 ScriptableObject hitch-settings migration.
+- [x] Host H hitch toggle / K real physics impulse diagnostic, HUD state.
+- [x] 9 new hitch EditMode test methods; old stale-brake test updated.
+- [ ] Unity 6000.3.x compile + EditMode and M1.3 tests actually PASS.
+- [ ] In Play Mode, H detaches and reconnects after hitch alignment;
+  speed/yaw/distance restrictions work as specified.
+- [ ] Physics solver actually triggers OnJointBreak at finite thresholds,
+  K test logs a break and H allows reconnection when safe.
+- [ ] Reimported saved assembly prefab retains hitch strength settings.
+- [ ] Older M0/M1 scenes and telemetry unaffected.
+
+Next: generalized attachment ports/assembly chain and trailer modules,
+not microscopic tire tuning; realistic meshes remain separate issue #9.

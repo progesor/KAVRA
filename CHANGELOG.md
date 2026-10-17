@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.4 — 2026-10-17 (manual trailer hitch + physical overload break)
+
+- Extended VehicleAssemblyDefinition with safe approach/yaw/body speed
+  requirements, optional short manual hitch snap, and separate solver
+  force/torque break thresholds (0=unbreakable).
+- Added old asset migration guard so v0.1.3 assembly assets inherit
+  workable defaults without invalidating intentionally unbreakable
+  newer assets.
+- VehicleCoupling now tracks Detached/Attached/Broken, rejects unsafe
+  manual hitch attempts, assigns Unity Joint.breakForce/breakTorque,
+  and handles engine OnJointBreak notification (no scripted break).
+- VehicleAssemblyRoot offers TryAttach/Detach; manual detach near stop,
+  and trailer service/park command resets after detachment or physical break.
+- H hitch key and K lab-only *real Rigidbody impulse* stress test,
+  live hitch/break telemetry in the articulated sample overlay.
+- Added 9 EditMode tests plus updated M1.3 stale-brake regression.
+- No extra Unity package dependencies or automatic rollover prevention;
+  source checks passed, real Unity joint-break Play Mode acceptance pending.
+
+
 ## 0.1.3 hotfix — 2026-10-17
 
 - Fixed CS1061 in VehicleCoupling: Unity's ConfigurableJoint does not

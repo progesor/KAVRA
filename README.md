@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-14): M1 vehicle framework foundation, package 0.1.3. New M1.1 source awaiting Unity Editor verification.**
+**State (2026-10-14): M1 vehicle framework foundation, package 0.1.4. New M1.1 source awaiting Unity Editor verification.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -244,3 +244,32 @@ Technical reference: `docs/21_M13_MULTIBODY_ASSEMBLY.md`.
 All M0 scenes, M1 single-body presets and user's prior CSV data remain
 unchanged. This feature is experimental until Unity Editor compile and
 actual connected driving tests pass.
+
+## M1.4 — Driver-operated hitch and genuine breakable joint
+
+The two-Rigidbody tractor–trailer coupling now has an explicit
+**hitch lifecycle**. In the M1.3/M1.4 sample, press **H**:
+- Connected: manually release only after both vehicles slow down.
+- Detached or previously broken: attempt a new connection ONLY when
+  hitch points are close, heading is aligned and approach speed is safe.
+  A small close-range correction may snap the trailer's hitch into place
+  once, on that keypress, before ConfigurableJoint is created.
+
+While connected, a genuinely overloaded Unity ConfigurableJoint can
+**break automatically** if the force or torque exceeds the configured
+`VehicleAssemblyDefinition.BreakForceNewtons` or
+`BreakTorqueNewtonMeters`. Unity itself removes the joint and sends
+`OnJointBreak(float)`; a counter and force reading appear in the lab HUD.
+Set either threshold to **0** to disable breaking by that quantity.
+The initial 150 kN / 100 kNm defaults are illustrative only, not measured
+hardware capacities, and the yaw axis is deliberately free.
+
+**K** in the host lab applies a strong lateral PHYSICS impulse to the
+trailer so the real joint solver's overload response can be inspected.
+It never calls Detach or fakes a break event. Tune the break thresholds
+in your assembly asset, regenerate/test as appropriate.
+Once physically broken, the hitch remains broken until the user backs
+into position and presses H; trailer brake commands no longer follow
+the tractor. The original R remains a manual recovery request only.
+No automatic rollover/auto-upright or autonomous reattachment.
+See `docs/22_M14_HITCH_LIFECYCLE.md`.

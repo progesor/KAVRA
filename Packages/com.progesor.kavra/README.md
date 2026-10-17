@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.1.3)
+# KAVRA embedded package (v0.1.4)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -174,3 +174,24 @@ Editor menus:
 The former creates/edits configuration and saves a truly two-Rigidbody
 prefab; the second produces a 6x6+4W sample in the host project.
 No UPM runtime dependency on the host's Input System or URP.
+
+### M1.4 runtime coupling lifecycle
+
+`VehicleCoupling.TryAttach` preflights hitch distance, projected heading,
+both body speeds and relative velocity AT THE HITCH before creating a
+ConfigurableJoint. Optional short trailer-position alignment is triggered
+only during an accepted *explicit attach request*.
+
+`VehicleAssemblyRoot.TryAttach/Detach` exposes driver-facing commands;
+manual detach is limited to very low speeds. The physical joint uses
+`breakForce` and `breakTorque` from VehicleAssemblyDefinition. PhysX
+overload triggers MonoBehaviour.`OnJointBreak(float)` and Unity destroys
+the joint; a state/count/last breaking force are available for UI.
+Neither shock load nor a loss of contact calls a user-originated
+Detach() method. No automatic reattachment.
+
+When a joint is removed, the assembly releases stale trailer brake
+commands instead of repeatedly applying the tractor's controls.
+`VehicleAssemblyDefinition` upgrades old M1.3 serialized settings.
+The zero-value break thresholds mean Infinity/unbreakable on new
+definition assets.

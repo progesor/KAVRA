@@ -292,3 +292,40 @@ can be saved through `Tools > KAVRA > Vehicle Assembly Wizard`.
 
 Actual Unity Editor verification is still needed for joint drift,
 turning/reversing, collision behavior, and two-body manual recovery.
+
+
+## M1.4 — hitch connect/disconnect and physics break test
+
+In `Tools > KAVRA > Create M1.3 Tractor Trailer Lab Scene`,
+the generated M1.4-capable assembly begins attached. Controls:
+
+- **H** while near stopped: manually detach; after backing hitch points
+  near each other with a matching heading, press H again to reconnect.
+  Too far / bad yaw / excessive point or body speed is rejected with
+  a concrete reason in the existing sample HUD.
+- **K**, while connected: optional **lab-only** lateral trailer impulse
+  using Rigidbody.AddForceAtPosition. This applies real PHYSICS load to
+  the ConfigurableJoint; only the Unity solver decides whether the joint
+  breaks based on configured force/torque thresholds. No scripted detach.
+- **R**: only user-triggered upright recovery. If still coupled,
+  reposition both bodies after safe preflight; otherwise only the
+  selected tractor chassis is recovered.
+
+`VehicleAssemblyDefinition` Inspector shows `BreakForceNewtons`
+(default 150000 N), `BreakTorqueNewtonMeters` (default 100000 Nm),
+hitch gap, heading and approach speed settings. For a visible lab
+demonstration adjust thresholds downward and reconstruct the scene or
+unhitch/rehitch so the new live joint gets those values; the raw
+Unity ConfigurableJoint Inspector also exposes current breakForce/
+breakTorque. Thresholds are UNCALIBRATED placeholders.
+
+The assembly HUD displays Attached/Detached/Broken, number of actual
+physics break callbacks, last solver-reported break force, hitch gap,
+yaw and break thresholds. The K shock test does not fake break events.
+Reattachment never happens automatically.
+
+A new EditMode suite `KavraHitchLifecycleEditModeTests` covers joint
+threshold transfer, attach prerequisites, manual unlink/relink,
+OnJointBreak status notification simulation and legacy asset
+migration. Actual physical overload breaking requires Unity Play Mode;
+a synthetic EditMode callback does not claim to prove solver breaking.

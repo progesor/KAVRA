@@ -6,6 +6,11 @@ namespace Progesor.Kavra
     /// <summary>Validation only; does not change existing vehicle assets.</summary>
     public static class VehicleAssemblyValidator
     {
+        private static bool IsNonnegativeFinite(float v)
+        {
+            return v >= 0f && !float.IsNaN(v) && !float.IsInfinity(v);
+        }
+
         private static bool IsFinite(Vector3 v)
         {
             return !(float.IsNaN(v.x) || float.IsInfinity(v.x) ||
@@ -53,6 +58,31 @@ namespace Progesor.Kavra
                 float.IsInfinity(assembly.MaximumAttachErrorMeters))
                 issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
                     "Attach tolerance must be a finite positive number."));
+
+            if (assembly.MaximumAttachYawDegrees < 0f ||
+                assembly.MaximumAttachYawDegrees > 180f ||
+                float.IsNaN(assembly.MaximumAttachYawDegrees) ||
+                float.IsInfinity(assembly.MaximumAttachYawDegrees))
+                issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                    "Attach yaw tolerance must be within 0..180 degrees."));
+
+            if (assembly.MaximumAttachRelativeSpeedMps <= 0f ||
+                float.IsNaN(assembly.MaximumAttachRelativeSpeedMps) ||
+                float.IsInfinity(assembly.MaximumAttachRelativeSpeedMps))
+                issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                    "Maximum relative attach speed must be finite and positive."));
+
+            if (assembly.MaximumManualCouplingBodySpeedMps <= 0f ||
+                float.IsNaN(assembly.MaximumManualCouplingBodySpeedMps) ||
+                float.IsInfinity(assembly.MaximumManualCouplingBodySpeedMps))
+                issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                    "Manual hitch engagement/disengagement body speed must be finite and positive."));
+
+            if (!IsNonnegativeFinite(assembly.BreakForceNewtons) ||
+                !IsNonnegativeFinite(assembly.BreakTorqueNewtonMeters))
+                issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                    "Hitch break force and torque must be finite and non-negative (0=unbreakable)."));
+
             if (assembly.TrailerServiceBrakeMultiplier < 0f ||
                 float.IsNaN(assembly.TrailerServiceBrakeMultiplier) ||
                 float.IsInfinity(assembly.TrailerServiceBrakeMultiplier))
