@@ -111,6 +111,16 @@ araç/çekici prefabını kullanabilmeli.
 **Çıkış:** En az bir yeni temiz Unity proje/sahnede reused prefab
 assetleri bozulmadan çalışıyor; Unity/UPM bağımlılıkları belgeli.
 
+### P1 kaynak ilerlemesi — 17 Ekim 2026
+
+- **Kaynakta eklendi:** `IVehicleAssemblyController`; iki gövdeli ve
+  sıralı çok-römork köklerinin ortak, geriye uyumlu link/attach API'si.
+- **Kaynakta eklendi:** iki EditMode regresyon testi, yeni Python
+  asmdef/GUID preflight kontrolü ve GitHub Actions statik doğrulama.
+- **Açık:** gerçek Unity derleme, EditMode PASS, prefab yeniden importu,
+  sahne görünümü ve Play Mode. P0 kabulü ve issue #17 kapanmadı;
+  PR #16 Draft. Ayrıntı: [docs/26](26_P1_COMMON_ASSEMBLY_CONTROL_API.md).
+
 ## 4. P2 — Vehicle Wizard üretim akışı ve model bağlama
 
 Kullanıcı isteği: ileride gerçek bir **açık şasi** otomobil, 4x4 ve

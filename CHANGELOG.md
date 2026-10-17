@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — P1 common assembly control API (source-only)
+
+- Both existing two-body and ordered chain roots now implement the
+  backward-compatible `IVehicleAssemblyController` API.
+- Added EditMode source regressions for zero-based links, read-only
+  attachment preflight and explicit H-only attach/detach behavior.
+- Repaired outdated 0.0.1 static bootstrap expectation; added
+  asmdef/MonoScript GUID guards and source-only CI workflow.
+- No PhysicsLab scenes, user CSV, recovery behavior or real solver
+  modifications. Unity compile and Play Mode remain unverified.
+
+
 ## 0.1.6 assembly hotfix — 2026-10-17
 
 - Fixed CS0246 from KavraHitchLifecycleEditModeTests trying to reference

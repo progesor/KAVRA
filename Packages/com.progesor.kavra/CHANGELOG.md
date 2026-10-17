@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — shared host-facing assembly API
+
+- Additive `IVehicleAssemblyController` implemented by M1.4 and M1.5
+  roots; consistent link queries and explicit manual control.
+- No serialized field changes, assembly physics changes or new package
+  dependency. Unity compiler and Test Runner acceptance pending.
+
+
 ## [0.1.6] — 2026-10-17
 
 - More forgiving manual assembly hitch defaults (0.5m / 55deg).
