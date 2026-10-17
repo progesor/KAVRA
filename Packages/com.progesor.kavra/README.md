@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.1.2)
+# KAVRA embedded package (v0.1.4)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -150,3 +150,48 @@ without changing anchor transforms, and new M1 primitive chassis presets
 include demonstration shocks. Older M0 prefabs/scenes with no rig still use
 the original direct cylinder visual animation path. There are no added
 dependencies on URP, imported meshes or the Input System.
+
+### M1.3 multi-Rigidbody assembly
+
+`VehicleAssemblyDefinition` references a tractor and a separate trailer
+VehicleDefinition. `VehicleCoupling` attaches a trailer Rigidbody
+to a tractor Rigidbody through a ConfigurableJoint. Angular Y is
+free for articulation; X/Z rotations are limited, all linear motion
+is locked at a coincident hitch. `VehicleAssemblyRoot` relays basic
+service/parking brake commands and owns member references; there is no
+additional Rigidbody on the assembly parent.
+
+`VehicleAssemblyMath`, `VehicleAssemblyValidator` and
+`VehicleAssemblyRecovery` keep geometry/validation/recovery independent
+of Editor tools. Manual R recovery relocates **both** bodies after
+preflight; no automatic rollover correction is ever called from a
+physics loop. Imported complex chassis volumes will eventually need a
+richer recovery clearance provider.
+
+Editor menus:
+`Tools > KAVRA > Vehicle Assembly Wizard` and
+`Tools > KAVRA > Create M1.3 Tractor Trailer Lab Scene`.
+The former creates/edits configuration and saves a truly two-Rigidbody
+prefab; the second produces a 6x6+4W sample in the host project.
+No UPM runtime dependency on the host's Input System or URP.
+
+### M1.4 runtime coupling lifecycle
+
+`VehicleCoupling.TryAttach` preflights hitch distance, projected heading,
+both body speeds and relative velocity AT THE HITCH before creating a
+ConfigurableJoint. Optional short trailer-position alignment is triggered
+only during an accepted *explicit attach request*.
+
+`VehicleAssemblyRoot.TryAttach/Detach` exposes driver-facing commands;
+manual detach is limited to very low speeds. The physical joint uses
+`breakForce` and `breakTorque` from VehicleAssemblyDefinition. PhysX
+overload triggers MonoBehaviour.`OnJointBreak(float)` and Unity destroys
+the joint; a state/count/last breaking force are available for UI.
+Neither shock load nor a loss of contact calls a user-originated
+Detach() method. No automatic reattachment.
+
+When a joint is removed, the assembly releases stale trailer brake
+commands instead of repeatedly applying the tractor's controls.
+`VehicleAssemblyDefinition` upgrades old M1.3 serialized settings.
+The zero-value break thresholds mean Infinity/unbreakable on new
+definition assets.

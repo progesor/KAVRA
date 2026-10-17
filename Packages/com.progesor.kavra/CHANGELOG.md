@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.4] — 2026-10-17
+
+- Added position/yaw/speed-limited manual hitch attachment and detachment.
+- Added physical joint breakForce/breakTorque and OnJointBreak tracking.
+- Added explicit assembly APIs, brake release on disconnect and legacy
+  asset-migration defaults; zero thresholds disable mechanical breaking.
+- Host H reconnect/unhitch, K physical break-load demo, status HUD.
+- Added 9 hitch lifecycle EditMode tests; Play Mode verification pending.
+
+
+## [0.1.3] — 2026-10-17
+
+- Runtime VehicleAssemblyDefinition/Root/Member, VehicleCoupling,
+  assembly math, validator and explicit two-body manual recovery.
+- Separate tractor and trailer Rigidbody simulations; ConfigurableJoint
+  yaw articulation with restricted pitch/roll and coincident anchors.
+- Editor assembly builder, reusable two-body prefab Wizard, trailer
+  4W + truck-powertrain template and independent host demonstration.
+- Added basic trailer service/parking brake sharing, no brake delay/
+  pneumatics or powered trailer shaft model.
+- Eight EditMode test sources added. Unity Play Mode not yet verified.
+
+
 ## [0.1.2] — 2026-10-17
 
 - Added gear shift state, torque cut, optional automatic thresholds and

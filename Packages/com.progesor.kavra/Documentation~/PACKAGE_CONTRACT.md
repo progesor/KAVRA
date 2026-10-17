@@ -163,3 +163,78 @@ do not apply a second scale reduction at load time.
 new M1 prototypes (optionally preview shock cylinders) and can bind
 currently selected existing vehicles through Tools menu. For existing
 M0 scenes with no rig, the original VisualTransform path is retained.
+
+
+## M1.3 — actual multi-body coupling contracts
+
+`VehicleAssemblyDefinition` is a ScriptableObject with two **distinct**
+single-chassis `VehicleDefinition` refs, local hitch anchors, pitch/roll
+limits and basic brake-command ratio. World-space hitch alignment uses
+`VehicleAssemblyMath.CalculateTrailerRootPosition`, which assumes
+unit vehicle Transform scales.
+
+`VehicleCoupling` is installed on the TRAILER rigidbody and owns its
+ConfigurableJoint. It rejects missing/identical/kinematic bodies,
+already attached joints, separated anchors, and invalid definitions.
+The joint connects to the tractor rigidbody and locks all three
+translations, permits free angular Y yaw and limited angular X pitch /
+angular Z roll. Local joint axis = right, secondaryAxis = up. Projection
+OFF by default, and connected-body collisions disabled. This is a first
+engine-driven constraint, not custom suspension link finite elements.
+Detach disables/destroys the joint; new attachment is an explicit action.
+
+`VehicleAssemblyRoot` is a reference holder and trailer-brake command
+relay on a **non-Rigidbody** parent. There are exactly two physics
+Rigidbodies in the starter. Trailer WheelDefinitions are not powered,
+but their normal road/suspension/rolling/braking forces are simulated
+by their own VehicleSimulationRoot.
+
+When `VehicleManualRecovery.TryRecover` sees a *currently attached*
+`VehicleAssemblyMember`, it routes an explicit R request to
+`VehicleAssemblyRecovery`. This checks both bodies' speed, both sets
+of wheel-ground samples and collider clearance BEFORE repositioning
+either. It straightens the assembly at its current horizontal position,
+restores hitch alignment and clears both bodies' transients. This
+teleport is never invoked as an automatic safety system.
+
+Assembly topology currently contains one tractor + one trailer; future
+VehicleAssembly graphs can reuse the coupling component for multiple
+trailers and powered modules. This simple 6x6+4W rig is **not** a finished
+18-wheel tractor-trailer, nor a calibrated real-world fifth-wheel/
+pneumatic-brake model. No new package dependency.
+
+
+## M1.4 breakable hitch lifecycle
+
+`VehicleAssemblyDefinition` adds:
+- `MaximumAttachErrorMeters` (already existed; world hitch separation);
+- `MaximumAttachYawDegrees` (projected forward heading limit);
+- `MaximumAttachRelativeSpeedMps` (velocity difference at hitch points);
+- `MaximumManualCouplingBodySpeedMps` (absolute speed bound for BOTH
+  manual attachment and manual detachment);
+- `AlignHitchesOnManualAttach` (optional one-time small trailer Rigidbody
+  correction before creating the joint);
+- `BreakForceNewtons` and `BreakTorqueNewtonMeters`; 0 maps to
+  `Mathf.Infinity` when constructing the live joint.
+
+Versioned ScriptableObject defaults migrate older M1.3 assets to M1.4
+when loading; newer explicitly unbreakable values remain unchanged.
+
+`VehicleCoupling` records Detached, Attached, Broken. It is the owner of
+`ConfigurableJoint`. Breaks are driven by **Unity physics** exceeding
+Joint.breakForce or breakTorque; Unity notifies
+`OnJointBreak(float)` and removes the joint. Torque break only applies
+to angular axes with Locked/Limited constraints (yaw is Free here).
+The controller does not apply a fake damage event or scripted detach.
+
+`VehicleAssemblyRoot.TryAttach/Detach` are explicit commands.
+Manual release is only allowed near standstill; physical overload
+breaks can happen at ANY vehicle speed. Destroying a manually released
+joint is deferred to end-of-frame in Play Mode; a same-frame attempt to
+reconnect returns JointRemovalPending. Do NOT set Joint.connectedBody
+to null because that anchors the joint to the WORLD.
+
+Disconnection releases the basic tractor-to-trailer service/park brake
+relay and clears last mirrored brake values. User's R-only recovery
+remains assembly-aware while still connected, and individual-body-only
+when uncoupled. No implicit auto-coupling or auto-rollover logic exists.

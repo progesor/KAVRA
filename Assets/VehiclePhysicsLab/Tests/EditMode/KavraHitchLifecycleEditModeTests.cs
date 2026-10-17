@@ -1,0 +1,238 @@
+using NUnit.Framework;
+using Progesor.Kavra;
+using Progesor.Kavra.Editor;
+using UnityEngine;
+
+namespace Progesor.Kavra.Lab.Tests
+{
+    /// <summary>
+    /// EditMode regression tests for explicit hitch lifecycle.
+    /// True PHYSICS threshold breaking needs a separate Unity Play Mode run.
+    /// </summary>
+    public sealed class KavraHitchLifecycleEditModeTests
+    {
+        private VehicleAssemblyDefinition definition;
+        private VehicleDefinition tractor;
+        private VehicleDefinition trailer;
+        private SimplePowertrainDefinition engine;
+        private GameObject assemblyObject;
+
+        [SetUp]
+        public void Setup()
+        {
+            tractor = VehicleTemplateFactory.Create(VehicleTemplate.Truck6x6);
+            engine = VehicleAssemblyTemplateFactory.CreateTruckSamplePowertrain();
+            tractor.Powertrain = engine;
+            trailer = VehicleAssemblyTemplateFactory.CreateFourWheelTrailer();
+            definition = ScriptableObject.CreateInstance<VehicleAssemblyDefinition>();
+            definition.Tractor = tractor;
+            definition.Trailer = trailer;
+        }
+
+        [TearDown]
+        public void Teardown()
+        {
+            if (assemblyObject != null) Object.DestroyImmediate(assemblyObject);
+            if (definition != null) Object.DestroyImmediate(definition);
+            if (tractor != null) Object.DestroyImmediate(tractor);
+            if (trailer != null) Object.DestroyImmediate(trailer);
+            if (engine != null) Object.DestroyImmediate(engine);
+        }
+
+        private VehicleAssemblyRoot MakeRig()
+        {
+            assemblyObject = VehicleAssemblyBuilder.Build(definition);
+            return assemblyObject.GetComponent<VehicleAssemblyRoot>();
+        }
+
+        [Test]
+        public void BreakThresholdsAreAssignedToActualUnityJoint()
+        {
+            definition.BreakForceNewtons = 9500f;
+            definition.BreakTorqueNewtonMeters = 4300f;
+            var assembly = MakeRig();
+            Assert.IsTrue(assembly.IsAttached);
+            Assert.AreEqual(VehicleHitchState.Attached, assembly.HitchState);
+            Assert.That(assembly.Coupling.Joint.breakForce, Is.EqualTo(9500f));
+            Assert.That(assembly.Coupling.Joint.breakTorque, Is.EqualTo(4300f));
+            Assert.AreEqual(0, assembly.Coupling.PhysicalBreakCount);
+        }
+
+        [Test]
+        public void ZeroBreakThresholdMeansUnbreakableJointNotZeroResistance()
+        {
+            definition.BreakForceNewtons = 0f;
+            definition.BreakTorqueNewtonMeters = 0f;
+            var assembly = MakeRig();
+            Assert.IsTrue(float.IsPositiveInfinity(assembly.Coupling.Joint.breakForce));
+            Assert.IsTrue(float.IsPositiveInfinity(assembly.Coupling.Joint.breakTorque));
+        }
+
+        [Test]
+        public void ManualDetachAndReattachRequireAnExplicitCommand()
+        {
+            var assembly = MakeRig();
+            Rigidbody a = assembly.Tractor.GetComponent<Rigidbody>();
+            Rigidbody b = assembly.Trailer.GetComponent<Rigidbody>();
+            a.linearVelocity = Vector3.zero;
+            b.linearVelocity = Vector3.zero;
+            Assert.IsTrue(assembly.Detach());
+            Assert.IsFalse(assembly.IsAttached);
+            Assert.AreEqual(VehicleHitchState.Detached, assembly.HitchState);
+            Assert.IsNull(assembly.Trailer.GetComponent<ConfigurableJoint>());
+            Assert.IsFalse(assembly.IsAttached); // no proximity auto-connect
+            Assert.AreEqual(VehicleCouplingResult.Connected, assembly.TryAttach());
+            Assert.IsTrue(assembly.IsAttached);
+        }
+
+        [Test]
+        public void DriverCannotDetachOrReconnectAtHighSpeed()
+        {
+            var assembly = MakeRig();
+            Rigidbody a = assembly.Tractor.GetComponent<Rigidbody>();
+            Rigidbody b = assembly.Trailer.GetComponent<Rigidbody>();
+            a.linearVelocity = Vector3.forward * 7f;
+            b.linearVelocity = Vector3.forward * 7f;
+            Assert.IsFalse(assembly.Detach());
+            Assert.IsTrue(assembly.IsAttached);
+
+            a.linearVelocity = Vector3.zero;
+            b.linearVelocity = Vector3.zero;
+            Assert.IsTrue(assembly.Detach());
+            a.linearVelocity = Vector3.forward * 7f;
+            b.linearVelocity = Vector3.forward * 7f;
+            Assert.AreEqual(VehicleCouplingResult.VehicleSpeedTooHigh,
+                assembly.TryAttach());
+            Assert.IsFalse(assembly.IsAttached);
+        }
+
+        [Test]
+        public void AttachRejectsDistantYawedOrFastRelativeHitchMotion()
+        {
+            var assembly = MakeRig();
+            var a = assembly.Tractor.GetComponent<Rigidbody>();
+            var b = assembly.Trailer.GetComponent<Rigidbody>();
+            Assert.IsTrue(assembly.Detach());
+
+            b.position += Vector3.back * 2f;
+            Physics.SyncTransforms();
+            Assert.AreEqual(VehicleCouplingResult.AttachmentPointsSeparated,
+                assembly.TryAttach());
+
+            b.position = VehicleAssemblyMath.CalculateTrailerRootPosition(
+                a.position, a.rotation, definition.TractorHitchLocal,
+                a.rotation, definition.TrailerHitchLocal);
+            // Keep hitch world location aligned while changing trailer yaw.
+            b.rotation = Quaternion.Euler(0f, 70f, 0f);
+            b.position = VehicleAssemblyMath.CalculateTrailerRootPosition(
+                a.position, a.rotation, definition.TractorHitchLocal,
+                b.rotation, definition.TrailerHitchLocal);
+            Physics.SyncTransforms();
+            Assert.AreEqual(VehicleCouplingResult.AttachmentYawMisaligned,
+                assembly.TryAttach());
+
+            b.rotation = a.rotation;
+            b.position = VehicleAssemblyMath.CalculateTrailerRootPosition(
+                a.position, a.rotation, definition.TractorHitchLocal,
+                b.rotation, definition.TrailerHitchLocal);
+            a.linearVelocity = Vector3.right * 1.4f;
+            b.linearVelocity = Vector3.zero;
+            Physics.SyncTransforms();
+            Assert.AreEqual(VehicleCouplingResult.RelativeSpeedTooHigh,
+                assembly.TryAttach());
+        }
+
+        [Test]
+        public void SmallHitchGapIsSnappedBeforeManualCoupling()
+        {
+            var assembly = MakeRig();
+            Rigidbody a = assembly.Tractor.GetComponent<Rigidbody>();
+            Rigidbody b = assembly.Trailer.GetComponent<Rigidbody>();
+            Assert.IsTrue(assembly.Detach());
+            b.position += new Vector3(0.09f, 0f, 0f);
+            Physics.SyncTransforms();
+            Assert.AreEqual(VehicleCouplingResult.Connected, assembly.TryAttach());
+
+            float gap = VehicleAssemblyMath.CalculateHitchErrorMeters(
+                a.position, a.rotation, definition.TractorHitchLocal,
+                b.position, b.rotation, definition.TrailerHitchLocal);
+            Assert.That(gap, Is.LessThan(0.0005f));
+        }
+
+        [Test]
+        public void PhysicsBreakNotificationSetsBrokenStateAndReleasesTrailerBrakes()
+        {
+            var assembly = MakeRig();
+            var tow = assembly.Tractor.GetComponent<VehicleSimulationRoot>();
+            var towed = assembly.Trailer.GetComponent<VehicleSimulationRoot>();
+            tow.SetInputs(0f, 0f, 0.7f, 0.6f);
+            assembly.PropagateBrakes();
+            Assert.That(towed.ServiceBrake, Is.GreaterThan(0f));
+            Assert.IsTrue(assembly.IsAttached);
+
+            // EditMode does not run a PhysX overload step. Simulate the
+            // Unity callback AFTER removing its joint; actual break force
+            // handling remains a separate Play Mode acceptance test.
+            Object.DestroyImmediate(assembly.Coupling.Joint);
+            assembly.Coupling.SendMessage("OnJointBreak", 12345f);
+            Assert.IsFalse(assembly.IsAttached);
+            Assert.AreEqual(VehicleHitchState.Broken, assembly.HitchState);
+            Assert.AreEqual(1, assembly.Coupling.PhysicalBreakCount);
+            Assert.That(assembly.Coupling.LastBreakForceNewtons, Is.EqualTo(12345f));
+            assembly.PropagateBrakes();
+            Assert.AreEqual(0f, towed.ServiceBrake);
+            Assert.AreEqual(0f, towed.ParkingBrake);
+            Assert.AreEqual(VehicleCouplingResult.Connected, assembly.TryAttach());
+            Assert.AreEqual(VehicleHitchState.Attached, assembly.HitchState);
+        }
+
+        [Test]
+        public void ValidatorRejectsInvalidHitchSettings()
+        {
+            definition.MaximumAttachRelativeSpeedMps = float.NaN;
+            Assert.IsTrue(VehicleAssemblyValidator.HasErrors(definition));
+            definition.MaximumAttachRelativeSpeedMps = 1.25f;
+            definition.BreakForceNewtons = -100f;
+            Assert.IsTrue(VehicleAssemblyValidator.HasErrors(definition));
+            definition.BreakForceNewtons = 150000f;
+            definition.MaximumManualCouplingBodySpeedMps = -1f;
+            Assert.IsTrue(VehicleAssemblyValidator.HasErrors(definition));
+        }
+        [Test]
+        public void LegacyAssetMigrationSetsSafeDefaultsButPreservesExplicitUnbreakable()
+        {
+            var field = typeof(VehicleAssemblyDefinition).GetField(
+                "hitchSettingsVersion",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic);
+            var migrate = typeof(VehicleAssemblyDefinition).GetMethod(
+                "UpgradeLegacyHitchSettings",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic);
+            Assert.IsNotNull(field);
+            Assert.IsNotNull(migrate);
+
+            // Emulate an asset serialized before the M1.4 hitch fields.
+            field.SetValue(definition, 0);
+            definition.MaximumAttachRelativeSpeedMps = 0f;
+            definition.MaximumManualCouplingBodySpeedMps = 0f;
+            definition.BreakForceNewtons = 0f;
+            definition.BreakTorqueNewtonMeters = 0f;
+            migrate.Invoke(definition, null);
+            Assert.AreEqual(1.25f, definition.MaximumAttachRelativeSpeedMps);
+            Assert.AreEqual(1.75f, definition.MaximumManualCouplingBodySpeedMps);
+            Assert.AreEqual(150000f, definition.BreakForceNewtons);
+            Assert.AreEqual(100000f, definition.BreakTorqueNewtonMeters);
+            Assert.IsFalse(VehicleAssemblyValidator.HasErrors(definition));
+
+            // A user explicitly setting both thresholds to 0 on a NEW
+            // schema is still allowed to make their hitch unbreakable.
+            definition.BreakForceNewtons = 0f;
+            definition.BreakTorqueNewtonMeters = 0f;
+            migrate.Invoke(definition, null);
+            Assert.AreEqual(0f, definition.BreakForceNewtons);
+            Assert.AreEqual(0f, definition.BreakTorqueNewtonMeters);
+        }
+
+    }
+}

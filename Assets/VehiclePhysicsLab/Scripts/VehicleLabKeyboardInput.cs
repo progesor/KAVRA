@@ -55,6 +55,33 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
 
         if (!AcceptDrivingKeys) return; // Scripted runner owns input during calibration.
 
+        // H is a conscious hitch command: never auto-connect in proximity.
+        // Attached H detaches; detached/broken H retries only when position,
+        // yaw and relative hitch speed pass VehicleCoupling.TryAttach.
+        if (keyboard.hKey.wasPressedThisFrame)
+        {
+            Progesor.Kavra.VehicleAssemblyMember member =
+                GetComponent<Progesor.Kavra.VehicleAssemblyMember>();
+            if (member != null && member.IsTractor && member.Assembly != null)
+            {
+                Progesor.Kavra.VehicleAssemblyRoot assembly = member.Assembly;
+                if (assembly.IsAttached)
+                {
+                    recoveryStatus = assembly.Detach()
+                        ? "Trailer uncoupled manually."
+                        : "Trailer could not be disconnected.";
+                }
+                else
+                {
+                    Progesor.Kavra.VehicleCouplingResult result = assembly.TryAttach();
+                    recoveryStatus = result == Progesor.Kavra.VehicleCouplingResult.Connected
+                        ? "Trailer coupled."
+                        : "Coupling refused: " + result;
+                }
+                recoveryStatusUntil = Time.unscaledTime + 4f;
+            }
+        }
+
         bool forward = keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed;
         bool backward = keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed;
         bool left = keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed;
@@ -210,11 +237,16 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
         else
             message += "\nSCRIPTED test: set maneuver in VehicleLabManeuverRunner";
         message += "\nR: MANUAL upright recovery (at low speed)";
+        Progesor.Kavra.VehicleAssemblyMember assemblyMember =
+            GetComponent<Progesor.Kavra.VehicleAssemblyMember>();
+        if (assemblyMember != null && assemblyMember.IsTractor &&
+            assemblyMember.Assembly != null)
+            message += "\nH: manually connect/disconnect trailer";
 #else
         message += "\nInput System unavailable: use VehicleSimulationRoot Inspector controls.";
 #endif
         if (Time.unscaledTime < recoveryStatusUntil)
             message += "\n" + recoveryStatus;
-        GUI.Box(new Rect(12f, 12f, 690f, 315f), message);
+        GUI.Box(new Rect(12f, 12f, 690f, 340f), message);
     }
 }

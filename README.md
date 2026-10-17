@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-14): M1 vehicle framework foundation, package 0.1.2. New M1.1 source awaiting Unity Editor verification.**
+**State (2026-10-14): M1 vehicle framework foundation, package 0.1.4. New M1.1 source awaiting Unity Editor verification.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -209,3 +209,67 @@ existing rig and does not alter the physical contact mount. The shared
 runtime assembly remains independent of URP/Input System/Blender.
 
 See `docs/20_M12_GEARBOX_AND_VISUAL_BINDING.md`.
+
+## M1.3 — Actual tractor/trailer assemblies (two Unity Rigidbodies)
+
+The first *multi-body* foundation is an optional
+`VehicleAssemblyDefinition` referencing **two different**
+`VehicleDefinition` assets. Each remains a complete independent
+rigid chassis with its own ray/sphere wheel contact, tire response,
+suspension and wheel visual rigs. A `VehicleCoupling` puts a genuine
+`ConfigurableJoint` on the trailer connecting it to the tractor.
+
+- Three linear axes LOCKED at a shared local hitch point.
+- Relative yaw around the joint's Y axis FREE.
+- Pitch and roll LIMITED (configurable in the assembly asset).
+- Joint projection OFF by default; it can violate physics conservation.
+- Basic service/park-brake commands shared from tractor to trailer.
+- **Manual R** is assembly-aware: when nearly stopped, checks both
+  vehicles' ground and free space, then repositions them TOGETHER with
+  hitch points coincident. It is never an automatic rollover fix.
+
+For a working-source sample use
+`Tools > KAVRA > Create M1.3 Tractor Trailer Lab Scene`. This makes
+a 6x6 powered tractor and separate passive four-wheel trailer, with
+**two Rigidbody components and ten wheel contacts**. Save the generated
+scene under `Assets/VehiclePhysicsLab/Scenes/M13_TractorTrailer.unity`.
+
+`Tools > KAVRA > Vehicle Assembly Wizard` supports arbitrary pairs of
+existing VehicleDefinition assets, editable local hitch anchors and
+saving a two-Rigidbody reusable Unity prefab. The prefab uses the same
+existing primitive placeholder models until actual vehicle meshes are
+introduced in separate backlog issue #9.
+
+Technical reference: `docs/21_M13_MULTIBODY_ASSEMBLY.md`.
+All M0 scenes, M1 single-body presets and user's prior CSV data remain
+unchanged. This feature is experimental until Unity Editor compile and
+actual connected driving tests pass.
+
+## M1.4 — Driver-operated hitch and genuine breakable joint
+
+The two-Rigidbody tractor–trailer coupling now has an explicit
+**hitch lifecycle**. In the M1.3/M1.4 sample, press **H**:
+- Connected: manually release only after both vehicles slow down.
+- Detached or previously broken: attempt a new connection ONLY when
+  hitch points are close, heading is aligned and approach speed is safe.
+  A small close-range correction may snap the trailer's hitch into place
+  once, on that keypress, before ConfigurableJoint is created.
+
+While connected, a genuinely overloaded Unity ConfigurableJoint can
+**break automatically** if the force or torque exceeds the configured
+`VehicleAssemblyDefinition.BreakForceNewtons` or
+`BreakTorqueNewtonMeters`. Unity itself removes the joint and sends
+`OnJointBreak(float)`; a counter and force reading appear in the lab HUD.
+Set either threshold to **0** to disable breaking by that quantity.
+The initial 150 kN / 100 kNm defaults are illustrative only, not measured
+hardware capacities, and the yaw axis is deliberately free.
+
+**K** in the host lab applies a strong lateral PHYSICS impulse to the
+trailer so the real joint solver's overload response can be inspected.
+It never calls Detach or fakes a break event. Tune the break thresholds
+in your assembly asset, regenerate/test as appropriate.
+Once physically broken, the hitch remains broken until the user backs
+into position and presses H; trailer brake commands no longer follow
+the tractor. The original R remains a manual recovery request only.
+No automatic rollover/auto-upright or autonomous reattachment.
+See `docs/22_M14_HITCH_LIFECYCLE.md`.
