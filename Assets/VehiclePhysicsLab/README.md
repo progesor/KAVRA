@@ -183,3 +183,84 @@ After Unity compiles and tests are run, ONE new StraightBrake
 A/B run with default limiter settings is sufficient for the first
 post-fix comparison. No automatic vehicle righting is ever invoked:
 the user must press R to request manual recovery.
+
+
+## M1 core powertrain lab (0.1.0)
+
+The M0 Physics Lab and scripted M0 calibration scene are **preserved**.
+To test the new powertrain separately choose:
+
+`Tools > KAVRA > Create M1 Powertrain Lab Scene`
+
+Save the generated scene to
+`Assets/VehiclePhysicsLab/Scenes/M1_PowertrainLab.unity` and Play.
+
+The M1 menu creates/reuses two **dedicated** host assets:
+`Assets/VehiclePhysicsLab/M1_PassengerCar4.asset` (vehicle)
+and `Assets/VehiclePhysicsLab/M1_SimplePowertrain.asset` (engine/gearbox).
+They do not overwrite your earlier M0 definition or telemetry CSVs.
+It builds one 4W dynamic chassis on a long flat test road.
+
+Keyboard: **W** forward accelerator, **S** reverse accelerator when almost
+stopped (brakes first if still moving forward), **A/D** steer, **Q/E**
+down/up-shift when in forward gears, **Space** brake, **Left Shift**
+parking brake, **R** request manual upright recovery at low speed.
+
+Inspector/HUD: `DriveSource`, `SelectedGear`, `EngineRpm`, motor Nm,
+total distributed wheel torque, per-wheel applied torque.
+CSV also contains `drive_source,selected_gear,engine_rpm,engine_nm,
+delivered_wheel_torque_nm`.
+
+**Limitations:** no automatic transmission shift logic, clutch or
+differential torque feedback, engine braking, measured vehicle tire
+calibration or automatic anti-flip. The M1 starter is a working simple
+powertrain chain, **not** an industrial automotive simulation yet.
+M1 source requires Unity compile and Play Mode verification. M0 data should
+not be used as a numerical baseline for the powered M1 vehicle.
+
+
+## M1.1: quick multi-axle demonstration menus
+
+With the `feat/m1-core-powertrain-foundation` branch open, use any of:
+
+- `Tools > KAVRA > Create M1 Powertrain Lab Scene` — 4W car.
+- `Tools > KAVRA > Create M1 Three-Wheel Lab Scene` — 3W delta.
+- `Tools > KAVRA > Create M1 6x6 Truck Lab Scene` — 6W / 3 driven axles.
+- `Tools > KAVRA > Create M1 8x8 Truck Lab Scene` — 8W / 4 driven axles.
+- `Tools > KAVRA > Create M1 20W Stress Lab Scene` — 20W
+  **single-chassis** load/stress test, NOT a multi-body semi-trailer.
+
+Each menu creates its own reusable `M1_<template>.asset` and
+`M1_Powertrain_<template>.asset` (car keeps existing
+`M1_SimplePowertrain.asset`). Valid existing tuned assets are **reused**
+without overwriting. Truck examples generate an uncalibrated diesel-like
+engine torque curve appropriate to a heavy demo vehicle.
+
+Save the generated scene from the Unity Editor; no pre-generated scenes
+are committed for these menu options. Use W/S, Q/E, A/D, Space, Shift and
+manual R recovery as in the 4W host sample. No high-fidelity meshes
+or automatically preventing rollovers.
+
+
+## M1.2 gearbox and visual wheels
+
+New M1 lab vehicles/prefabs generated from the Wizard contain separate
+`TravelPivot/SteeringPivot/SpinPivot` transforms under each WheelAnchor,
+plus a simple shock preview cylinder following two endpoints. They are
+visual-only and **do not change wheel physics**. Replace the mesh under
+SpinPivot with imported FBX/GLB wheel meshes, retaining correct pivot
+position. For an existing scene: select vehicle root and invoke
+`Tools > KAVRA > Bind Selected Vehicle Wheel Visuals`.
+Assign an imported mesh to `VehicleWheelAnchor.VisualTransform` first.
+
+Input on interactive M1 lab: W forward, S reverse when near stopped,
+Q/E manual forward gear down/up, N neutral, T toggle automatic/manual
+forward shift scheduling, Space brake, Shift parking brake,
+**R** explicit user-triggered upright recovery. Existing M0 sample
+control mode remains unchanged. Gearbox HUD now shows engaged gear,
+target, shifting status, and selected mode. CSV adds
+`engaged_gear,gearbox_mode,shift_in_progress,shift_progress01`.
+
+This is a starter visual binding, not realistic suspension linkage
+geometry or automatic mesh discovery. Neither gearbox changes nor the
+visual hierarchy have been verified in actual Unity Play Mode yet.

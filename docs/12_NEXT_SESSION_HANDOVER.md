@@ -146,3 +146,70 @@ different road friction/axle layouts, before/after contact mode benchmark,
 airborne wheel overspeed with future powertrain. Preserve user's
 committed files and keep PR #2 Draft pending broad acceptance. Never
 add automatic rollover prevention; R-only manual recovery remains.
+
+
+## 2026-10-14: New M1 core powertrain branch
+
+Branch: `feat/m1-core-powertrain-foundation` based on the existing M0
+prototype branch; separate Draft PR to M0 will track this milestone.
+Issue: https://github.com/progesor/KAVRA/issues/7
+
+Main priority changed by user: *build a robust general modular vehicle
+framework*, stop over-investing in minor physics imperfections.
+
+Added M1 simple engine/gearbox ScriptableObject (torque vs RPM, idle/redline,
+forward/reverse/neutral, final drive), C# powertrain runtime calculating
+signed wheel torques distributed across any number of driven AxleId groups.
+Gear and drive source fields integrated in VehicleSimulationRoot;
+M0 legacy mode default retained. Wizard creates/assigns asset and an M1
+dynamic chassis. Separate host-only M1 lab generator/input HUD/CSV.
+EditMode tests include 3/4/6/8/20, neutral/reverse, torque totals and
+gearing compatibility.
+
+Open next steps: compile in user's Unity 6000.3.18f1 Editor, run EditMode
+tests, drive a generated M1 lab car, smoke check custom 8W in Wizard.
+Full differential/clutch/engine drag/real calibration out of scope.
+No automatic rollover prevention; only R recovery.
+
+
+## 2026-10-14 M1.1 axle routing & demo vehicle options
+
+Working branch `feat/m1-core-powertrain-foundation`, Draft PR #8, issue #10.
+User's priority remains completing main configurable vehicle framework over
+minute vehicle physics. 3D model assets tracked in backlog issue #9.
+
+Added per-axle weight + speed-based differential torque COMMAND approximation,
+kept older engine/wheel APIs, Wizard drive layout toggles and torque settings.
+Separate generated M1 lab menus for 3W/4W/6x6/8x8/20W with appropriate
+sample engine torque curves. Six EditMode test source cases added.
+
+Do NOT call the approximate speed-based mode a physically locked differential.
+The engine/gearbox baseline remains simple and fast, separate from M0 tire
+solver. Unity Editor compiler/tests and multi-axle Play Mode verification
+are still required; PR should remain Draft. No auto-rollover prevention,
+only R manually recover.
+
+
+## 2026-10-17 M1.2 — gearbox state and initial visual binding
+
+Branch `feat/m1-core-powertrain-foundation`, Draft PR #8, issue #11.
+
+New `VehicleGearboxController` per-vehicle runtime manages manual and
+optional automatic forward gear changes, explicit shift duration / temporary
+torque interruption, low-speed reverse safety, target vs current gear.
+`VehicleSimulationRoot` uses its state before calculating axle motor
+torques, exposing telemetry. Input System host toggles automatic via T,
+supports manual Q/E/N and retains W/S, brake, manual R recovery.
+CSV records actual/target gear, shift activity and progress.
+
+Optional `VehicleWheelVisualRig` separates vertical travel, steer and
+spin pivots. A `VehicleSuspensionVisualLink` can animate a visual shock
+between endpoints. M1 generated chassis/prefabs now have primitive
+wheel rigs and shock rods; old M0 scenes without rigs still animate
+the old cylinder. Existing imported wheel mesh can be bound to a chosen
+anchor and converted from Tools menu, no rendering dependency in UPM.
+
+Unity Editor compilation/Test Runner and Play Mode remain unverified here.
+The next tests should be **M1 lab drive + manual/auto T shift + a wheel
+rig/shock preview**, not four long repeat CSV runs. No automatic rollover
+prevention is ever introduced.

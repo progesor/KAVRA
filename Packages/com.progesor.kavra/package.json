@@ -1,8 +1,8 @@
 {
   "name": "com.progesor.kavra",
-  "version": "0.0.6",
+  "version": "0.1.2",
   "displayName": "KAVRA Vehicle Framework",
-  "description": "Experimental M0.5 vehicle physics with telemetry-calibrated low-speed braking limit, tire profiles, Ackermann-like steering, surfaces and manual recovery.",
+  "description": "M1.2 vehicle foundation: manual/optional auto gearbox state, axle torque routing, configurable wheel visual pivots and shock links.",
   "unity": "6000.3",
   "author": {
     "name": "Progesor Creating"

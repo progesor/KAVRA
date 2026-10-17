@@ -10,8 +10,15 @@ namespace Progesor.Kavra.Editor
     /// </summary>
     public static class VehicleScaffoldBuilder
     {
-        public static GameObject Create(VehicleDefinition configuration, bool dynamicPhysics = false)
+        public static GameObject Create(VehicleDefinition configuration,
+            bool dynamicPhysics = false,
+            VehicleDriveSource driveSource = VehicleDriveSource.LegacyDirectWheelTorque)
         {
+            if (dynamicPhysics && driveSource == VehicleDriveSource.SimplePowertrain &&
+                (configuration == null || configuration.Powertrain == null))
+                throw new System.ArgumentException(
+                    "M1 Basic Powertrain requires a VehicleDefinition.Powertrain asset.");
+
             if (configuration == null)
                 throw new System.ArgumentNullException(nameof(configuration));
             foreach (VehicleValidationIssue issue in VehicleConfigurationValidator.Validate(configuration))
@@ -86,7 +93,14 @@ namespace Progesor.Kavra.Editor
             if (dynamicPhysics)
             {
                 body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-                Undo.AddComponent<VehicleSimulationRoot>(root);
+                var simulation = Undo.AddComponent<VehicleSimulationRoot>(root);
+                simulation.DriveSource = driveSource;
+
+                // Only new M1 scaffolds gain the transform rig by default.
+                // Existing M0 scenes/prefabs retain their original single-
+                // cylinder visual behavior for backward compatibility.
+                if (driveSource == VehicleDriveSource.SimplePowertrain)
+                    VehicleWheelVisualRigBuilder.Bind(root, true);
             }
 
             Selection.activeGameObject = root;

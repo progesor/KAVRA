@@ -1,5 +1,62 @@
 # Changelog
 
+## 0.1.2 — 2026-10-17 (gearbox state + transform-based wheel rigs)
+
+- Added allocation-free VehicleGearboxController with manual/automatic
+  forward shifting, actual engaged vs requested gear, shift-time torque
+  interruption and safe moving direction-change rejection.
+- Added gearbox tuning fields to optional SimplePowertrainDefinition,
+  preserved legacy M0 direct-torque default.
+- Added host T auto/manual toggle, Q/E manual up/down, N neutral, W/S
+  low-speed direction control, R manual recovery; gearbox HUD/CSV metrics.
+- Added VehicleWheelVisualRig (travel/steer/spin pivot hierarchy) and
+  VehicleSuspensionVisualLink (kinematic shock rod binding).
+- New M1 generated scaffolds/prefabs get structured placeholder wheel rigs.
+  Existing M0 wheel visuals remain unchanged. Editor menu can bind selected
+  existing vehicle wheel meshes without touching wheel contact physics.
+- Added gearbox/visual EditMode regression source, updated package contract
+  and technical instructions in docs/20.
+- No automatic rollover assistance, physical clutch, deformable tire/ground
+  or real external 3D asset included.
+- **Unity 6.3.x real compile and Play Mode tests pending.**
+
+
+## 0.1.1 — 2026-10-14 (M1.1 axle drive routing and demo breadth)
+
+- Added optional per-axle drive torque weights and two explicit allocation
+  modes: EqualTorque (legacy), SpeedBiasedApproximation (LSD-like **command
+  routing**, not wheel-speed locking or traction-limited mechanical diff).
+- Updated SimplePowertrainRuntime to accept AxleDefinition configs while
+  preserving the original two-argument constructor and older assets.
+- Added per-axle drive flags and differential/allocation controls to Wizard.
+- Added standalone 3W, 6x6, 8x8 and 20W M1 lab generation menus, including
+  an approximate heavy diesel torque preset for truck demos.
+- Added six EditMode regression tests for weighted axles, speed-bias torque,
+  reverse, legacy weight compatibility, CanDrive authority and validation.
+- New docs/19; no automatic anti-rollover and no real car 3D assets.
+- Source/static checks only; Unity Editor/Play Mode acceptance pending.
+
+
+## 0.1.0 — 2026-10-14 (M1 modular powertrain foundation — unverified in Unity)
+
+- Added separate `SimplePowertrainDefinition` with torque-by-RPM curve,
+  forward/reverse/neutral gears, final drive and efficiency.
+- Added `SimplePowertrainRuntime` with speed-coupled engine RPM, basic
+  redline torque cutoff and axle-group/wheel torque distribution for
+  variable wheel counts (3/4/6/8/20).
+- `VehicleSimulationRoot` now selects between legacy direct-torque and
+  opt-in simple powertrain. Existing scenes and unassigned definitions
+  preserve their original M0 behavior.
+- Wizard now creates/assigns the asset and builds a dynamic M1 chassis.
+- Added a host-only M1 Powertrain Lab menu, keyboard forward/reverse
+  (direction change only when slow), Q/E gear shifting and basic engine
+  RPM/gear/wheel torque HUD+CSV.
+- Added EditMode regression sources for gear direction, neutral, redline,
+  per-axle distribution, arbitrary wheels and M0 compatibility.
+- Full clutch/gear engagement dynamics, differential types, engine braking,
+  hybrid power units and vehicle certification are NOT claimed.
+- **Unity Editor import/compilation and driving tests still pending.**
+
 ## 0.0.6 — 2026-10-14 (first real telemetry review and brake jitter fix)
 
 - Reviewed four user-recorded PhysicsLab CSV sessions in `docs/Telemetry/`:

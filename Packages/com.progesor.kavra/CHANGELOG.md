@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.1.2] — 2026-10-17
+
+- Added gear shift state, torque cut, optional automatic thresholds and
+  forward/reverse direction-change safety (not a real clutch).
+- Added independent wheel visual pivot bindings and a visual shock link.
+- Editor can bind selected wheel meshes, and newly generated M1 scaffolds
+  use the new rig while older M0 scenes stay compatible.
+- Updated host HUD/CSV and EditMode test sources; Unity tests pending.
+
+
+## [0.1.1] — 2026-10-14
+
+- Added axle-relative drive torque weighting and selectable EqualTorque /
+  SpeedBiasedApproximation torque-command routing per driven axle.
+- Extended SimplePowertrainRuntime constructor with AxleDefinition list;
+  older two-parameter constructor remains supported.
+- Wizard can toggle driven axles and tune axle torque/differential settings.
+- Added 3W, 6x6, 8x8 and 20W host powertrain lab scene options.
+- Added six EditMode test sources and documented approximation limits.
+- No Unity Editor test result yet.
+
+
+## [0.1.0] — 2026-10-14 — M1 core prototype
+
+- Added optional powertrain ScriptableObject, gear ratios, torque curve,
+  engine RPM state, speed/redline-limited torque distribution.
+- Introduced data-driven axle grouping for driven wheel torque and neutral,
+  reverse and forward gears, independent of wheel count.
+- Legacy direct torque remains the default when existing scenes load.
+- Wizard and dedicated host M1 lab provide asset/scene generation and input.
+- Wizard 4D saves an opt-in dynamic M1 prototype prefab, refusing to overwrite an existing asset.
+- Added M1 EditMode test cases and extended telemetry fields.
+- Source code was statically checked; no Unity Editor test was performed
+  during authorship.
+
 ## [0.0.6] — 2026-10-14
 
 - Real user CSV analysis showed recurring +/-14 kN braking force chatter

@@ -135,3 +135,65 @@ girdiyle çalışabilir.
 - [ ] SteeringStep repeated and airborne wheel RPM/grounded behavior assessed;
   no automatic roll or flip correction will be introduced.
 - [ ] Surface/multi-axle behavior acceptance, before M1 freeze.
+
+
+## M1 — Reordered implementation focus: core vehicle power path
+
+Based on the user's request, we now prioritize the **functioning reusable
+vehicle system** before tiny near-limit physics tuning details.
+
+- [x] Source: SimplePowertrainDefinition (torque/RPM + gears + final drive).
+- [x] Source: reusable SimplePowertrainRuntime with axle-ID torque splits and
+      no 4-wheel hardcoding; direct M0 drive mode remains optional/default.
+- [x] Source: Wizard create/attach powertrain asset, build M1 chassis
+      and save a placeholder reusable powered Unity prefab.
+- [x] Source: M1 host scene generator, input/gear handling, HUD/CSV and tests.
+- [ ] Unity 6000.3.x imports and compiles new M1 sources.
+- [ ] EditMode tests pass, 3/4/6/8/20 wheels allocate motor torque correctly.
+- [ ] M1 Play Mode W/S, Q/E, brakes, R manual recovery and gear RPM telemetry.
+- [ ] Save actual M1 lab scene and minimum smoke results in repo.
+- [ ] Confirm older M0 scenes and user telemetry behavior are unchanged.
+
+Next: move forward with a basic explicit open differential and optional
+multi-axle weighting, better Wizard prefab binding, then M2 clutch/gearbox
+reaction models. Do NOT block main framework development on minuscule tire
+force refinements. Natural rollover and R-only manual recovery remain.
+
+
+### M1.1 reusable driveline and multi-axle demos — issue #10
+
+- [x] Source: AxleDefinition extended with backward-compatible drive torque
+  weighting and clearly labeled approximation mode.
+- [x] Source: SimplePowertrainRuntime distributes total engine output by
+  axle weights and wheel-level relative-speed bias when requested.
+- [x] Source: Wizard can toggle powered axles and modify group torque modes.
+- [x] Source: separate M1 labs for 3W/4W/6x6/8x8/20W (one rigid body each).
+- [x] Source: six EditMode regression tests, old constructor retained.
+- [ ] Unity 6000.3.x compile and EditMode tests actually PASS.
+- [ ] M1 truck 6x6 and 8x8 scenes drive, reverse and show wheel torques.
+- [ ] M0 .unity scenes and previously recorded user telemetry remain intact.
+- [ ] Actual gear/torque behavior and performance evaluated in Play Mode.
+
+Next foundational step: basic real gearbox state/shift control and simpler
+reusable model/visual binding; full mechanical differential lock remains
+deferred. Realistic mechanical demo 3D models are tracked separately #9.
+
+
+### M1.2 gearbox and wheel presentation — issue #11
+
+- [x] Source: per-vehicle manual/automatic gearbox state, shift torque
+  interruption, requested/engaged gear and speed-aware direction safety.
+- [x] Source: explicit Travel/Steer/Spin pivot presentation and visual
+  suspension link that do not affect Rigidbody forces or contacts.
+- [x] Source: generated M1 prefab/scaffold rigs and Editor binding menu
+  for previously selected vehicle wheel meshes; old M0 visuals unaffected.
+- [x] Host HUD/CSV and EditMode test sources for new behavior.
+- [ ] Unity 6.3.x compile and Test Runner pass.
+- [ ] Actual manual/automatic shift, gear change at speed, and R recovery.
+- [ ] Imported model wheel pivot and preview shock update in Play Mode.
+- [ ] Existing user's M0 scenes/csvs and M1 prior presets remain intact.
+
+Next **core** milestone: first VehicleAssembly coupling (multi-body
+tractor and trailer, physically separate rigidbodies) and reusable
+scene/prefab construction; then more complete drivetrain or loading
+mechanics. Realistic demo model search remains backlog #9.
