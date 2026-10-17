@@ -72,47 +72,49 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
         // yaw and relative hitch speed pass VehicleCoupling.TryAttach.
         if (keyboard.hKey.wasPressedThisFrame)
         {
-            if (convoy != null && convoy.LinkCount > 0)
-            {
-                int selected = convoy.SelectedLinkIndex;
-                if (convoy.IsLinkAttached(selected))
-                {
-                    recoveryStatus = convoy.DetachSelected()
-                        ? "Chain link " + selected + " manually disconnected."
-                        : "Chain link " + selected + " cannot disconnect at this speed.";
-                }
-                else
-                {
-                    Progesor.Kavra.VehicleCouplingResult result =
-                        convoy.TryAttachSelected();
-                    recoveryStatus = result == Progesor.Kavra.VehicleCouplingResult.Connected
-                        ? "Chain link " + selected + " connected."
-                        : "Link " + selected + ": " + result;
-                }
-                recoveryStatusUntil = Time.unscaledTime + 4f;
-            }
+            // P1 shared contract: host controls M1.4 and M1.5 by the same
+            // explicit API, without changing either runtime implementation.
+            bool selectedChain = convoy != null && convoy.LinkCount > 0;
+            Progesor.Kavra.IVehicleAssemblyController hitchControl = null;
+            if (selectedChain)
+                hitchControl = convoy;
             else
             {
                 Progesor.Kavra.VehicleAssemblyMember member =
                     GetComponent<Progesor.Kavra.VehicleAssemblyMember>();
-                if (member != null && member.IsTractor && member.Assembly != null)
+                if (member != null && member.IsTractor)
+                    hitchControl = member.Assembly;
+            }
+
+            if (hitchControl != null && hitchControl.LinkCount > 0)
+            {
+                int selected = selectedChain ? convoy.SelectedLinkIndex : 0;
+                if (hitchControl.IsLinkAttached(selected))
                 {
-                    Progesor.Kavra.VehicleAssemblyRoot assembly = member.Assembly;
-                    if (assembly.IsAttached)
-                    {
-                        recoveryStatus = assembly.Detach()
+                    bool detached = hitchControl.DetachLink(selected);
+                    if (selectedChain)
+                        recoveryStatus = detached
+                            ? "Chain link " + selected + " manually disconnected."
+                            : "Chain link " + selected + " cannot disconnect at this speed.";
+                    else
+                        recoveryStatus = detached
                             ? "Trailer uncoupled manually."
                             : "Trailer could not be disconnected.";
-                    }
+                }
+                else
+                {
+                    Progesor.Kavra.VehicleCouplingResult result =
+                        hitchControl.TryAttachLink(selected);
+                    if (selectedChain)
+                        recoveryStatus = result == Progesor.Kavra.VehicleCouplingResult.Connected
+                            ? "Chain link " + selected + " connected."
+                            : "Link " + selected + ": " + result;
                     else
-                    {
-                        Progesor.Kavra.VehicleCouplingResult result = assembly.TryAttach();
                         recoveryStatus = result == Progesor.Kavra.VehicleCouplingResult.Connected
                             ? "Trailer coupled."
                             : "Coupling refused: " + result;
-                    }
-                    recoveryStatusUntil = Time.unscaledTime + 4f;
                 }
+                recoveryStatusUntil = Time.unscaledTime + 4f;
             }
         }
 
