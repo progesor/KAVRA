@@ -8,6 +8,15 @@
 > Son GitHub kontrolü: **17 Ekim 2026**. Yeni kod geliştirmeden önce
 > **son commitin Unity'de gerçekten derlenip test edildiğini doğrula**.
 
+> **17 Ekim P1 devam güncellemesi (bu devir notundan sonra):**
+> Aktif dalın yeni HEAD'i `f73629fa2ccf0860f76bbddf9fa0cb30e9a294d5`.
+> M1.5.1 hata düzeltmelerini takiben ortak assembly kontrol API'si ve
+> statik CI eklendi. Son HEAD için iki **kaynak-only** GitHub Actions
+> kontrolü başarılıdır; **Unity compile/EditMode/Play Mode hâlâ kabul
+> bekliyor**. Güncel ek: [docs/26](26_P1_COMMON_ASSEMBLY_CONTROL_API.md).
+> Aşağıdaki `48d8528` bilgileri önceki M1.5.1 hotfix'in tarihsel
+> kaydıdır; PR #16 Draft ve issue #17 açık kalır.
+>
 ## 1. Tek bakışta
 
 | Alan | Güncel durum |
@@ -311,3 +320,20 @@ Bu hedeflerin tarihleri taahhüt değil; önce P0 kabulü gerekli.
 **Not:** Bu belge, son commit ve konfigürasyonlarda eski bilgiyle ilerlememek
 için hazırlanmıştır. Gerçek Unity test sonuçları geldikçe tarihli ekler
 açılmalı; daha önce doğrulanmış kullanıcı testleri silinmemelidir.
+
+## 11. Aynı gün P1 API/otomatik ön kontrol ek kaydı
+
+- `743813f`: M1.4 iki-gövde ve M1.5 zincir için ortak,
+  geri uyumlu `IVehicleAssemblyController`; iki yeni EditMode
+  test kaynağı.
+- `e553644`: yanlış `0.0.1` beklentisi olan bootstrap
+  kontrolünü düzelten Python doğrulayıcı, assembly/MonoScript GUID
+  koruması, yalnızca kaynak statik kontrolü yapan Actions workflow'u.
+- `f73629f`: PhysicsLab `H` komutu artık yeni ortak API'yi kullanır;
+  önceki H mesajları ve manuel `R` akışı korunur.
+- Son commit `f73629f` için GitHub source-only CI 2/2 PASS;
+  **bu bir Unity/C# compiler veya NUnit/PhysX PASS sonucu değildir**.
+- Kullanıcının `.unity` sahneleri, prefab varlıkları,
+  `docs/Telemetry/` CSV'leri değişmedi. PR #16 birleştirilmedi.
+  Asıl P0 kabulü için kullanıcı Unity 6000.3.18f1 Console,
+  dört EditMode suite ve M1.5.1/M1.4 görsel/Play testi gerekiyor.

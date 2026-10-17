@@ -44,6 +44,14 @@ automatic reconnect or stabilization. Real joint breaks remain
 `ConfigurableJoint` solver events; manual R recovery remains separate.
 The UPM runtime does not depend on lab input, camera or rendering APIs.
 
+## Host usage integrated
+
+The existing `Assets/VehiclePhysicsLab/Scripts/VehicleLabKeyboardInput.cs`
+now routes H through `IVehicleAssemblyController` for both assembly
+types. J/L chain selection, H safety gates and existing success/failure
+messages remain unchanged. The R path still calls manual recovery only
+when the player presses the key.
+
 ## Evidence and next acceptance
 
 Two new EditMode source tests cover both interfaces, link indices,

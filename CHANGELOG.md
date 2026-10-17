@@ -4,6 +4,8 @@
 
 - Both existing two-body and ordered chain roots now implement the
   backward-compatible `IVehicleAssemblyController` API.
+- PhysicsLab keyboard H handler now consumes the common controller while
+  preserving existing manual hitch UI text and controls.
 - Added EditMode source regressions for zero-based links, read-only
   attachment preflight and explicit H-only attach/detach behavior.
 - Repaired outdated 0.0.1 static bootstrap expectation; added
