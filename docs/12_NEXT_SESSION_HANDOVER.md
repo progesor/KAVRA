@@ -264,3 +264,29 @@ and should not be claimed until user actually runs Play Mode.
 
 See `docs/22_M14_HITCH_LIFECYCLE.md`. Old scenes and telemetry are
 not modified. Thresholds 150 kN/100 kNm are demos, not certified ratings.
+
+
+## 2026-10-17 M1.5 ordered convoy chain
+
+Branch `feat/m15-multitrailer-chain`, based on working user's
+M1.4 `feat/m13-vehicle-assembly-coupling`, separate Draft PR to M1.4.
+Issue #15. Preserve all older branches and user telemetry files.
+
+Implemented NEW VehicleAssemblyChainDefinition (ordered references to
+existing VehicleAssemblyDefinition link assets) and validator:
+chain continuity, no repeated vehicle assets, 1..16 links.
+VehicleAssemblyChainRoot builds independent per-link joints,
+selected manual link operations and lead-prefix-only brake relay.
+ChainBuilder/Wizard saves multi-body prefab, generated 6x6 powered
+tractor + 4W trailer A + 4W trailer B lab has 3 Rigidbody/14W/2
+hitches. J/L selects hitch; H manually toggles it; K applies physics
+stress on selected link. No forced break or auto-reconnection.
+Existing M1.4 two-body demo remains untouched.
+
+VehicleManualRecovery now delegates explicit R on chain LEAD to
+VehicleAssemblyChainRecovery: preflight ground, motion/clearance of
+all connected-prefix vehicles, reposition group with exact shared
+hitch frames, detached suffix untouched. It never runs automatically.
+Nine new EditMode source tests cover validation, two joints, brake
+disconnection, physical break event bookkeeping, selection and R safety.
+No Unity compile/Play acceptance yet. Read docs/23.

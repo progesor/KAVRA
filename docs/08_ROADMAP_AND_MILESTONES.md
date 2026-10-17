@@ -246,3 +246,22 @@ Do not postpone main module development for microscopic tire tuning.
 
 Next: generalized attachment ports/assembly chain and trailer modules,
 not microscopic tire tuning; realistic meshes remain separate issue #9.
+
+
+### M1.5 — ordered multi-trailer chain — issue #15
+
+- [x] Source: 1..16 link assets with chain continuity and cycle validation.
+- [x] Source: 2..17 distinct Rigidbody bodies with independent wheel
+  physics; one real ConfigurableJoint per edge, separate break settings.
+- [x] Source: selected-link manual H, J/L link navigation and K physical
+  overload lab stress, no automatic attachment.
+- [x] Source: connected-lead-only brake propagation and R manual
+  recovery with detached suffixes untouched.
+- [x] Source: chain Wizard/prefab, host 6x6+4W+4W demo and nine tests.
+- [ ] Unity 6000.3.x compilation and Test Runner pass.
+- [ ] 14-wheel 3-body lab follows corners, reverses and stays stable.
+- [ ] Per-link detach/break/reconnect + brake isolation passes Play Mode.
+- [ ] R on lead moves only lead-connected bodies and refuses at speed.
+- [ ] Prefab export/reimport and legacy M1.4 two-body compatibility.
+- [ ] Decide joint solver stability and nonadjacent collision policy
+      from real field test, not guessed tuning.

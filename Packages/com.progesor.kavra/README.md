@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.1.4)
+# KAVRA embedded package (v0.1.5)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -195,3 +195,29 @@ commands instead of repeatedly applying the tractor's controls.
 `VehicleAssemblyDefinition` upgrades old M1.3 serialized settings.
 The zero-value break thresholds mean Infinity/unbreakable on new
 definition assets.
+
+### M1.5 ordered multi-body vehicle chains
+
+`VehicleAssemblyChainDefinition` lists 1..16 ordered
+`VehicleAssemblyDefinition` edges. Each has a distinct tractor/trailer
+pair; edge i+1 reuses edge i's Trailer as its Tractor. Vehicle assets
+for different chassis nodes must be separate objects.
+
+Runtime `VehicleAssemblyChainRoot` holds arrays of separate VehicleRoot
+and VehicleCoupling objects. A fully connected chain has N vehicles
+and N-1 real ConfigurableJoint components. No fixed truck/wheel count.
+`TryAttachLink(i)`, `DetachLink(i)`, `SelectLink(i)`,
+`TryAttachSelected()`, `DetachSelected()` provide user-controlled
+lifecycle. A physically broken joint on one edge does not affect
+other joint ownership/state automatically.
+
+Basic service/parking brake signals propagate from the lead only
+through continuously connected links. All trailer wheel contact and
+suspension simulation still occurs independently per Rigidbody.
+`VehicleAssemblyChainRecovery` is reached only from deliberate R on
+lead driver input; it preflights and repositions ONLY the connected
+lead prefix (never the disconnected suffix).
+
+An Editor-only `VehicleAssemblyChainBuilder` and chain Wizard build
+and save N-body prefabs; PhysicsLab remains outside UPM. No extra runtime
+packages. This is an ordered convoy rather than a branched coupling graph.

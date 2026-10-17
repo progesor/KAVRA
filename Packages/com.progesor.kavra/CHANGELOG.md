@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.5] — 2026-10-17
+
+- Added ordered chain definition/validator, N-body runtime/Editor builder
+  and per-link coupling selection with existing breakable hitch components.
+- Added braking relay through lead-connected prefix and manual recovery
+  of that prefix without moving any detached suffix vehicle.
+- Added 14-wheel, 3-Rigidbody multi-trailer PhysicsLab and source tests.
+- Preserved all previous scenes and UPM dependencies.
+- Unity Editor compilation/Play Mode still needs user verification.
+
+
 ## [0.1.4] — 2026-10-17
 
 - Added position/yaw/speed-limited manual hitch attachment and detachment.

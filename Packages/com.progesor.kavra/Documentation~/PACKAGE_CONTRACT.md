@@ -238,3 +238,36 @@ Disconnection releases the basic tractor-to-trailer service/park brake
 relay and clears last mirrored brake values. User's R-only recovery
 remains assembly-aware while still connected, and individual-body-only
 when uncoupled. No implicit auto-coupling or auto-rollover logic exists.
+
+
+## M1.5 ordered chain contracts
+
+`VehicleAssemblyChainDefinition` references an ORDERED list of existing
+`VehicleAssemblyDefinition` assets, not a hard-coded truck mesh list.
+For edge i>0, edge i.Tractor MUST equal edge i-1.Trailer; no chassis
+definition can appear twice as a physical node (no cycles). Validator
+limits 1..16 edges. This is a directed path, not a branching graph.
+
+`VehicleAssemblyChainRoot` is a non-Rigidbody logical parent. It
+tracks N independent VehicleRoot objects and N-1 VehicleCoupling
+objects. Each ConfigurableJoint is owned on its downstream vehicle
+and has its own force/torque thresholds and state. H/J/L controls are
+host examples; the runtime API accepts link indices directly.
+Repeated key presses are explicit only: **no auto-attach**.
+
+Brake propagation is sequential from the lead through every connected
+edge. Once an edge is detached or physically broken, no downstream
+body receives inherited lead braking, even if two trailers remain
+attached to each other. Previously mirrored commands are cleared.
+This is still a basic command relay, not pneumatic/line-pressure physics.
+
+`VehicleAssemblyChainMember` routes R-only recovery from the LEAD to
+`VehicleAssemblyChainRecovery`. It preflights all vehicles in the
+connected lead prefix (position/speed, road under wheels and primitive
+collision-box clearance) before relocating ANY of them. A detached
+suffix's position, velocity and joint state are left unchanged.
+The chain recovery does not automatically upright rolled vehicles.
+
+The entire path may be serialized as a Unity prefab by the Editor
+builder; the currently bundled primitive chassis visuals still have
+no imported real vehicle mesh dependence.

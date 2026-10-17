@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.1.5 — 2026-10-17 (M1.5 multiple trailers / chain assemblies)
+
+- Added ordered `VehicleAssemblyChainDefinition` and validation
+  requiring each link's Tractor to be the previous Trailer.
+- Added `VehicleAssemblyChainRoot` with 1..16 independent breakable
+  ConfigurableJoint links, user-selected attach/detach, lead-connected
+  vehicle count and brake relay that stops at a broken link.
+- Added per-member markers and R-only `VehicleAssemblyChainRecovery`.
+  Recover the connected lead prefix together while detached trailers
+  are left in place; preflight ground/support/clearance before movement.
+- Added Editor chain builder, Wizard, N-body prefab save and host
+  M1.5 6x6 tractor + two 4W trailers (14W/3 Rigidbody) lab.
+- Added J/L link selector, H manual hitch toggle and K real PhysX
+  impulse test on selected link; separate HUD.
+- Added nine EditMode source tests for topology, 3-body build,
+  brake propagation/breaking, selection and safe recovery.
+- Does NOT change M1.4 single-trailer logic, M0 scenes, existing telemetry,
+  powertrain/suspension or add auto-rollover help.
+- Unity import/compile, Test Runner and dynamic hitch chain tests pending.
+
+
 ## 0.1.4 — 2026-10-17 (manual trailer hitch + physical overload break)
 
 - Extended VehicleAssemblyDefinition with safe approach/yaw/body speed

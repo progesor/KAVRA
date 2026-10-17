@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-14): M1 vehicle framework foundation, package 0.1.4. New M1.1 source awaiting Unity Editor verification.**
+**State (2026-10-14): M1 vehicle framework foundation, package 0.1.5. New M1.1 source awaiting Unity Editor verification.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -273,3 +273,38 @@ into position and presses H; trailer brake commands no longer follow
 the tractor. The original R remains a manual recovery request only.
 No automatic rollover/auto-upright or autonomous reattachment.
 See `docs/22_M14_HITCH_LIFECYCLE.md`.
+
+## M1.5 — Variable-length tractor / multi-trailer chains
+
+KAVRA now has a separate, **opt-in** ordered assembly chain for more than
+two independent vehicle bodies. Every link is a standard
+`VehicleAssemblyDefinition` with its own physical `VehicleCoupling`,
+reusable hitch geometry and force/torque break limits. The next link's
+Tractor definition must be the previous link's Trailer definition.
+Cycles, repeated chassis assets and missing links are rejected.
+
+The logical `VehicleAssemblyChainRoot` holds the vehicles and hitch
+components. It relays service/parking brakes **only through the
+continuous connected prefix from the lead tractor**. A broken hitch
+does not fake an engine-driven trailer, reattach itself or preserve stale
+brake values on separated segments.
+
+In the dedicated PhysicsLab, choose
+`Tools > KAVRA > Create M1.5 Two-Trailer Lab Scene`.
+This creates a 6x6 powered tractor + TWO passive four-wheel trailers:
+**3 independent Rigidbodies, 14 independent wheels, 2 breakable joints**.
+Original M1.4 single-trailer test remains unchanged.
+
+Lab controls: **J/L** selects a hitch, **H** explicitly detaches/attaches
+the selected hitch, and **K** applies physical stress to that hitch's
+downstream body. **R** only manually recovers the lead-connected subset
+of the convoy, leaving separated rear trailers untouched. Normal
+W/S/A/D/Space/Q/E/T drivetrain controls remain on the tractor.
+The UI reports each link's Attached/Detached/Broken state.
+
+A new `Tools > KAVRA > Vehicle Chain Wizard` builds/saves an actual
+N-Rigidbody Unity prefab from an ordered list of link assets.
+The current implementation is a *linear chain*, not a free-form branching
+vehicle graph. See `docs/23_M15_MULTI_TRAILER_CHAIN.md`. Real imported
+truck models, coupling force calibration and a generalized attachment-port
+graph are later milestones. All earlier scenes/CSV captures are preserved.

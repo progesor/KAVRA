@@ -180,3 +180,24 @@ brake lag, while preserving a compositional scene/prefab contract.
 Assembly-safe manual recovery is user-triggered only and computes a
 safe aligned two-body pose before teleporting both. It does not
 continuously right vehicles or apply hidden stabilizing forces.
+
+
+## M1.5 — ordered multi-Rigidbody composition
+
+The first compositional step beyond a two-vehicle assembly is a
+VehicleAssemblyChainDefinition of ordered VehicleAssemblyDefinition
+edges. The runtime graph is a PATH: node i represents one
+VehicleRoot + Rigidbody + VehicleSimulationRoot, edge i represents
+a configurable, breakable ConfigurableJoint stored on the downstream
+body. The parent VehicleAssemblyChainRoot has no Rigidbody.
+
+Each node retains independent axle/suspension/tire force integration.
+The leader has an optional M1 powertrain; passive trailers use the
+existing unpowered mode. Brake commands travel only over an unbroken
+prefix from leader to tail; breakage isolates the detached suffix.
+Physical stress is delegated to Unity's existing joint solver.
+
+The graph may later be generalized to branching drawbars and
+multiple powered modules; this current path architecture has explicit
+validation and no cycles, suitable for initial arbitrary trailer counts
+and reusable prefab output.

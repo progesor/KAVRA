@@ -329,3 +329,38 @@ threshold transfer, attach prerequisites, manual unlink/relink,
 OnJointBreak status notification simulation and legacy asset
 migration. Actual physical overload breaking requires Unity Play Mode;
 a synthetic EditMode callback does not claim to prove solver breaking.
+
+
+## M1.5 — true multi-trailer lab (6x6 + 4W + 4W)
+
+`Tools > KAVRA > Create M1.5 Two-Trailer Lab Scene` generates three
+independent Rigidbody objects and two ConfigurableJoints:
+**6-wheel powered truck + two passive four-wheel trailers**, 14 total.
+Save as `Assets/VehiclePhysicsLab/Scenes/M15_TwoTrailerChain.unity`.
+
+Reused/created data under `Assets/VehiclePhysicsLab/Assemblies/`:
+M15 tractor definition, two DIFFERENT 4W trailer definition assets,
+separate M15_Link0_TractorToA and M15_Link1_AToB hitch assets, one
+M15_MultiTrailerChain asset and the truck motor profile.
+Existing assets are reused without silent overwrites.
+
+Controls: W/S forward/reverse, A/D steering, Q/E shifting, T
+manual/automatic gearbox, Space brake, R EXPLICIT manual recovery.
+**J/L** chooses a hitch index (0 tractor→A, 1 A→B).
+**H** manually attaches/detaches THAT hitch only (requires low speed,
+small aligned gap); **K** physically stresses the selected hitch
+without directly invoking a break. The HUD shows each hitch's
+Attached/Detached/Broken status.
+
+Example: detach link 1 via J/L→H. The tractor still tows trailer A,
+but trailer B is independent and loses inherited brake signals. When
+link 0 is broken, the still-attached A→B pair does not receive tractor
+brakes. Only an intentional H can reattach a valid link.
+**R** recovers ONLY the lead-connected vehicles together after a
+full preflight, without moving any disconnected rear convoy.
+
+Save a reusable N-body prefab via
+`Tools > KAVRA > Vehicle Chain Wizard`. ConfigurableJoint force/torque
+failure limits remain each link asset's own values (v0.1.4 subsystem).
+Unity 6000.3.x compile, Test Runner, actual towing/reverse/hitch break
+and prefab round-trip must be checked in Unity.
