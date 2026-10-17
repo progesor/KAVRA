@@ -95,6 +95,12 @@ namespace Progesor.Kavra.Editor
                 body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
                 var simulation = Undo.AddComponent<VehicleSimulationRoot>(root);
                 simulation.DriveSource = driveSource;
+
+                // Only new M1 scaffolds gain the transform rig by default.
+                // Existing M0 scenes/prefabs retain their original single-
+                // cylinder visual behavior for backward compatibility.
+                if (driveSource == VehicleDriveSource.SimplePowertrain)
+                    VehicleWheelVisualRigBuilder.Bind(root, true);
             }
 
             Selection.activeGameObject = root;

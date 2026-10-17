@@ -94,6 +94,12 @@ namespace Progesor.Kavra
         public VehicleDriveSource DriveSource = VehicleDriveSource.LegacyDirectWheelTorque;
         [Tooltip("SimplePowertrain uses unsigned throttle magnitude; -1 reverse, 0 neutral, >=1 forward gears.")]
         [Range(-1, 12)] public int SelectedGear = 1;
+        [Tooltip("Manual or basic automatic forward gear selection. Never automatically rights a rolled vehicle.")]
+        public GearboxControlMode GearboxMode = GearboxControlMode.Manual;
+        public int EngagedGear => gearbox != null ? gearbox.CurrentGear : SelectedGear;
+        public bool IsGearShifting => gearbox != null && gearbox.IsShifting;
+        public float GearShiftProgress01 => gearbox != null ? gearbox.ShiftProgress01 : 1f;
+        public float GearTorqueTransfer01 => gearbox != null ? gearbox.TorqueTransfer01 : 1f;
         public float EngineRpm => simplePowertrain != null ? simplePowertrain.EngineRpm : 0f;
         public float EngineTorqueNm => simplePowertrain != null ? simplePowertrain.EngineTorqueNm : 0f;
         public float TotalAppliedDriveTorqueNm =>
@@ -127,6 +133,7 @@ namespace Progesor.Kavra
             public WheelDefinition Definition;
             public VehicleWheelAnchor Anchor;
             public Transform Visual;
+            public VehicleWheelVisualRig VisualRig;
             public Quaternion BaseVisualRotation;
             public float StaticLoadFraction;
             public float SpringRateNPerMeter;
@@ -157,6 +164,7 @@ namespace Progesor.Kavra
         private readonly RaycastHit[] raycastHits = new RaycastHit[32];
         private SimplePowertrainDefinition powertrainDefinition;
         private SimplePowertrainRuntime simplePowertrain;
+        private VehicleGearboxController gearbox;
         private float[] wheelDriveTorquesNm;
         private float[] wheelAngularFeedback;
         private WheelState[] wheels;
@@ -194,6 +202,16 @@ namespace Progesor.Kavra
                 definition == null || gear < -1 ||
                 gear > definition.ForwardGearCount)
                 return false;
+
+            // Existing Editor clients may select initial gear before Awake.
+            // When running, a shift is a proper state transition with a
+            // temporary power interruption rather than immediate gear swap.
+            if (gearbox != null)
+            {
+                float forwardSpeed = body != null
+                    ? Vector3.Dot(body.linearVelocity, transform.forward) : 0f;
+                if (!gearbox.TryRequestGear(gear, forwardSpeed)) return false;
+            }
             SelectedGear = gear;
             return true;
         }
@@ -206,6 +224,7 @@ namespace Progesor.Kavra
         public void ResetTransientMotionState()
         {
             if (simplePowertrain != null) simplePowertrain.Reset();
+            if (gearbox != null) gearbox.Reset(EngagedGear);
             if (wheelDriveTorquesNm != null)
                 System.Array.Clear(wheelDriveTorquesNm, 0, wheelDriveTorquesNm.Length);
             if (wheelAngularFeedback != null)
@@ -287,6 +306,8 @@ namespace Progesor.Kavra
 
                 simplePowertrain = new SimplePowertrainRuntime(powertrainDefinition,
                     definition.Wheels, definition.Axles);
+                gearbox = new VehicleGearboxController(powertrainDefinition, SelectedGear);
+                SelectedGear = gearbox.TargetGear;
                 if (simplePowertrain.DrivenWheelCount == 0)
                 {
                     Debug.LogError("KAVRA: no driven wheels in M1 drivetrain configuration.", this);
@@ -317,6 +338,13 @@ namespace Progesor.Kavra
                 Transform visual = anchor.VisualTransform != null
                     ? anchor.VisualTransform
                     : anchor.transform.Find("__WHEEL_PREVIEW");
+                VehicleWheelVisualRig rig = anchor.GetComponent<VehicleWheelVisualRig>();
+                if (rig != null && !rig.CaptureInitialPose())
+                {
+                    Debug.LogWarning("KAVRA: wheel visual rig on " + spec.Id +
+                                     " is incomplete; falling back to legacy visual update.", rig);
+                    rig = null;
+                }
                 float sprungMass = definition.ChassisMassKg * loadFractions[i];
                 float sag = Mathf.Max(0.01f,
                     spec.SuspensionTravelMeters * TargetStaticCompressionFraction);
@@ -325,6 +353,7 @@ namespace Progesor.Kavra
                     Definition = spec,
                     Anchor = anchor,
                     Visual = visual,
+                    VisualRig = rig,
                     BaseVisualRotation = visual != null ? visual.localRotation : Quaternion.identity,
                     StaticLoadFraction = loadFractions[i],
                     SprungMassKg = sprungMass,
@@ -411,8 +440,18 @@ namespace Progesor.Kavra
             {
                 for (int i = 0; i < wheels.Length; i++)
                     wheelAngularFeedback[i] = wheels[i].OmegaRadPerSec;
-                simplePowertrain.Step(Mathf.Abs(Throttle), SelectedGear, dt,
-                    wheelAngularFeedback, wheelDriveTorquesNm);
+                if (gearbox != null)
+                {
+                    float longitudinalSpeed = Vector3.Dot(body.linearVelocity, transform.forward);
+                    gearbox.Step(dt, simplePowertrain.EngineRpm,
+                        Mathf.Abs(Throttle), longitudinalSpeed, GearboxMode);
+                    SelectedGear = gearbox.TargetGear;
+                }
+
+                simplePowertrain.Step(Mathf.Abs(Throttle) *
+                    (gearbox != null ? gearbox.TorqueTransfer01 : 1f),
+                    gearbox != null ? gearbox.CurrentGear : SelectedGear,
+                    dt, wheelAngularFeedback, wheelDriveTorquesNm);
             }
 
             long contactQueryTicks = 0L;
@@ -611,8 +650,17 @@ namespace Progesor.Kavra
                     spec.SuspensionTravelMeters);
                 wheel.SpinAngleDeg = Mathf.Repeat(
                     wheel.SpinAngleDeg + wheel.OmegaRadPerSec * dt * Mathf.Rad2Deg, 360f);
-                if (wheel.Visual != null)
+                if (wheel.VisualRig != null)
                 {
+                    // The mesh hierarchy owns its local travel/steer/spin
+                    // pivots; physical anchor/contact calculations stay
+                    // separate and unchanged.
+                    wheel.VisualRig.ApplyPose(visualDrop, steerAngle,
+                        wheel.SpinAngleDeg);
+                }
+                else if (wheel.Visual != null)
+                {
+                    // Legacy M0 visual path for previously saved scenes.
                     wheel.Visual.localPosition = Vector3.down * visualDrop;
                     wheel.Visual.localRotation =
                         Quaternion.AngleAxis(steerAngle, Vector3.up) *

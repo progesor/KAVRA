@@ -36,7 +36,7 @@ public sealed class VehicleLabTelemetryRecorder : MonoBehaviour
         scripted = GetComponent<VehicleLabManeuverRunner>();
         if (!RecordOnPlay || Simulation == null) return;
         rows = new StringBuilder(16 * 1024);
-        rows.AppendLine("time_s,wheel_id,grounded,contact_mode,surface,mu_long,mu_lat,rolling_coeff,contact_cost_us_total,static_share,compression_m,bottomout_m,bump_n,antiroll_n,fz_n,fx_n,fy_n,slipx_mps,slipy_mps,wheel_rpm,speed_mps,tilt_deg,com_height_m,steer_deg,slip_ratio,slip_angle_deg,tire_profile,tire_kx,tire_ky,throttle_input,steer_input,brake_input,steer_mode,maneuver,brake_impulse_limited,brake_limiter_enabled,drive_source,selected_gear,engine_rpm,engine_nm,delivered_wheel_torque_nm");
+        rows.AppendLine("time_s,wheel_id,grounded,contact_mode,surface,mu_long,mu_lat,rolling_coeff,contact_cost_us_total,static_share,compression_m,bottomout_m,bump_n,antiroll_n,fz_n,fx_n,fy_n,slipx_mps,slipy_mps,wheel_rpm,speed_mps,tilt_deg,com_height_m,steer_deg,slip_ratio,slip_angle_deg,tire_profile,tire_kx,tire_ky,throttle_input,steer_input,brake_input,steer_mode,maneuver,brake_impulse_limited,brake_limiter_enabled,drive_source,selected_gear,engine_rpm,engine_nm,delivered_wheel_torque_nm,engaged_gear,gearbox_mode,shift_in_progress,shift_progress01");
     }
 
     private void FixedUpdate()
@@ -94,7 +94,11 @@ public sealed class VehicleLabTelemetryRecorder : MonoBehaviour
                 .Append(Simulation.SelectedGear).Append(',')
                 .Append(F(Simulation.EngineRpm)).Append(',')
                 .Append(F(Simulation.EngineTorqueNm)).Append(',')
-                .Append(F(w.AppliedDriveTorqueNm))
+                .Append(F(w.AppliedDriveTorqueNm)).Append(',')
+                .Append(Simulation.EngagedGear).Append(',')
+                .Append(Simulation.GearboxMode.ToString()).Append(',')
+                .Append(Simulation.IsGearShifting ? "1" : "0").Append(',')
+                .Append(F(Simulation.GearShiftProgress01))
                 .AppendLine();
         }
 

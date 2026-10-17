@@ -2,7 +2,7 @@
 
 **Modular, reusable Unity vehicle mechanics — from 3-wheel layouts to many-axle machines.**
 
-**State (2026-10-14): M1 vehicle framework foundation, package 0.1.1. New M1.1 source awaiting Unity Editor verification.**
+**State (2026-10-14): M1 vehicle framework foundation, package 0.1.2. New M1.1 source awaiting Unity Editor verification.**
 Repository: https://github.com/progesor/KAVRA
 
 KAVRA is a Unity 6.3 LTS embedded UPM package (`Packages/com.progesor.kavra`)
@@ -179,3 +179,33 @@ are still preserved.
 See `docs/19_M1_AXLE_DRIVE_AND_DEMOS.md`. Existing powered M1 vehicles
 keep their per-axle routing unless axle settings are changed explicitly.
 Unity compilation and driving verification are still required.
+
+## M1.2 — Dedicated gearbox state and removable wheel presentation
+
+New `VehicleGearboxController` is a **per-vehicle** state machine. Manual
+gear requests and optional automatic up/downshifts have an actual
+transition interval (`SimplePowertrainDefinition.ShiftDurationSeconds`)
+with torque cut while shifting. The current engaged gear, requested
+target and shift progress are separate. Reversing against vehicle travel
+above 0.75 m/s is rejected in the gearbox itself, independent of input.
+No physical clutch or torque-converter is claimed.
+
+On a powered test car, press **T** to toggle manual/automatic forward gear
+selection; in manual mode **Q/E** down/upshift and **N** selects neutral
+when no other direction key is pressed. W/S select forward/reverse at
+low speed, Space brake, **R** manual recovery (no auto rollover control).
+
+The separate `VehicleWheelVisualRig` allows real 3D wheel meshes to follow
+three transforms: suspension travel, steering pivot, spin pivot. A basic
+`VehicleSuspensionVisualLink` follows designated upper/lower shock points,
+without adding physical links or Unity Rigidbody joints.
+
+**New M1 scaffolds** get pivot rigs and simple visible shock rods by default.
+**Saved M0 scenes** still use legacy single-cylinder visuals. To prepare
+existing scene meshes, select a vehicle and choose
+`Tools > KAVRA > Bind Selected Vehicle Wheel Visuals`, after assigning
+each WheelAnchor.VisualTransform to its mesh. The menu skips anchors with an
+existing rig and does not alter the physical contact mount. The shared
+runtime assembly remains independent of URP/Input System/Blender.
+
+See `docs/20_M12_GEARBOX_AND_VISUAL_BINDING.md`.

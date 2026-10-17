@@ -142,3 +142,20 @@ differential and LSD mechanics can later implement proper output shaft
 constraints behind the same public drive API. The KAVRA Wizard now exposes
 per-axle drive enable and torque weight/mode without requiring a prefab
 custom C# script.
+
+
+## M1.2 separated gearbox and presentation pivots
+
+A per-Rigidbody `VehicleGearboxController` now sits between host driver
+commands and `SimplePowertrainRuntime`: the controller updates gear
+state and torque transfer once per physics step; the engine/axle power
+distribution stays independent of vehicle wheel count and tire contacts.
+Automatic up/downshift thresholds are an opt-in control policy; clutch
+constraints are intentionally postponed.
+
+Presentation/mesh binding is separated from physical wheel simulation:
+`VehicleWheelVisualRig` uses local pivot transforms to animate suspension
+travel, steering and wheel spin, while
+`VehicleSuspensionVisualLink` tracks visible shock geometry by endpoints.
+The runtime core knows nothing of Blender, FBX/GLB or rendering pipeline;
+only optional Unity Transforms, preserving portability.

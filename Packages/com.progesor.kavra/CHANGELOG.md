@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.2] — 2026-10-17
+
+- Added gear shift state, torque cut, optional automatic thresholds and
+  forward/reverse direction-change safety (not a real clutch).
+- Added independent wheel visual pivot bindings and a visual shock link.
+- Editor can bind selected wheel meshes, and newly generated M1 scaffolds
+  use the new rig while older M0 scenes stay compatible.
+- Updated host HUD/CSV and EditMode test sources; Unity tests pending.
+
+
 ## [0.1.1] — 2026-10-14
 
 - Added axle-relative drive torque weighting and selectable EqualTorque /

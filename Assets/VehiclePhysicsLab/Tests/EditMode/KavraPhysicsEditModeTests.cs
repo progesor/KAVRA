@@ -1185,5 +1185,223 @@ namespace Progesor.Kavra.Lab.Tests
             finally { Object.DestroyImmediate(vehicle); }
         }
 
+        [Test]
+        public void M12GearShiftInterruptsTorqueAndEngagesAfterDelay()
+        {
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                config.ShiftDurationSeconds = 0.24f;
+                var gearbox = new VehicleGearboxController(config, 1);
+                Assert.AreEqual(1, gearbox.CurrentGear);
+                Assert.AreEqual(1f, gearbox.TorqueTransfer01);
+                Assert.IsTrue(gearbox.TryRequestGear(2, 3f));
+                Assert.IsTrue(gearbox.IsShifting);
+                Assert.AreEqual(0f, gearbox.TorqueTransfer01);
+                Assert.AreEqual(1, gearbox.CurrentGear);
+                Assert.AreEqual(2, gearbox.TargetGear);
+                Assert.IsFalse(gearbox.TryRequestGear(3, 3f));
+
+                gearbox.Step(0.10f, 4000f, 1f, 3f, GearboxControlMode.Manual);
+                Assert.IsTrue(gearbox.IsShifting);
+                Assert.That(gearbox.ShiftProgress01, Is.EqualTo(0.10f / 0.24f).Within(0.0001f));
+                gearbox.Step(0.15f, 3000f, 1f, 3f, GearboxControlMode.Manual);
+                Assert.IsFalse(gearbox.IsShifting);
+                Assert.AreEqual(2, gearbox.CurrentGear);
+                Assert.AreEqual(1f, gearbox.TorqueTransfer01);
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void M12DirectionSafetyRejectsReverseAtForwardSpeed()
+        {
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                var gearbox = new VehicleGearboxController(config, 1);
+                Assert.IsFalse(gearbox.TryRequestGear(-1, 11f));
+                Assert.AreEqual(1, gearbox.CurrentGear);
+                Assert.AreEqual(1, gearbox.TargetGear);
+                Assert.IsTrue(gearbox.TryRequestGear(0, 11f)); // neutral always allowed
+                gearbox.Step(1f, 2000f, 0f, 11f, GearboxControlMode.Manual);
+                Assert.IsFalse(gearbox.TryRequestGear(-1, 10f));
+                Assert.IsTrue(gearbox.TryRequestGear(-1, 0.2f));
+                gearbox.Step(1f, 1000f, 0f, 0f, GearboxControlMode.Manual);
+                Assert.AreEqual(-1, gearbox.CurrentGear);
+                Assert.IsFalse(gearbox.TryRequestGear(1, -7f));
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void M12AutomaticUpshiftAndDownshiftUseRpmHysteresis()
+        {
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                config.ShiftDurationSeconds = 0.2f;
+                config.MinTimeBetweenShiftsSeconds = 0.5f;
+                config.AutomaticUpshiftRpm = 4200f;
+                config.AutomaticDownshiftRpm = 1700f;
+                var gearbox = new VehicleGearboxController(config, 1);
+
+                gearbox.Step(0.1f, 3000f, 1f, 4f, GearboxControlMode.Automatic);
+                Assert.AreEqual(1, gearbox.CurrentGear);
+                gearbox.Step(0.1f, 4600f, 1f, 4f, GearboxControlMode.Automatic);
+                Assert.IsTrue(gearbox.IsShifting);
+                Assert.AreEqual(2, gearbox.TargetGear);
+                gearbox.Step(0.2f, 3900f, 1f, 4f, GearboxControlMode.Automatic);
+                Assert.AreEqual(2, gearbox.CurrentGear);
+
+                // Cooldown prevents immediately hunting back to first.
+                gearbox.Step(0.1f, 1000f, 1f, 4f, GearboxControlMode.Automatic);
+                Assert.AreEqual(2, gearbox.CurrentGear);
+                Assert.IsFalse(gearbox.IsShifting);
+                gearbox.Step(0.5f, 1000f, 1f, 4f, GearboxControlMode.Automatic);
+                Assert.IsTrue(gearbox.IsShifting);
+                Assert.AreEqual(1, gearbox.TargetGear);
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void M12GearboxInitialManualStatePreservesExistingM1Mode()
+        {
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                var gearbox = new VehicleGearboxController(config, 1);
+                gearbox.Step(30f, 5500f, 1f, 8f, GearboxControlMode.Manual);
+                Assert.AreEqual(1, gearbox.CurrentGear);
+                Assert.AreEqual(1f, gearbox.TorqueTransfer01);
+                Assert.IsFalse(gearbox.IsShifting);
+                Assert.IsFalse(gearbox.TryRequestGear(99, 0f));
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void M12VisualRigSeparatesTravelSteerAndWheelSpin()
+        {
+            var root = new GameObject("RigTest");
+            try
+            {
+                GameObject travel = new GameObject("Travel");
+                travel.transform.SetParent(root.transform, false);
+                GameObject steer = new GameObject("Steer");
+                steer.transform.SetParent(travel.transform, false);
+                GameObject spin = new GameObject("Spin");
+                spin.transform.SetParent(steer.transform, false);
+                var rig = root.AddComponent<VehicleWheelVisualRig>();
+                rig.TravelPivot = travel.transform;
+                rig.SteeringPivot = steer.transform;
+                rig.SpinPivot = spin.transform;
+                Assert.IsTrue(rig.CaptureInitialPose());
+                Assert.IsTrue(rig.ApplyPose(0.15f, 25f, 70f));
+                Assert.That(travel.transform.localPosition.y,
+                    Is.EqualTo(-0.15f).Within(0.00001f));
+                Assert.Less(Quaternion.Angle(steer.transform.localRotation,
+                    Quaternion.AngleAxis(25f, Vector3.up)), 0.001f);
+                Assert.Less(Quaternion.Angle(spin.transform.localRotation,
+                    Quaternion.AngleAxis(70f, Vector3.right)), 0.001f);
+                Assert.IsTrue(rig.ApplyPose(0.15f, 25f, 70f));
+                Assert.That(travel.transform.localPosition.y,
+                    Is.EqualTo(-0.15f).Within(0.00001f));
+                Assert.That(root.transform.position.sqrMagnitude,
+                    Is.EqualTo(0f)); // physics anchor never moved
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [Test]
+        public void M12VisualRigIsOptionalForOldWheelAnchors()
+        {
+            VehicleDefinition definition =
+                VehicleTemplateFactory.Create(VehicleTemplate.PassengerCar4);
+            GameObject original = null;
+            GameObject powered = null;
+            SimplePowertrainDefinition engine =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                original = VehicleScaffoldBuilder.Create(definition, true);
+                foreach (VehicleWheelAnchor anchor in
+                         original.GetComponentsInChildren<VehicleWheelAnchor>())
+                    Assert.IsNull(anchor.GetComponent<VehicleWheelVisualRig>());
+
+                definition.Powertrain = engine;
+                powered = VehicleScaffoldBuilder.Create(definition, true,
+                    VehicleDriveSource.SimplePowertrain);
+                int visualRigs = powered.GetComponentsInChildren<VehicleWheelVisualRig>().Length;
+                int shocks = powered.GetComponentsInChildren<VehicleSuspensionVisualLink>().Length;
+                Assert.AreEqual(4, visualRigs);
+                Assert.AreEqual(4, shocks);
+            }
+            finally
+            {
+                if (original != null) Object.DestroyImmediate(original);
+                if (powered != null) Object.DestroyImmediate(powered);
+                Object.DestroyImmediate(definition);
+                Object.DestroyImmediate(engine);
+            }
+        }
+
+        [Test]
+        public void M12SuspensionLinkTracksTwoTransformsWithoutPhysics()
+        {
+            var root = new GameObject("VisualSuspension");
+            try
+            {
+                GameObject upper = new GameObject("Upper");
+                upper.transform.SetParent(root.transform, false);
+                upper.transform.localPosition = new Vector3(0f, 0.4f, 0f);
+                GameObject lower = new GameObject("Lower");
+                lower.transform.SetParent(root.transform, false);
+                lower.transform.localPosition = Vector3.zero;
+                GameObject rod = new GameObject("Rod");
+                rod.transform.SetParent(root.transform, false);
+                rod.transform.localScale = new Vector3(0.04f, 0.5f, 0.04f);
+
+                var link = root.AddComponent<VehicleSuspensionVisualLink>();
+                link.UpperAttachment = upper.transform;
+                link.LowerAttachment = lower.transform;
+                link.LinkMesh = rod.transform;
+                link.ReferenceLengthMeters = 1f;
+                Assert.IsTrue(link.CaptureInitialScale());
+                Assert.IsTrue(link.UpdateLink());
+                Assert.That(rod.transform.localScale.y, Is.EqualTo(0.2f).Within(0.0001f));
+                Assert.That(rod.transform.localPosition.y, Is.EqualTo(0.2f).Within(0.0001f));
+                lower.transform.localPosition = new Vector3(0f, -0.2f, 0f);
+                Assert.IsTrue(link.UpdateLink());
+                Assert.That(rod.transform.localScale.y, Is.EqualTo(0.3f).Within(0.0001f));
+                Assert.That(rod.transform.localPosition.y, Is.EqualTo(0.1f).Within(0.0001f));
+                Assert.AreEqual(0, root.GetComponents<Rigidbody>().Length);
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [Test]
+        public void M12AutomaticShiftsOnLowRedlineTruckPreset()
+        {
+            SimplePowertrainDefinition config =
+                ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
+            try
+            {
+                config.IdleRpm = 650f;
+                config.MaxRpm = 3100f;
+                // Deliberately leave passenger default AutoUpshiftRpm = 4600.
+                var gearbox = new VehicleGearboxController(config, 1);
+                gearbox.Step(0.1f, 3000f, 1f, 5f, GearboxControlMode.Automatic);
+                Assert.IsTrue(gearbox.IsShifting);
+                Assert.AreEqual(2, gearbox.TargetGear);
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
     }
 }

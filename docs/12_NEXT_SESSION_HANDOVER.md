@@ -188,3 +188,28 @@ The engine/gearbox baseline remains simple and fast, separate from M0 tire
 solver. Unity Editor compiler/tests and multi-axle Play Mode verification
 are still required; PR should remain Draft. No auto-rollover prevention,
 only R manually recover.
+
+
+## 2026-10-17 M1.2 — gearbox state and initial visual binding
+
+Branch `feat/m1-core-powertrain-foundation`, Draft PR #8, issue #11.
+
+New `VehicleGearboxController` per-vehicle runtime manages manual and
+optional automatic forward gear changes, explicit shift duration / temporary
+torque interruption, low-speed reverse safety, target vs current gear.
+`VehicleSimulationRoot` uses its state before calculating axle motor
+torques, exposing telemetry. Input System host toggles automatic via T,
+supports manual Q/E/N and retains W/S, brake, manual R recovery.
+CSV records actual/target gear, shift activity and progress.
+
+Optional `VehicleWheelVisualRig` separates vertical travel, steer and
+spin pivots. A `VehicleSuspensionVisualLink` can animate a visual shock
+between endpoints. M1 generated chassis/prefabs now have primitive
+wheel rigs and shock rods; old M0 scenes without rigs still animate
+the old cylinder. Existing imported wheel mesh can be bound to a chosen
+anchor and converted from Tools menu, no rendering dependency in UPM.
+
+Unity Editor compilation/Test Runner and Play Mode remain unverified here.
+The next tests should be **M1 lab drive + manual/auto T shift + a wheel
+rig/shock preview**, not four long repeat CSV runs. No automatic rollover
+prevention is ever introduced.

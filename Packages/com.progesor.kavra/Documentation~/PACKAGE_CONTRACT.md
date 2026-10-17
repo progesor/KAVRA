@@ -130,3 +130,36 @@ maximum torque share ratio. It is only a bounded torque **command** model,
 not a physical open or limited-slip differential constraint. Redline
 protection may cause unused engine power, which is not redistributed
 after limiting an overspeeding wheel. No auto-righting/roll stability logic.
+
+
+## M1.2 — gearbox state and wheel presentation contract
+
+`VehicleGearboxController` owns engaged/target gear, duration, progress,
+and temporary 0/1 torque coupling. Manual/default avoids altering existing
+gear choices automatically; the optional Automatic mode uses previous
+step RPM for forward up/downshift with cooldown and hysteresis. Direction
+changes at >0.75 m/s in the opposite longitudinal direction are rejected.
+This transition model has **no mechanical clutch shaft or synchronizer
+forces**. It does not auto-right a rolled or overturned vehicle.
+
+`SimplePowertrainDefinition` has four new optional tuning fields:
+`ShiftDurationSeconds`, `MinTimeBetweenShiftsSeconds`,
+`AutomaticUpshiftRpm`, `AutomaticDownshiftRpm`. Older serialized assets
+with missing automatic thresholds use engine idle/redline-derived fallback.
+
+`VehicleWheelVisualRig` is optional and only updates its own Visual
+Transform hierarchy. The physical `VehicleWheelAnchor` and its world
+suspension mount are NEVER moved by this component. Imported Unity meshes
+can be assigned under the travel/steering/spin pivots; the mesh can carry
+its native orientation under `SpinPivot`, preserving stable axes.
+
+`VehicleSuspensionVisualLink` is an optional visual-only interpolation
+of a mesh between two attachment transforms. It tracks length and
+orientation, but does NOT contribute suspension force, Rigidbody joints
+or damage events. The initial local mesh scale is serialized so prefabs
+do not apply a second scale reduction at load time.
+
+`VehicleWheelVisualRigBuilder` is Editor-only, can generate rigs on
+new M1 prototypes (optionally preview shock cylinders) and can bind
+currently selected existing vehicles through Tools menu. For existing
+M0 scenes with no rig, the original VisualTransform path is retained.

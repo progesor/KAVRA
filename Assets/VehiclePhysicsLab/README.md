@@ -240,3 +240,27 @@ Save the generated scene from the Unity Editor; no pre-generated scenes
 are committed for these menu options. Use W/S, Q/E, A/D, Space, Shift and
 manual R recovery as in the 4W host sample. No high-fidelity meshes
 or automatically preventing rollovers.
+
+
+## M1.2 gearbox and visual wheels
+
+New M1 lab vehicles/prefabs generated from the Wizard contain separate
+`TravelPivot/SteeringPivot/SpinPivot` transforms under each WheelAnchor,
+plus a simple shock preview cylinder following two endpoints. They are
+visual-only and **do not change wheel physics**. Replace the mesh under
+SpinPivot with imported FBX/GLB wheel meshes, retaining correct pivot
+position. For an existing scene: select vehicle root and invoke
+`Tools > KAVRA > Bind Selected Vehicle Wheel Visuals`.
+Assign an imported mesh to `VehicleWheelAnchor.VisualTransform` first.
+
+Input on interactive M1 lab: W forward, S reverse when near stopped,
+Q/E manual forward gear down/up, N neutral, T toggle automatic/manual
+forward shift scheduling, Space brake, Shift parking brake,
+**R** explicit user-triggered upright recovery. Existing M0 sample
+control mode remains unchanged. Gearbox HUD now shows engaged gear,
+target, shifting status, and selected mode. CSV adds
+`engaged_gear,gearbox_mode,shift_in_progress,shift_progress01`.
+
+This is a starter visual binding, not realistic suspension linkage
+geometry or automatic mesh discovery. Neither gearbox changes nor the
+visual hierarchy have been verified in actual Unity Play Mode yet.

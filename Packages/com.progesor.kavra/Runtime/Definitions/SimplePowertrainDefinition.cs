@@ -29,6 +29,12 @@ namespace Progesor.Kavra
         [Min(0.01f)] public float FinalDriveRatio = 3.9f;
         [Range(0f, 1f)] public float Efficiency = 0.87f;
 
+        [Header("M1.2 gearbox transition (no clutch physical simulation)")]
+        [Range(0f, 1.5f)] public float ShiftDurationSeconds = 0.24f;
+        [Range(0.05f, 3f)] public float MinTimeBetweenShiftsSeconds = 0.55f;
+        [Min(100f)] public float AutomaticUpshiftRpm = 4600f;
+        [Min(100f)] public float AutomaticDownshiftRpm = 1700f;
+
         public int ForwardGearCount => ForwardGearRatios != null
             ? ForwardGearRatios.Length : 0;
 

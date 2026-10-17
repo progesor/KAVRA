@@ -177,3 +177,23 @@ force refinements. Natural rollover and R-only manual recovery remain.
 Next foundational step: basic real gearbox state/shift control and simpler
 reusable model/visual binding; full mechanical differential lock remains
 deferred. Realistic mechanical demo 3D models are tracked separately #9.
+
+
+### M1.2 gearbox and wheel presentation — issue #11
+
+- [x] Source: per-vehicle manual/automatic gearbox state, shift torque
+  interruption, requested/engaged gear and speed-aware direction safety.
+- [x] Source: explicit Travel/Steer/Spin pivot presentation and visual
+  suspension link that do not affect Rigidbody forces or contacts.
+- [x] Source: generated M1 prefab/scaffold rigs and Editor binding menu
+  for previously selected vehicle wheel meshes; old M0 visuals unaffected.
+- [x] Host HUD/CSV and EditMode test sources for new behavior.
+- [ ] Unity 6.3.x compile and Test Runner pass.
+- [ ] Actual manual/automatic shift, gear change at speed, and R recovery.
+- [ ] Imported model wheel pivot and preview shock update in Play Mode.
+- [ ] Existing user's M0 scenes/csvs and M1 prior presets remain intact.
+
+Next **core** milestone: first VehicleAssembly coupling (multi-body
+tractor and trailer, physically separate rigidbodies) and reusable
+scene/prefab construction; then more complete drivetrain or loading
+mechanics. Realistic demo model search remains backlog #9.

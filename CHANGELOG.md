@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.1.2 — 2026-10-17 (gearbox state + transform-based wheel rigs)
+
+- Added allocation-free VehicleGearboxController with manual/automatic
+  forward shifting, actual engaged vs requested gear, shift-time torque
+  interruption and safe moving direction-change rejection.
+- Added gearbox tuning fields to optional SimplePowertrainDefinition,
+  preserved legacy M0 direct-torque default.
+- Added host T auto/manual toggle, Q/E manual up/down, N neutral, W/S
+  low-speed direction control, R manual recovery; gearbox HUD/CSV metrics.
+- Added VehicleWheelVisualRig (travel/steer/spin pivot hierarchy) and
+  VehicleSuspensionVisualLink (kinematic shock rod binding).
+- New M1 generated scaffolds/prefabs get structured placeholder wheel rigs.
+  Existing M0 wheel visuals remain unchanged. Editor menu can bind selected
+  existing vehicle wheel meshes without touching wheel contact physics.
+- Added gearbox/visual EditMode regression source, updated package contract
+  and technical instructions in docs/20.
+- No automatic rollover assistance, physical clutch, deformable tire/ground
+  or real external 3D asset included.
+- **Unity 6.3.x real compile and Play Mode tests pending.**
+
+
 ## 0.1.1 — 2026-10-14 (M1.1 axle drive routing and demo breadth)
 
 - Added optional per-axle drive torque weights and two explicit allocation

@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.1.1)
+# KAVRA embedded package (v0.1.2)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -125,3 +125,28 @@ enabling/disabling its powered wheels at once.
 
 The host has new 3W/6x6/8x8/20W test scene generator menus. These are
 not production-art demos; imported mechanical models are a later issue.
+
+### M1.2 gearbox and visual-binding foundation
+
+`VehicleGearboxController`: allocation-free state machine with optional
+`GearboxControlMode.Automatic`. Manual remains the default to avoid changing
+existing M1 behavior except during explicit gear requests. A shift interrupts
+engine-to-wheel torque for a configurable duration; neutral/reverse and
+longitudinal direction safety are explicit. This is a simplified gear state,
+**not a physical friction clutch or torque converter**.
+
+`VehicleSimulationRoot` exports `EngagedGear`, `SelectedGear` target,
+`IsGearShifting`, `GearShiftProgress01` and `GearboxMode`. A shared
+`SimplePowertrainDefinition` holds time/RPM thresholds; engine/wheel states
+remain per Rigidbody vehicle.
+
+`VehicleWheelVisualRig` is an optional visual-only component attached to
+`VehicleWheelAnchor`. Pivot references: `TravelPivot`, `SteeringPivot`,
+`SpinPivot`. `VehicleSuspensionVisualLink` scales/reorients an optional
+cylinder or modeled mechanical rod between assigned upper/lower endpoints.
+
+The Editor `VehicleWheelVisualRigBuilder.Bind` creates missing pivot rigs
+without changing anchor transforms, and new M1 primitive chassis presets
+include demonstration shocks. Older M0 prefabs/scenes with no rig still use
+the original direct cylinder visual animation path. There are no added
+dependencies on URP, imported meshes or the Input System.

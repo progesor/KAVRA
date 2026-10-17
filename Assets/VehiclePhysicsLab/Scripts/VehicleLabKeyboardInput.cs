@@ -69,11 +69,22 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
             // gear sign. W/S automatically selects forward/reverse at low
             // speed. Pressing the opposite direction while driving first
             // brakes instead of instantly reversing drivetrain torque.
+            if (keyboard.tKey.wasPressedThisFrame)
+                Simulation.GearboxMode =
+                    Simulation.GearboxMode == Progesor.Kavra.GearboxControlMode.Automatic
+                        ? Progesor.Kavra.GearboxControlMode.Manual
+                        : Progesor.Kavra.GearboxControlMode.Automatic;
+
             int selectedGear = Simulation.SelectedGear;
-            if (keyboard.eKey.wasPressedThisFrame && selectedGear >= 1)
-                Simulation.TrySetGear(selectedGear + 1);
-            else if (keyboard.qKey.wasPressedThisFrame && selectedGear > 1)
-                Simulation.TrySetGear(selectedGear - 1);
+            if (Simulation.GearboxMode == Progesor.Kavra.GearboxControlMode.Manual)
+            {
+                if (keyboard.eKey.wasPressedThisFrame && selectedGear >= 1)
+                    Simulation.TrySetGear(selectedGear + 1);
+                else if (keyboard.qKey.wasPressedThisFrame && selectedGear > 1)
+                    Simulation.TrySetGear(selectedGear - 1);
+                else if (keyboard.nKey.wasPressedThisFrame)
+                    Simulation.TrySetGear(0);
+            }
 
             float longitudinal = vehicleBody != null
                 ? Vector3.Dot(vehicleBody.linearVelocity, transform.forward) : 0f;
@@ -183,7 +194,10 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
         if (Simulation.DriveSource == Progesor.Kavra.VehicleDriveSource.SimplePowertrain)
         {
             message += "\nPOWERTRAIN: " + Simulation.EngineRpm.ToString("F0") +
-                " RPM   Gear: " + Simulation.SelectedGear +
+                " RPM   Gear: " + Simulation.EngagedGear +
+                " (target " + Simulation.SelectedGear + ")" +
+                "   Mode: " + Simulation.GearboxMode +
+                (Simulation.IsGearShifting ? "  SHIFTING" : "") +
                 "   Engine Nm: " + Simulation.EngineTorqueNm.ToString("F0") +
                 "   Wheel torque Nm: " + Simulation.TotalAppliedDriveTorqueNm.ToString("F0");
         }
@@ -191,7 +205,7 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
         if (AcceptDrivingKeys)
             message += Simulation.DriveSource ==
                        Progesor.Kavra.VehicleDriveSource.SimplePowertrain
-                ? "\nW/S: forward/reverse   Q/E: down/up gear   A/D: steer   Space: brake"
+                ? "\nW/S: fwd/rev   Q/E: gears (manual)   T: auto/manual   N: neutral   A/D: steer"
                 : "\nW/S: torque   A/D: steer   Space: brake   Shift: park";
         else
             message += "\nSCRIPTED test: set maneuver in VehicleLabManeuverRunner";
@@ -201,6 +215,6 @@ public sealed class VehicleLabKeyboardInput : MonoBehaviour
 #endif
         if (Time.unscaledTime < recoveryStatusUntil)
             message += "\n" + recoveryStatus;
-        GUI.Box(new Rect(12f, 12f, 555f, 292f), message);
+        GUI.Box(new Rect(12f, 12f, 690f, 315f), message);
     }
 }
