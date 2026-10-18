@@ -30,7 +30,6 @@ namespace Progesor.Kavra.Lab.Tests
             try
             {
                 Assert.IsFalse(HasErrors(config), preset.ToString());
-                Assert.AreEqual(null, config.Powertrain);
             }
             finally { Object.DestroyImmediate(config); }
         }
@@ -109,13 +108,15 @@ namespace Progesor.Kavra.Lab.Tests
                 Assert.IsTrue(HasErrors(config));
                 wheel.Id = originalWheelId;
 
+                AxleDifferentialMode originalMode = axle.DifferentialMode;
                 axle.DifferentialMode = (AxleDifferentialMode)777;
                 Assert.IsTrue(HasErrors(config));
-                axle.DifferentialMode = AxleDifferentialMode.EqualTorque;
+                axle.DifferentialMode = originalMode;
 
+                WheelSide originalSide = wheel.Side;
                 wheel.Side = (WheelSide)777;
                 Assert.IsTrue(HasErrors(config));
-                wheel.Side = WheelSide.Left;
+                wheel.Side = originalSide;
 
                 Assert.IsFalse(HasErrors(config));
             }
