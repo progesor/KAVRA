@@ -8,6 +8,14 @@
   dependency. Unity compiler and Test Runner acceptance pending.
 
 
+## Unreleased — 2026-10-18 P1 guardrails (source only)
+
+- Non-finite configuration parameters and malformed IDs are now rejected
+  by validation before prefab construction. Legacy valid assets stay valid.
+- Host EditMode roundtrip tests cover independent rigidbodies and joint
+  references after prefab save/reimport/load. Unity results pending.
+- Package version remains v0.1.6 until acceptance.
+
 ## [0.1.6] — 2026-10-17
 
 - More forgiving manual assembly hitch defaults (0.5m / 55deg).

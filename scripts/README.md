@@ -12,3 +12,28 @@ syntax and accidental generated Unity folders.
 **Static checks are not Unity compiler tests.** This script cannot execute
 NUnit/Test Runner, PhysX joints or the visual PhysicsLab acceptance. Those
 results must come from Unity 6000.3.18f1 and remain open on issue #17.
+
+## Actual Unity acceptance (Windows / PowerShell)
+
+Close the Unity Editor GUI on the **same project** first, then run:
+
+```powershell
+git switch feat/m15-multitrailer-chain
+git pull --ff-only origin feat/m15-multitrailer-chain
+.\scripts\Run-KavraUnityEditMode.ps1
+```
+
+If Unity Hub is elsewhere, pass `-UnityEditorPath "D:\Unity\Editor\Unity.exe"`
+or set the environment variable `KAVRA_UNITY_EDITOR`.
+The script requires `ProjectVersion.txt` to target **6000.3.18f1**.
+
+Unlike the Python check, this launches a REAL Unity Editor test run. It
+filters `Progesor.Kavra.Lab.EditModeTests` and rejects absent XML, zero
+tests, failed tests, missing expected suite classes, or an unsuccessful
+Unity process. The NUnit XML and Unity Editor log are written to
+new uniquely named folders under the Windows Temp directory, not into
+your project's saved scenes, prefabs, or `docs/Telemetry/`.
+
+Manual Play Mode (checker/hitch graphics, H/J/L/K/R and physics solver
+joint breaks) is intentionally not claimed by this EditMode runner.
+No Unity installation or license is embedded in the repository.

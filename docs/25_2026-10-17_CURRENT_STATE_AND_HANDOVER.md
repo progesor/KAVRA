@@ -337,3 +337,18 @@ açılmalı; daha önce doğrulanmış kullanıcı testleri silinmemelidir.
   `docs/Telemetry/` CSV'leri değişmedi. PR #16 birleştirilmedi.
   Asıl P0 kabulü için kullanıcı Unity 6000.3.18f1 Console,
   dört EditMode suite ve M1.5.1/M1.4 görsel/Play testi gerekiyor.
+
+## 12. 18 Ekim P1 veri doğrulama / prefab testleri (Unity kabul bekliyor)
+
+Önceki 17 Ekim HEAD ve devir bölümleri tarihsel kayıttır. 18 Ekim'de
+`feat/m15-multitrailer-chain` üzerinde yapılan çalışmalar:
+- `bf139da`: VehicleConfigurationValidator finite numeric / stabil ID
+  / powertrain kontrolleri; runtime alanları, eski assetler değiştirilmedi.
+- `e2ab644`: hatalı veriye karşı NUnit doğrulama test kaynağı.
+- `f0c8993`: 4W/20W, iki-gövde ve üç-gövde için geçici asset
+  klasöründe prefab save/reimport/load regresyonları.
+- `45bb3d8`: Windows Unity 6000.3.18f1 EditMode batch runner; sonuç
+  dosyaları repo dışına ve benzersiz klasöre yazılır.
+- **Kaynakta hazır, Unity testi henüz koşturulmadı.** Issue #17
+  ve PR #16 Draft açık. Kabul planı [docs/27](27_2026-10-18_P1_VALIDATION_AND_PREFAB_ACCEPTANCE.md).
+

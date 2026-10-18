@@ -121,6 +121,23 @@ assetleri bozulmadan çalışıyor; Unity/UPM bağımlılıkları belgeli.
   sahne görünümü ve Play Mode. P0 kabulü ve issue #17 kapanmadı;
   PR #16 Draft. Ayrıntı: [docs/26](26_P1_COMMON_ASSEMBLY_CONTROL_API.md).
 
+### 18 Ekim P1 kaynak ilerlemesi ve bekleyen kabul
+
+- **Kaynakta:** non-finite (NaN/Infinity) kütle, CoM, wheel mount,
+  boyut ve powertrain parametreleri prefab kurulmadan önce reddedilir;
+  stabil teker/aks kimlikleri ve geçersiz enum değerleri kontrol edilir.
+  Kaydedilmiş kullanıcı tanımları otomatik değiştirilmez.
+- **Yeni regresyonlar:** 3W/4W/6x6/8x8/20W eski presetler ve hatalı
+  asset girdileri; 4W/20W motorlu prefab, M1.4 iki-gövde ve M1.5
+  üç-gövde zincir prefablarının **save/reimport/load** EditMode testleri.
+- **Kabul aracı:** Windows PowerShell `scripts/Run-KavraUnityEditMode.ps1`
+  gerçek Unity 6000.3.18f1 Test Runner'ı çağırır, XML ve Editor log
+  üretir, altı test suite'i denetler. GitHub Actions yalnızca kaynak
+  ve PowerShell sözdizimi ön kontrolünü yapar.
+- **Henüz PASS değil:** Unity üzerinde sonuç alınmadı; prefab roundtrip,
+  eski sahneler, görsel lab ve gerçek solver kopması kabul bekliyor.
+  Ayrıntı: [docs/27](27_2026-10-18_P1_VALIDATION_AND_PREFAB_ACCEPTANCE.md).
+
 ## 4. P2 — Vehicle Wizard üretim akışı ve model bağlama
 
 Kullanıcı isteği: ileride gerçek bir **açık şasi** otomobil, 4x4 ve

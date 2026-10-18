@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — P1 definition validation and prefab contract (2026-10-18)
+
+- Strictly validate numeric finiteness of chassis, wheel mounts/geometry
+  and optional engine/gearbox data; reject whitespace IDs and unknown
+  axle/wheel enum values, without rewriting original ScriptableObjects.
+- Added NUnit regression sources for corrupted configs and isolated
+  prefab save/reimport/load for 4W, 20W, two-body and multi-trailer.
+- Added Windows Unity 6000.3.18f1 EditMode acceptance runner; temp logs
+  and XML outside the repository. **Actual Unity acceptance still pending.**
+
 ## Unreleased — P1 common assembly control API (source-only)
 
 - Both existing two-body and ordered chain roots now implement the

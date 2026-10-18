@@ -242,3 +242,17 @@ All checker road textures, shaders, vehicle colors, marker rendering
 and speed-sensitive FOV are optional PhysicsLab host scripts under
 `Assets/VehiclePhysicsLab`; the KAVRA UPM runtime remains
 renderer-/render-pipeline-/input-system-independent.
+
+## P1 development-only acceptance (2026-10-18)
+
+The host's optional EditMode tests now include
+`KavraDefinitionValidationEditModeTests` (corrupt ScriptableObject inputs)
+and `KavraPrefabRoundtripEditModeTests` (4W, 20W, two-body and N-body
+prefab reference retention). They create temporary Assets folders
+and delete only those folders after each run. They do not reside in or
+run as part of the portable UPM runtime.
+
+On Windows, close the running Editor and execute
+`scripts/Run-KavraUnityEditMode.ps1` from the repository root to
+collect an actual Unity 6.3 Test Runner result. No real Unity PASS
+has been received as of this source update.
