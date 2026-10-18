@@ -20,6 +20,16 @@ namespace Progesor.Kavra
     /// <summary>No side effects; safe to call from runtime and Editor.</summary>
     public static class VehicleConfigurationValidator
     {
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private static bool IsFinite(UnityEngine.Vector3 value)
+        {
+            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+        }
+
         public static List<VehicleValidationIssue> Validate(VehicleDefinition definition)
         {
             var issues = new List<VehicleValidationIssue>();
@@ -29,8 +39,12 @@ namespace Progesor.Kavra
                 return issues;
             }
 
-            if (definition.ChassisMassKg <= 0f)
-                issues.Add(new VehicleValidationIssue(ValidationSeverity.Error, "Chassis mass must be greater than zero."));
+            if (!IsFinite(definition.ChassisMassKg) || definition.ChassisMassKg <= 0f)
+                issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                    "Chassis mass must be finite and greater than zero."));
+            if (!IsFinite(definition.CenterOfMassLocal))
+                issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                    "Center of mass must have finite local coordinates."));
 
             if (definition.Axles == null || definition.Axles.Count == 0)
                 issues.Add(new VehicleValidationIssue(ValidationSeverity.Error, "At least one axle definition is required."));
@@ -49,6 +63,19 @@ namespace Progesor.Kavra
                     }
                     if (!axleIds.Add(axle.Id))
                         issues.Add(new VehicleValidationIssue(ValidationSeverity.Error, "Duplicate axle ID: " + axle.Id));
+                    if (axle.Id != axle.Id.Trim())
+                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                            "Axle ID contains leading/trailing whitespace: " + axle.Id));
+                    if (axle.Linkage != AxleLinkage.Independent &&
+                        axle.Linkage != AxleLinkage.Rigid &&
+                        axle.Linkage != AxleLinkage.Bogie &&
+                        axle.Linkage != AxleLinkage.Virtual)
+                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                            "Axle " + axle.Id + " has an unknown linkage mode."));
+                    if (axle.DifferentialMode != AxleDifferentialMode.EqualTorque &&
+                        axle.DifferentialMode != AxleDifferentialMode.SpeedBiasedApproximation)
+                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                            "Axle " + axle.Id + " has an unknown torque routing mode."));
                     if (axle.DriveTorqueWeight < 0f ||
                         float.IsNaN(axle.DriveTorqueWeight) ||
                         float.IsInfinity(axle.DriveTorqueWeight))
@@ -79,13 +106,27 @@ namespace Progesor.Kavra
                     }
                     if (string.IsNullOrWhiteSpace(wheel.Id) || !wheelIds.Add(wheel.Id))
                         issues.Add(new VehicleValidationIssue(ValidationSeverity.Error, "Missing or duplicate wheel ID: " + wheel.Id));
+                    if (!string.IsNullOrWhiteSpace(wheel.Id) && wheel.Id != wheel.Id.Trim())
+                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                            "Wheel " + wheel.Id + " contains leading/trailing whitespace."));
+                    if (wheel.Side != WheelSide.Left && wheel.Side != WheelSide.Center &&
+                        wheel.Side != WheelSide.Right)
+                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                            "Wheel " + wheel.Id + " has an unknown side."));
                     if (string.IsNullOrWhiteSpace(wheel.AxleId) || !axleIds.Contains(wheel.AxleId))
                         issues.Add(new VehicleValidationIssue(ValidationSeverity.Error, "Wheel " + wheel.Id + " references a missing axle."));
                     else usedAxles.Add(wheel.AxleId);
-                    if (wheel.RadiusMeters <= 0f || wheel.WidthMeters <= 0f)
-                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error, "Wheel " + wheel.Id + " has invalid dimensions."));
-                    if (wheel.SuspensionTravelMeters < 0f)
-                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error, "Wheel " + wheel.Id + " has negative suspension travel."));
+                    if (!IsFinite(wheel.MountLocalPosition))
+                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                            "Wheel " + wheel.Id + " has non-finite local mount coordinates."));
+                    if (!IsFinite(wheel.RadiusMeters) || wheel.RadiusMeters <= 0f ||
+                        !IsFinite(wheel.WidthMeters) || wheel.WidthMeters <= 0f)
+                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                            "Wheel " + wheel.Id + " has invalid radius or width."));
+                    if (!IsFinite(wheel.SuspensionTravelMeters) ||
+                        wheel.SuspensionTravelMeters < 0f)
+                        issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                            "Wheel " + wheel.Id + " has invalid suspension travel."));
                 }
 
                 if (definition.Wheels.Count < 3)
@@ -103,27 +144,51 @@ namespace Progesor.Kavra
             if (definition.Powertrain != null)
             {
                 var p = definition.Powertrain;
-                if (p.IdleRpm < 100f || p.MaxRpm <= p.IdleRpm)
+                if (!IsFinite(p.IdleRpm) || !IsFinite(p.MaxRpm) ||
+                    p.IdleRpm < 100f || p.MaxRpm <= p.IdleRpm)
                     issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
-                        "Powertrain RPM settings are invalid (MaxRpm must exceed IdleRpm)."));
-                if (p.FinalDriveRatio <= 0f || p.ReverseGearRatio <= 0f ||
-                    p.Efficiency <= 0f || p.Efficiency > 1f)
+                        "Powertrain RPM settings must be finite (MaxRpm above IdleRpm)."));
+                if (!IsFinite(p.EngineRpmResponsePerSecond) ||
+                    p.EngineRpmResponsePerSecond <= 0f ||
+                    !IsFinite(p.LaunchFreeRevFraction) ||
+                    p.LaunchFreeRevFraction < 0f || p.LaunchFreeRevFraction > 1f)
+                    issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                        "Powertrain engine response / free-rev fraction is invalid."));
+                if (!IsFinite(p.FinalDriveRatio) || p.FinalDriveRatio <= 0f ||
+                    !IsFinite(p.ReverseGearRatio) || p.ReverseGearRatio <= 0f ||
+                    !IsFinite(p.Efficiency) || p.Efficiency <= 0f ||
+                    p.Efficiency > 1f)
                     issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
                         "Powertrain final-drive/reverse/efficiency settings are invalid."));
+                if (!IsFinite(p.ShiftDurationSeconds) || p.ShiftDurationSeconds < 0f ||
+                    !IsFinite(p.MinTimeBetweenShiftsSeconds) ||
+                    p.MinTimeBetweenShiftsSeconds <= 0f ||
+                    !IsFinite(p.AutomaticUpshiftRpm) || p.AutomaticUpshiftRpm <= 0f ||
+                    !IsFinite(p.AutomaticDownshiftRpm) || p.AutomaticDownshiftRpm <= 0f)
+                    issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                        "Powertrain shift timing and RPM thresholds must be finite and non-negative."));
                 if (p.ForwardGearRatios == null || p.ForwardGearRatios.Length == 0)
                     issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
                         "Powertrain needs at least one forward gear."));
                 else
                     foreach (float ratio in p.ForwardGearRatios)
-                        if (ratio <= 0f)
+                        if (!IsFinite(ratio) || ratio <= 0f)
                         {
                             issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
-                                "Powertrain forward gear ratios must be positive."));
+                                "Powertrain forward gear ratios must be finite and positive."));
                             break;
                         }
                 if (p.TorqueNmByRpm == null || p.TorqueNmByRpm.length == 0)
                     issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
                         "Powertrain requires an RPM-to-torque curve."));
+                else
+                    foreach (UnityEngine.Keyframe key in p.TorqueNmByRpm.keys)
+                        if (!IsFinite(key.time) || !IsFinite(key.value) || key.time < 0f)
+                        {
+                            issues.Add(new VehicleValidationIssue(ValidationSeverity.Error,
+                                "Powertrain torque curve contains an invalid RPM/torque key."));
+                            break;
+                        }
                 bool driven = false;
                 if (definition.Wheels != null)
                     foreach (var wheel in definition.Wheels)
