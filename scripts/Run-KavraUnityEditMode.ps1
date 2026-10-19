@@ -55,8 +55,11 @@ New-Item -Path $runDirectory -ItemType Directory -Force | Out-Null
 $xmlPath = Join-Path $runDirectory "EditMode-results.xml"
 $logPath = Join-Path $runDirectory "Unity-Editor.log"
 
+# Unity Test Framework owns Editor shutdown after -runTests completes.
+# The Unity 6000.3 command-line reference explicitly forbids -quit here:
+# it can interrupt an in-progress test run.
 $arguments = @(
-    "-batchmode", "-nographics", "-quit",
+    "-batchmode", "-nographics",
     "-projectPath", $ProjectPath,
     "-runTests", "-testPlatform", "EditMode",
     "-assemblyNames", "Progesor.Kavra.Lab.EditModeTests",
@@ -67,6 +70,7 @@ Write-Host "KAVRA Unity test project: $ProjectPath"
 Write-Host "Unity Editor: $UnityEditorPath"
 Write-Host "Results: $xmlPath"
 Write-Host "Editor log: $logPath"
+Write-Host "Diagnostic directory: $runDirectory"
 Write-Host "Run only after closing the same project in the Unity GUI."
 
 & $UnityEditorPath @arguments
@@ -110,8 +114,26 @@ foreach ($suite in $expectedSuites) {
     }
 }
 
-Write-Host ("KAVRA EditMode: {0} total, {1} passed, {2} failed, {3} skipped (Unity exit {4})." -f
+$status = ("KAVRA EditMode: {0} total, {1} passed, {2} failed, {3} skipped (Unity exit {4})." -f
     $total, $passed, $failed, $skipped, $unityExit)
+Write-Host $status
+
+# Report exact test names without requiring a user to inspect the XML.
+# A non-zero process code by itself cannot distinguish NUnit failure
+# from an Editor crash; both XML and Editor.log remain diagnostic evidence.
+$failedCases = @($testReport.SelectNodes("//test-case[@result='Failed']"))
+$reportLines = @($status, "Editor log: $logPath", "NUnit XML: $xmlPath")
+foreach ($failedCase in $failedCases) {
+    $messageNode = $failedCase.SelectSingleNode("failure/message")
+    $reason = if ($null -ne $messageNode) {
+        (($messageNode.InnerText -split '[\r\n]+') | Where-Object { $_.Trim() } |
+            Select-Object -First 1).Trim()
+    } else { "See test XML for details." }
+    $line = "FAIL: " + $failedCase.GetAttribute("fullname") + " -- " + $reason
+    Write-Warning $line
+    $reportLines += $line
+}
+$reportLines | Set-Content -LiteralPath (Join-Path $runDirectory "Acceptance-summary.txt") -Encoding UTF8
 if ($missing.Count -gt 0) {
     Write-Warning ("Test suites not found: " + ($missing -join ", "))
 }

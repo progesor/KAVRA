@@ -115,6 +115,13 @@ def main():
         check("AssessAttachLink(" in source,
               component + " missing read-only attachment assessment")
 
+    runner = (ROOT / "scripts/Run-KavraUnityEditMode.ps1").read_text(
+        encoding="utf-8")
+    check('" -quit"' not in runner and
+          '"-quit"' not in runner.split("$arguments = @(", 1)[-1].split("\n)", 1)[0],
+          "Unity Test Framework forbids -quit with -runTests")
+    check('"-runTests"' in runner, "Unity Test Runner invocation missing")
+
     for path in ROOT.rglob("*.json"):
         load(path)
     print("PASS: UPM, asmdef graph, hitch GUID, P1 control API and JSON source")

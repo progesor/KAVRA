@@ -37,3 +37,18 @@ your project's saved scenes, prefabs, or `docs/Telemetry/`.
 Manual Play Mode (checker/hitch graphics, H/J/L/K/R and physics solver
 joint breaks) is intentionally not claimed by this EditMode runner.
 No Unity installation or license is embedded in the repository.
+
+### 19 October 2026 troubleshooting update
+
+The previous runner mistakenly combined `-runTests` with `-quit`.
+Unity 6.3's official Test Framework command-line reference states they
+must **not** be combined: the test runner shuts down the Editor after
+completion. The updated script omits `-quit`, reports exact failed test
+names and writes `Acceptance-summary.txt` beside the XML and Editor log.
+
+If Unity genuinely crashes (rather than shutting down as batch mode
+normally does), upload the generated `Unity-Editor.log` and the
+`Acceptance-summary.txt`. For tests run **inside** the GUI, capture
+`%LOCALAPPDATA%\\Unity\\Editor\\Editor.log` immediately after the crash;
+native reports may be under `%TMP%\\Unity\\Editor\\Crashes`.
+A completed NUnit XML does not prove that Unity exited normally.
