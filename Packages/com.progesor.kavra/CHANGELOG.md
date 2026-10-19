@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — P2.0 imported model binder (source-only)
+
+- New visual mapping ScriptableObject and read-only vehicle visual marker.
+- Editor-only mesh binding validator, dedicated Wizard and prefab
+  generator; no new physics body, extra collider or hard importer package.
+- Source meshes/materials referenced instead of duplicated. Existing
+  vehicle definitions, joints and user data unmodified.
+- Seven-suite Unity EditMode validation and real FBX visual acceptance pending.
+
+
 ## Unreleased — 19 October 2026 (Editor-only Undo lifecycle fix)
 
 - Editor vehicle/assembly/visual builders now support optional
