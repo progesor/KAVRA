@@ -394,3 +394,22 @@ ancak Unity'nin kapanırken tekrar crash verdiğini bildirdi. Yüklediği
 - Ana framework Physics/telemetry/scriptable definition ve bütün
   `.unity`, `.prefab`, `docs/Telemetry/` dosyaları korunmuştur.
 - Yeni devir referansı: [docs/29](29_2026-10-19_NATIVE_EDITOR_UNDO_CRASH.md).
+
+## 15. 19 Ekim P2 başlangıcı ve Undo crash kabulü
+
+- Kullanıcı, EditMode testlerinin geçtiğini ve Unity Test Runner crash'inin
+  çözüldüğünü bildirdi. Bu **kullanıcı gözlemi** olarak kabul edildi;
+  final NUnit XML bu mesajda eklenmedi. Play Mode H/J/L/K/R ve görsel
+  PhysicsLab kabulü bağımsız olarak hâlâ açık.
+- P2.0 harici FBX/imported prefab mesh bağlama sistemi eklendi:
+  `VehicleVisualBindingDefinition`, `VehicleImportedVisualRoot`,
+  `VehicleImportedVisualValidator`, `VehicleImportedVisualBuilder`,
+  `KavraImportedModelWizardWindow`.
+- Kaynakta 4W/6x6/20W görsel/per-wheel mapping ve prefab roundtrip testleri,
+  yeni yedinci EditMode suite ve kullanıcı yönergesi var.
+- Yeni P2 C# kodunun Unity derlemesi ve gerçek FBX Play Mode sonucu
+  henüz paylaşılmadı; kaynak statik CI'nin yerine geçmez.
+- Ayrıntı: [docs/30](30_2026-10-19_P20_IMPORTED_MODEL_BINDING.md).
+- `.unity` sahneler, `.prefab` kullanıcı varlıkları, eski
+  `docs/Telemetry/` dosyaları, ana framework fizik ve manuel `R`
+  korunmuştur. PR #16 Draft, ana dal merge edilmedi.
