@@ -96,3 +96,13 @@ user Editor undo history must not be discarded.
 Official Unity Undo documentation:
 https://docs.unity.com/en-us/engine/6000.7/script-reference/unityeditor/undo/registercreatedobjectundo
 https://docs.unity.cn/6000.0/Documentation/ScriptReference/Undo.RevertAllDownToGroup.html
+
+
+## Later user acceptance (19 October 2026)
+
+The user confirmed that the Unity Editor no longer crashes during
+Test Runner cleanup after the no-Undo temporary builder change.
+They had also reported all previous EditMode tests passed. This is
+recorded as **user-observed closure of the Undo crash**, not as a
+newly obtained NUnit XML, and does not certify the later P2.0 visual
+binding code, which requires a separate Unity run.
