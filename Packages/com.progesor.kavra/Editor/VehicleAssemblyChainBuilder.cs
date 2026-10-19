@@ -9,8 +9,14 @@ namespace Progesor.Kavra.Editor
     /// </summary>
     public static class VehicleAssemblyChainBuilder
     {
+        public static GameObject Build(VehicleAssemblyChainDefinition definition)
+        {
+            return Build(definition, true);
+        }
+
+        /// <summary>Explicit no-Undo mode for disposable chain staging.</summary>
         public static GameObject Build(VehicleAssemblyChainDefinition definition,
-            bool recordUndo = true)
+            bool recordUndo)
         {
             foreach (VehicleValidationIssue issue in
                      VehicleAssemblyChainValidator.Validate(definition))

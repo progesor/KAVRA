@@ -10,10 +10,22 @@ namespace Progesor.Kavra.Editor
     /// </summary>
     public static class VehicleScaffoldBuilder
     {
+        // Exact legacy signature is preserved for method-group/delegate
+        // consumers as well as source calls with optional arguments.
         public static GameObject Create(VehicleDefinition configuration,
             bool dynamicPhysics = false,
-            VehicleDriveSource driveSource = VehicleDriveSource.LegacyDirectWheelTorque,
-            bool recordUndo = true)
+            VehicleDriveSource driveSource = VehicleDriveSource.LegacyDirectWheelTorque)
+        {
+            return Create(configuration, dynamicPhysics, driveSource, true);
+        }
+
+        /// <summary>
+        /// Explicit temporary-build overload. Pass false for disposable
+        /// NUnit/prefab stages so Unity Test Runner Undo rollback has no
+        /// references to objects deleted by DestroyImmediate.
+        /// </summary>
+        public static GameObject Create(VehicleDefinition configuration,
+            bool dynamicPhysics, VehicleDriveSource driveSource, bool recordUndo)
         {
             if (dynamicPhysics && driveSource == VehicleDriveSource.SimplePowertrain &&
                 (configuration == null || configuration.Powertrain == null))

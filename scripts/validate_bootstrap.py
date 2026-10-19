@@ -132,8 +132,8 @@ def main():
     )
     for name in builder_names:
         code = (editor / (name + ".cs")).read_text(encoding="utf-8")
-        check("bool recordUndo = true" in code and "if (recordUndo)" in code,
-              name + " must keep default GUI Undo and an opt-out for temp objects")
+        check("bool recordUndo)" in code and "if (recordUndo)" in code,
+              name + " must preserve GUI Undo and a no-Undo overload")
     scaffold = (editor / "VehicleScaffoldBuilder.cs").read_text(encoding="utf-8")
     check("VehicleWheelVisualRigBuilder.Bind(root, true, recordUndo)" in scaffold,
           "Wheel rig must inherit the temporary build Undo policy")

@@ -9,8 +9,18 @@ namespace Progesor.Kavra.Editor
     /// </summary>
     public static class VehicleAssemblyBuilder
     {
+        public static GameObject Build(VehicleAssemblyDefinition definition)
+        {
+            return Build(definition, true);
+        }
+
+        /// <summary>
+        /// Build a disposable test/export hierarchy with recordUndo=false.
+        /// Interactive editor callers use the original overload and retain
+        /// their normal Undo/selection semantics.
+        /// </summary>
         public static GameObject Build(VehicleAssemblyDefinition definition,
-            bool recordUndo = true)
+            bool recordUndo)
         {
             foreach (VehicleValidationIssue issue in
                      VehicleAssemblyValidator.Validate(definition))

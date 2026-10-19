@@ -30,8 +30,14 @@ namespace Progesor.Kavra.Editor
         /// addDemonstrationShock creates simple visible cylinders; true for
         /// newly generated M1 primitive previews, false for imported meshes.
         /// </summary>
+        public static int Bind(GameObject vehicle, bool addDemonstrationShock)
+        {
+            return Bind(vehicle, addDemonstrationShock, true);
+        }
+
+        /// <summary>Explicit opt-out for disposable mesh/pivot previews.</summary>
         public static int Bind(GameObject vehicle, bool addDemonstrationShock,
-            bool recordUndo = true)
+            bool recordUndo)
         {
             if (vehicle == null) return 0;
             VehicleWheelAnchor[] mounts =
