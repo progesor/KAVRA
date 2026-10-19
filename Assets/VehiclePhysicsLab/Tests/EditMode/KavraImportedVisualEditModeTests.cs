@@ -221,6 +221,25 @@ namespace Progesor.Kavra.Lab.Tests
         }
 
         [Test]
+        public void ModelScaleMismatchWarnsWithoutMovingPhysicsWheelAnchors()
+        {
+            var binding = MakeProfile(VehicleTemplate.PassengerCar4, false, 4);
+            Vector3 oldMount = binding.Vehicle.Wheels[0].MountLocalPosition;
+            binding.ModelScale = 2f;
+            bool alignmentWarning = false;
+            foreach (VehicleValidationIssue issue in
+                     VehicleImportedVisualValidator.Validate(binding))
+                if (issue.Severity == ValidationSeverity.Warning &&
+                    issue.Message.Contains("imported pivot"))
+                    alignmentWarning = true;
+            Assert.IsTrue(alignmentWarning,
+                "A significantly different model scale must be visible to the author.");
+            Assert.That(binding.Vehicle.Wheels[0].MountLocalPosition,
+                Is.EqualTo(oldMount),
+                "Validation must never mutate an existing physics wheel definition.");
+        }
+
+        [Test]
         public void InvalidVisualScaleIsCaughtBeforeAnySceneConstruction()
         {
             var binding = MakeProfile(VehicleTemplate.PassengerCar4, false, 0);
