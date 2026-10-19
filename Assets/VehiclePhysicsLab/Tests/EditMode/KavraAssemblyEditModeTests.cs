@@ -107,7 +107,7 @@ namespace Progesor.Kavra.Lab.Tests
             GameObject instance = null;
             try
             {
-                instance = VehicleAssemblyBuilder.Build(config);
+                instance = VehicleAssemblyBuilder.Build(config, false);
                 VehicleAssemblyRoot root = instance.GetComponent<VehicleAssemblyRoot>();
                 Assert.IsNotNull(root);
                 Assert.AreSame(config, root.Definition);
@@ -203,7 +203,7 @@ namespace Progesor.Kavra.Lab.Tests
             GameObject instance = null;
             try
             {
-                instance = VehicleAssemblyBuilder.Build(config);
+                instance = VehicleAssemblyBuilder.Build(config, false);
                 VehicleAssemblyRoot assembly = instance.GetComponent<VehicleAssemblyRoot>();
                 VehicleSimulationRoot tow = assembly.Tractor.GetComponent<VehicleSimulationRoot>();
                 VehicleSimulationRoot towed = assembly.Trailer.GetComponent<VehicleSimulationRoot>();
@@ -238,7 +238,7 @@ namespace Progesor.Kavra.Lab.Tests
             {
                 floor.transform.position = new Vector3(0f, -0.5f, 0f);
                 floor.transform.localScale = new Vector3(200f, 1f, 200f);
-                instance = VehicleAssemblyBuilder.Build(config);
+                instance = VehicleAssemblyBuilder.Build(config, false);
                 VehicleAssemblyRoot assembly = instance.GetComponent<VehicleAssemblyRoot>();
                 Rigidbody a = assembly.Tractor.GetComponent<Rigidbody>();
                 Rigidbody b = assembly.Trailer.GetComponent<Rigidbody>();
@@ -279,7 +279,7 @@ namespace Progesor.Kavra.Lab.Tests
             GameObject instance = null;
             try
             {
-                instance = VehicleAssemblyBuilder.Build(config);
+                instance = VehicleAssemblyBuilder.Build(config, false);
                 var assembly = instance.GetComponent<VehicleAssemblyRoot>();
                 Rigidbody tow = assembly.Tractor.GetComponent<Rigidbody>();
                 Rigidbody towed = assembly.Trailer.GetComponent<Rigidbody>();
@@ -307,7 +307,7 @@ namespace Progesor.Kavra.Lab.Tests
             GameObject instance = null;
             try
             {
-                instance = VehicleAssemblyBuilder.Build(config);
+                instance = VehicleAssemblyBuilder.Build(config, false);
                 var assembly = instance.GetComponent<VehicleAssemblyRoot>();
                 IVehicleAssemblyController api = assembly;
                 Assert.AreEqual(2, api.VehicleCount);

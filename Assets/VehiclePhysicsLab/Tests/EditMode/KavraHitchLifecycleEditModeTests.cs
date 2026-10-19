@@ -41,7 +41,7 @@ namespace Progesor.Kavra.Lab.Tests
 
         private VehicleAssemblyRoot MakeRig()
         {
-            assemblyObject = VehicleAssemblyBuilder.Build(definition);
+            assemblyObject = VehicleAssemblyBuilder.Build(definition, false);
             return assemblyObject.GetComponent<VehicleAssemblyRoot>();
         }
 

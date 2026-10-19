@@ -1353,14 +1353,15 @@ namespace Progesor.Kavra.Lab.Tests
                 ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
             try
             {
-                original = VehicleScaffoldBuilder.Create(definition, true);
+                original = VehicleScaffoldBuilder.Create(definition, true,
+                    VehicleDriveSource.LegacyDirectWheelTorque, false);
                 foreach (VehicleWheelAnchor anchor in
                          original.GetComponentsInChildren<VehicleWheelAnchor>())
                     Assert.IsNull(anchor.GetComponent<VehicleWheelVisualRig>());
 
                 definition.Powertrain = engine;
                 powered = VehicleScaffoldBuilder.Create(definition, true,
-                    VehicleDriveSource.SimplePowertrain);
+                    VehicleDriveSource.SimplePowertrain, false);
                 int visualRigs = powered.GetComponentsInChildren<VehicleWheelVisualRig>().Length;
                 int shocks = powered.GetComponentsInChildren<VehicleSuspensionVisualLink>().Length;
                 Assert.AreEqual(4, visualRigs);

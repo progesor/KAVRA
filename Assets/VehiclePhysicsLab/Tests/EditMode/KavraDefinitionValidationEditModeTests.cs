@@ -44,7 +44,8 @@ namespace Progesor.Kavra.Lab.Tests
                 config.ChassisMassKg = float.NaN;
                 Assert.IsTrue(HasErrors(config));
                 Assert.Throws<System.InvalidOperationException>(
-                    () => VehicleScaffoldBuilder.Create(config, true));
+                    () => VehicleScaffoldBuilder.Create(config, true,
+                        VehicleDriveSource.LegacyDirectWheelTorque, false));
                 config.ChassisMassKg = float.PositiveInfinity;
                 Assert.IsTrue(HasErrors(config));
 

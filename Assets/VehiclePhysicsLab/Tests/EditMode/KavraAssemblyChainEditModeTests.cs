@@ -63,7 +63,7 @@ namespace Progesor.Kavra.Lab.Tests
 
         private VehicleAssemblyChainRoot Build()
         {
-            sceneRoot = VehicleAssemblyChainBuilder.Build(chainDef);
+            sceneRoot = VehicleAssemblyChainBuilder.Build(chainDef, false);
             return sceneRoot.GetComponent<VehicleAssemblyChainRoot>();
         }
 

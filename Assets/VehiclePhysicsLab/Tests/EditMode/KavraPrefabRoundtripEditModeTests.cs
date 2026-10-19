@@ -78,7 +78,7 @@ namespace Progesor.Kavra.Lab.Tests
             AssetDatabase.SaveAssets();
 
             temporary = VehicleScaffoldBuilder.Create(vehicle, true,
-                VehicleDriveSource.SimplePowertrain);
+                VehicleDriveSource.SimplePowertrain, false);
             GameObject prefab = SaveAndLoad("SingleChassis");
             VehicleRoot root = prefab.GetComponent<VehicleRoot>();
             var simulation = prefab.GetComponent<VehicleSimulationRoot>();
@@ -115,7 +115,7 @@ namespace Progesor.Kavra.Lab.Tests
             Store(asset, "Assembly");
             AssetDatabase.SaveAssets();
 
-            temporary = VehicleAssemblyBuilder.Build(asset);
+            temporary = VehicleAssemblyBuilder.Build(asset, false);
             GameObject prefab = SaveAndLoad("TwoBody");
             var root = prefab.GetComponent<VehicleAssemblyRoot>();
             Assert.IsNotNull(root);
@@ -161,7 +161,7 @@ namespace Progesor.Kavra.Lab.Tests
             Store(chainAsset, "Chain");
             AssetDatabase.SaveAssets();
 
-            temporary = VehicleAssemblyChainBuilder.Build(chainAsset);
+            temporary = VehicleAssemblyChainBuilder.Build(chainAsset, false);
             GameObject prefab = SaveAndLoad("ThreeBody");
             var root = prefab.GetComponent<VehicleAssemblyChainRoot>();
             Assert.IsNotNull(root);
