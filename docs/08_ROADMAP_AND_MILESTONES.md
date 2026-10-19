@@ -86,6 +86,26 @@ testlerden geçiyor ve lab sürüşünde fonksiyonel görünüyor.
 [docs/24](24_M151_PHYSICSLAB_VISIBILITY.md) ·
 [docs/25](25_2026-10-17_CURRENT_STATE_AND_HANDOVER.md).
 
+### 19 Ekim 2026 — İlk gerçek Unity EditMode raporu (P0 AÇIK)
+
+- Unity 6000.3.18f1 test sonucu: **117 toplam; 111 PASS, 6 FAIL**.
+  M0/M1.4/M1.5 assembly doğrulama testleri çoğunlukla geçti;
+  dört prefab roundtrip ve on definition validation testi PASS.
+- Kalan altı hatanın kök nedenleri: null `ownBody` yüzünden statik
+  zeminin elenmesi (3), EditMode'da `SendMessage("OnJointBreak")`
+  native assertion'ı (2), physics-step öncesi `Transform.rotation`
+  üzerinden kontrol (1).
+- **Kaynak düzeltmesi eklendi; yeni Unity PASS sonucu yok.**
+  Ayrıca Unity 6.3 dokümanına aykırı `-runTests -quit` ikilisi
+  kabul betiğinden kaldırıldı, başarısız test adları raporlanıyor.
+- Kullanıcı, EditMode XML tamamlandıktan sonra Unity kapanmasının
+  crash olarak göründüğünü bildirdi. Gerçek kapanma sebebi yalnızca
+  XML'den anlaşılamıyor; `Editor.log` / crash raporu gerekiyor.
+- Açık kalanlar: güncel HEAD'le gerçek EditMode tekrar testi,
+  Play Mode H/J/L/K/R ve checker/hitch görsel kabulü,
+  olağandışı Editor kapanmasının log incelemesi.
+  [19 Ekim analiz](28_2026-10-19_P0_UNITY_TEST_RESULTS_AND_FIXES.md).
+
 ## 3. P1 — Çekirdeği ve modül arabirimlerini sağlamlaştır
 
 **Ürün hedefi:** Başka bir Unity projesi KAVRA'yı ekleyip, kopyalanmış

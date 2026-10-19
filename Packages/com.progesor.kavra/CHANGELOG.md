@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — 2026-10-19 wheel contact filter correction
+
+- Prevent treating static ground colliders as own-vehicle colliders
+  when `WheelContactProbe` receives a null `ownBody`.
+- Other physics behavior, braking, manual-only recovery, hitch solver,
+  serialized assets and UPM dependencies remain unchanged.
+- Source regression added in optional PhysicsLab host. First Unity
+  EditMode feedback (111/117 passed) prompted this change; **new
+  Unity test acceptance is not yet available**.
+
+
 ## Unreleased — shared host-facing assembly API
 
 - Additive `IVehicleAssemblyController` implemented by M1.4 and M1.5

@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased — 2026-10-19 Unity P0 test feedback (acceptance pending)
+
+- Received actual Unity 6.3 EditMode evidence: 111/117 PASS, 6 FAIL.
+  The P1 prefab roundtrip suite passed all four cases.
+- Fixed static collider exclusion when `ownBody` is null in wheel
+  contact/raycast queries, with a new regression case.
+- Reworked two EditMode joint-break callback tests to avoid native
+  `SendMessage` assertions; real solver breaks still need Play Mode.
+- Corrected M1.3 EditMode recovery assertions to check authoritative
+  `Rigidbody.rotation` instead of one-tick-stale `Transform.rotation`.
+- Removed incompatible `-quit` when running `-runTests` in Windows
+  acceptance script; added failed-case report and clearer log locations.
+- **Source/CI only after fixes; fresh Unity NUnit run and crash-log
+  diagnostics still pending.** Saved scenes/prefabs/CSV unchanged.
+
+
 ## Unreleased — P1 definition validation and prefab contract (2026-10-18)
 
 - Strictly validate numeric finiteness of chassis, wheel mounts/geometry

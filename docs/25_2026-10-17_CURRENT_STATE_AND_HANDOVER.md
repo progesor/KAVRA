@@ -1,5 +1,15 @@
 # KAVRA — 17 Ekim 2026 Proje Devir ve Güncel Durum Raporu
 
+> **19 Ekim Unity test güncellemesi:** İlk gerçek EditMode sonucu
+> **111/117 PASS, 6 FAIL**; statik zemin teması, EditMode joint-break
+> callback testleri ve Rigidbody/Transform poz karşılaştırması hedefli
+> düzeltildi. Unity test runner'da `-quit` kaldırıldı. Değişiklikler
+> sonraki Unity testiyle doğrulanana kadar **P0 kapanmış değildir**.
+> Test bitiminde bildirilen olağandışı Editor kapanmasının nedenini
+> XML kanıtlamıyor; Editor/crash logu gerekli. Güncel kayıt:
+> [docs/28](28_2026-10-19_P0_UNITY_TEST_RESULTS_AND_FIXES.md).
+>
+
 > **Yeni sohbet için ana referans belge.** Önce bunu oku; ardından
 > [güncel yol haritası](08_ROADMAP_AND_MILESTONES.md),
 > [ürün hedefleri](00_SCOPE_AND_GOALS.md) ve
@@ -352,3 +362,14 @@ açılmalı; daha önce doğrulanmış kullanıcı testleri silinmemelidir.
 - **Kaynakta hazır, Unity testi henüz koşturulmadı.** Issue #17
   ve PR #16 Draft açık. Kabul planı [docs/27](27_2026-10-18_P1_VALIDATION_AND_PREFAB_ACCEPTANCE.md).
 
+
+## 13. 19 Ekim 2026 — İlk gerçek Unity EditMode delili
+
+Kullanıcı `TestResults.xml` sağladı: Unity 6000.3.18f1, 117 vaka,
+111 başarılı, 6 başarısız. Bu sonuç KAVRA Test Runner assembly'sinin
+gerçekten derlenip yüklenebildiğini ve 117 testin çalıştığını gösterir;
+Unity Console'un tamamen hatasız olduğunu veya Play Mode'u kanıtlamaz.
+Prefab roundtrip 4/4 ve yeni veri doğrulama 10/10 geçti. Altı açık
+test vakası [docs/28](28_2026-10-19_P0_UNITY_TEST_RESULTS_AND_FIXES.md)
+altında analiz edilip düzeltme commitleri kaydedildi. Güncel kaynakta
+bu testler tekrar çalıştırılmadı; `docs/Telemetry/` korunuyor.
