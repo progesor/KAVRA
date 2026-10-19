@@ -130,6 +130,35 @@ namespace Progesor.Kavra.Editor
                             "Wheel node has no mesh renderer: " + path));
                         continue;
                     }
+                    // Warn when an imported model uses a different scale
+                    // or +Z forward convention from this VehicleDefinition.
+                    // Do not move wheel anchors or change source FBX settings.
+                    WheelDefinition wheelData = null;
+                    if (binding.Vehicle.Wheels != null)
+                        foreach (WheelDefinition configured in binding.Vehicle.Wheels)
+                            if (configured != null && configured.Id == item.WheelId)
+                            {
+                                wheelData = configured;
+                                break;
+                            }
+                    if (wheelData != null && Finite(binding.ModelScale) &&
+                        binding.ModelScale > 0f && Finite(binding.ModelLocalOffset) &&
+                        Finite(binding.ModelLocalEuler))
+                    {
+                        Vector3 sourceOffset = node.position - source.transform.position;
+                        Vector3 transformed = binding.ModelLocalOffset +
+                            Quaternion.Euler(binding.ModelLocalEuler) *
+                            (sourceOffset * binding.ModelScale);
+                        Vector3 error = transformed - wheelData.MountLocalPosition;
+                        float horizontal = Mathf.Sqrt(error.x * error.x + error.z * error.z);
+                        if (horizontal > 0.50f)
+                            issues.Add(new VehicleValidationIssue(ValidationSeverity.Warning,
+                                "Wheel " + item.WheelId + " imported pivot is " +
+                                horizontal.ToString("F2") + "m from its KAVRA " +
+                                "mount in X/Z. Check source units, +Z forward, " +
+                                "scale and offset before building."));
+                    }
+
                     usedPaths.Add(path);
                     mappedCount++;
                 }
