@@ -1,5 +1,149 @@
 # Changelog
 
+## Unreleased — P2.0 imported model visual binding (2026-10-19)
+
+- Added external FBX/model GameObject visual binding profile, validator,
+  dedicated Editor Wizard (also linked from Vehicle Setup Wizard), and
+  reusable prefab builder.
+- Mesh/material references are reused; imported body and separate wheel
+  meshes move into KAVRA's existing 3-pivot visual rig without copying
+  source physics/colliders/scripts or touching input, drivetrain, hitch
+  or manual R recovery.
+- Added 4W/6W/20W synthetic model regression, prefab save/reimport,
+  invalid source node mapping and scale-mismatch checks.
+- FBX first, GLB only once host imports it to a prefab via optional
+  importer; no core UPM dependency. Actual Unity P2 acceptance pending.
+- User confirmed resolved Undo/Test Runner native crash.
+
+
+## Unreleased — Unity native Test Runner Undo rollback mitigation (2026-10-19)
+
+- User reports all EditMode tests passed on a later local rerun, but
+  native Unity Editor crash occurred **after** results were saved.
+- Analyzed supplied compressed Unity crash report: Test Runner calls
+  `Undo.RevertAllDownToGroup`, native `Dereferencing NULL ImmediatePtr!`.
+- Editor scaffold, wheel visual, two-body and multi-trailer builders
+  now accept additive `recordUndo = true` argument.
+- Temporary NUnit test objects and prefab export staging explicitly
+  build with `recordUndo = false`, including nested pivots/hitches;
+  regular Editor interactive Undo remains available by default.
+- Source-only CI guard added. Native crash is not claimed fixed
+  until an actual Unity Test Runner rerun exits cleanly. No UPM
+  Runtime physics or user scenes/telemetry modified.
+
+
+## Unreleased — 2026-10-19 Unity P0 test feedback (acceptance pending)
+
+- Received actual Unity 6.3 EditMode evidence: 111/117 PASS, 6 FAIL.
+  The P1 prefab roundtrip suite passed all four cases.
+- Fixed static collider exclusion when `ownBody` is null in wheel
+  contact/raycast queries, with a new regression case.
+- Reworked two EditMode joint-break callback tests to avoid native
+  `SendMessage` assertions; real solver breaks still need Play Mode.
+- Corrected M1.3 EditMode recovery assertions to check authoritative
+  `Rigidbody.rotation` instead of one-tick-stale `Transform.rotation`.
+- Removed incompatible `-quit` when running `-runTests` in Windows
+  acceptance script; added failed-case report and clearer log locations.
+- **Source/CI only after fixes; fresh Unity NUnit run and crash-log
+  diagnostics still pending.** Saved scenes/prefabs/CSV unchanged.
+
+
+## Unreleased — P1 definition validation and prefab contract (2026-10-18)
+
+- Strictly validate numeric finiteness of chassis, wheel mounts/geometry
+  and optional engine/gearbox data; reject whitespace IDs and unknown
+  axle/wheel enum values, without rewriting original ScriptableObjects.
+- Added NUnit regression sources for corrupted configs and isolated
+  prefab save/reimport/load for 4W, 20W, two-body and multi-trailer.
+- Added Windows Unity 6000.3.18f1 EditMode acceptance runner; temp logs
+  and XML outside the repository. **Actual Unity acceptance still pending.**
+
+## Unreleased — P1 common assembly control API (source-only)
+
+- Both existing two-body and ordered chain roots now implement the
+  backward-compatible `IVehicleAssemblyController` API.
+- PhysicsLab keyboard H handler now consumes the common controller while
+  preserving existing manual hitch UI text and controls.
+- Added EditMode source regressions for zero-based links, read-only
+  attachment preflight and explicit H-only attach/detach behavior.
+- Repaired outdated 0.0.1 static bootstrap expectation; added
+  asmdef/MonoScript GUID guards and source-only CI workflow.
+- No PhysicsLab scenes, user CSV, recovery behavior or real solver
+  modifications. Unity compile and Play Mode remain unverified.
+
+
+## 0.1.6 assembly hotfix — 2026-10-17
+
+- Fixed CS0246 from KavraHitchLifecycleEditModeTests trying to reference
+  VehicleLabHitchGuide in the predefined Assembly-CSharp assembly.
+- Moved VehicleLabHitchGuide.cs into an isolated auto-referenced
+  Progesor.Kavra.Lab.HitchVisuals assembly definition that references
+  the KAVRA UPM runtime, then added this assembly to EditModeTests.asmdef.
+- Preserved the original MonoScript .meta GUID during the move so
+  serialized scenes retain their script component references.
+- No added UPM dependencies, Input System assembly requirements,
+  physics solver modifications or texture reimports.
+- Static assembly-reference graph and source/file GUID checks completed.
+  Actual Unity 6000.3.x recompile and EditMode Test Runner still pending.
+
+
+## 0.1.6 hotfix — 2026-10-17 (HitchGuide scene creation NRE)
+
+- Fixed a real Unity NullReferenceException reported during
+  `Tools > KAVRA > Create M1.5 Two-Trailer Lab Scene`.
+- `VehicleLabHitchGuide.Setup()` now creates its MaterialPropertyBlock
+  BEFORE coloring the first tractor/trailer hitch marker, even when
+  Unity Editor invokes Setup before MonoBehaviour.Awake.
+- `TintRenderer` also lazily initializes the block for domain-reload
+  or alternate setup paths.
+- Added a reproducer EditMode test forcibly resetting the color block
+  before Setup; verifies marker and line/capture-ring initialization.
+- Does not change hitch physics, road colors, CSV data or existing
+  saved Unity scenes. **Local Unity compiler/test verification pending.**
+
+
+## 0.1.6 — 2026-10-17 (M1.5.1 hitch usability / PhysicsLab visuals)
+
+- Made manual hitch capture easier: initial 0.15m -> 0.50m,
+  yaw 35deg -> 55deg; safe body/hitch approach velocities remain
+  required and all coupling is still explicitly triggered with H.
+- Versioned hitch settings migration updates only old default
+  tolerances, preserving user-customized link assets.
+- Added non-mutating VehicleCoupling.AssessAttach and runtime
+  VehicleHitchAssessment measurements for consistent UI diagnostics.
+- Added generated checker road material/texture, metric roadside/
+  centerline references, distinct matte vehicle colors and dark tires.
+- Added selected hitch-colored endpoints and connection guide lines,
+  circular capture radius and READY/TOO FAR/BAD ANGLE/TOO FAST readout.
+- Added optional subtle speed-dependent chase-camera FOV to articulated
+  PhysicsLab generators only. Prior saved M0/M1 scenes unchanged.
+- Added 4 new EditMode hitch capture/migration regression sources.
+- Generated assets live under Assets/VehiclePhysicsLab/Generated and
+  do not silently overwrite existing native .asset/.mat files.
+- Real Unity Editor import/Play Mode verification pending.
+
+
+## 0.1.5 — 2026-10-17 (M1.5 multiple trailers / chain assemblies)
+
+- Added ordered `VehicleAssemblyChainDefinition` and validation
+  requiring each link's Tractor to be the previous Trailer.
+- Added `VehicleAssemblyChainRoot` with 1..16 independent breakable
+  ConfigurableJoint links, user-selected attach/detach, lead-connected
+  vehicle count and brake relay that stops at a broken link.
+- Added per-member markers and R-only `VehicleAssemblyChainRecovery`.
+  Recover the connected lead prefix together while detached trailers
+  are left in place; preflight ground/support/clearance before movement.
+- Added Editor chain builder, Wizard, N-body prefab save and host
+  M1.5 6x6 tractor + two 4W trailers (14W/3 Rigidbody) lab.
+- Added J/L link selector, H manual hitch toggle and K real PhysX
+  impulse test on selected link; separate HUD.
+- Added nine EditMode source tests for topology, 3-body build,
+  brake propagation/breaking, selection and safe recovery.
+- Does NOT change M1.4 single-trailer logic, M0 scenes, existing telemetry,
+  powertrain/suspension or add auto-rollover help.
+- Unity import/compile, Test Runner and dynamic hitch chain tests pending.
+
+
 ## 0.1.4 — 2026-10-17 (manual trailer hitch + physical overload break)
 
 - Extended VehicleAssemblyDefinition with safe approach/yaw/body speed

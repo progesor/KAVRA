@@ -32,6 +32,13 @@ namespace Progesor.Kavra.Editor
         /// </summary>
         public static int Bind(GameObject vehicle, bool addDemonstrationShock)
         {
+            return Bind(vehicle, addDemonstrationShock, true);
+        }
+
+        /// <summary>Explicit opt-out for disposable mesh/pivot previews.</summary>
+        public static int Bind(GameObject vehicle, bool addDemonstrationShock,
+            bool recordUndo)
+        {
             if (vehicle == null) return 0;
             VehicleWheelAnchor[] mounts =
                 vehicle.GetComponentsInChildren<VehicleWheelAnchor>(true);
@@ -45,33 +52,40 @@ namespace Progesor.Kavra.Editor
                     ? mount.VisualTransform : mount.transform.Find("__WHEEL_PREVIEW");
                 if (mesh == null) continue;
 
-                GameObject travel = MakePivot("TravelPivot", mount.transform);
-                GameObject steering = MakePivot("SteeringPivot", travel.transform);
-                GameObject spin = MakePivot("SpinPivot", steering.transform);
+                GameObject travel = MakePivot("TravelPivot", mount.transform, recordUndo);
+                GameObject steering = MakePivot("SteeringPivot", travel.transform, recordUndo);
+                GameObject spin = MakePivot("SpinPivot", steering.transform, recordUndo);
 
-                Undo.SetTransformParent(mesh, spin.transform,
-                    "Bind wheel visual to KAVRA pivot rig");
+                if (recordUndo)
+                    Undo.SetTransformParent(mesh, spin.transform,
+                        "Bind wheel visual to KAVRA pivot rig");
+                else
+                    mesh.SetParent(spin.transform, true);
 
-                VehicleWheelVisualRig rig =
-                    Undo.AddComponent<VehicleWheelVisualRig>(mount.gameObject);
+                VehicleWheelVisualRig rig = recordUndo
+                    ? Undo.AddComponent<VehicleWheelVisualRig>(mount.gameObject)
+                    : mount.gameObject.AddComponent<VehicleWheelVisualRig>();
                 rig.TravelPivot = travel.transform;
                 rig.SteeringPivot = steering.transform;
                 rig.SpinPivot = spin.transform;
                 rig.CaptureInitialPose();
 
                 if (addDemonstrationShock)
-                    AddDemonstrationShock(mount, travel.transform);
+                    AddDemonstrationShock(mount, travel.transform, recordUndo);
 
-                EditorUtility.SetDirty(mount.gameObject);
+                if (recordUndo)
+                    EditorUtility.SetDirty(mount.gameObject);
                 linked++;
             }
             return linked;
         }
 
-        private static GameObject MakePivot(string name, Transform parent)
+        private static GameObject MakePivot(string name, Transform parent,
+            bool recordUndo)
         {
             var pivot = new GameObject(name);
-            Undo.RegisterCreatedObjectUndo(pivot, "Create KAVRA wheel visual pivot");
+            if (recordUndo)
+                Undo.RegisterCreatedObjectUndo(pivot, "Create KAVRA wheel visual pivot");
             pivot.transform.SetParent(parent, false);
             pivot.transform.localPosition = Vector3.zero;
             pivot.transform.localRotation = Quaternion.identity;
@@ -80,17 +94,18 @@ namespace Progesor.Kavra.Editor
         }
 
         private static void AddDemonstrationShock(
-            VehicleWheelAnchor anchor, Transform travel)
+            VehicleWheelAnchor anchor, Transform travel, bool recordUndo)
         {
             float offset = anchor.transform.localPosition.x < 0f ? 0.12f : -0.12f;
-            GameObject upper = MakePivot("ShockUpper", anchor.transform);
+            GameObject upper = MakePivot("ShockUpper", anchor.transform, recordUndo);
             upper.transform.localPosition = new Vector3(offset, 0.28f, 0.1f);
-            GameObject lower = MakePivot("ShockLower", travel);
+            GameObject lower = MakePivot("ShockLower", travel, recordUndo);
             lower.transform.localPosition = new Vector3(offset, 0.02f, 0.1f);
 
             GameObject rod = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             rod.name = "__SHOCK_PREVIEW";
-            Undo.RegisterCreatedObjectUndo(rod, "Create KAVRA shock visual");
+            if (recordUndo)
+                Undo.RegisterCreatedObjectUndo(rod, "Create KAVRA shock visual");
             rod.transform.SetParent(anchor.transform, false);
             rod.transform.localPosition = Vector3.zero;
             rod.transform.localRotation = Quaternion.identity;
@@ -98,8 +113,9 @@ namespace Progesor.Kavra.Editor
             Collider collider = rod.GetComponent<Collider>();
             if (collider != null) Object.DestroyImmediate(collider);
 
-            VehicleSuspensionVisualLink link =
-                Undo.AddComponent<VehicleSuspensionVisualLink>(anchor.gameObject);
+            VehicleSuspensionVisualLink link = recordUndo
+                ? Undo.AddComponent<VehicleSuspensionVisualLink>(anchor.gameObject)
+                : anchor.gameObject.AddComponent<VehicleSuspensionVisualLink>();
             link.UpperAttachment = upper.transform;
             link.LowerAttachment = lower.transform;
             link.LinkMesh = rod.transform;

@@ -3,11 +3,16 @@
   "rootNamespace": "Progesor.Kavra.Lab.Tests",
   "references": [
     "Progesor.Kavra.Runtime",
-    "Progesor.Kavra.Editor"
+    "Progesor.Kavra.Editor",
+    "Progesor.Kavra.Lab.HitchVisuals"
   ],
-  "includePlatforms": ["Editor"],
+  "includePlatforms": [
+    "Editor"
+  ],
   "excludePlatforms": [],
-  "optionalUnityReferences": ["TestAssemblies"],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
   "allowUnsafeCode": false,
   "autoReferenced": false,
   "noEngineReferences": false

@@ -111,7 +111,11 @@ namespace Progesor.Kavra
             {
                 RaycastHit hit = hits[i];
                 Collider collider = hit.collider;
-                if (collider == null || collider.attachedRigidbody == ownBody ||
+                // A static road has attachedRigidbody == null. If the caller
+                // has no ownBody (standalone probe / EditMode sensor), that
+                // must NOT filter out every static ground collider.
+                if (collider == null ||
+                    (ownBody != null && collider.attachedRigidbody == ownBody) ||
                     (ownVehicleRoot != null && collider.transform.IsChildOf(ownVehicleRoot)))
                     continue;
 

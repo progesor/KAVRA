@@ -120,6 +120,18 @@ namespace Progesor.Kavra.Editor
                                             "M0 direct torque is still available.",
                         MessageType.Info);
             }
+
+            GUILayout.Space(10f);
+            EditorGUILayout.LabelField("5. Imported 3D vehicle model (P2)",
+                EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Map an FBX/Unity model asset's chassis and separate wheel " +
+                "meshes to KAVRA physics anchors. A separate visual profile " +
+                "preserves the original model and VehicleDefinition.",
+                MessageType.None);
+            if (GUILayout.Button("Open Imported Model Binding Wizard",
+                GUILayout.Height(32f)))
+                KavraImportedModelWizardWindow.OpenFor(configuration);
         }
 
         private void DrawAxleDriveSettings()

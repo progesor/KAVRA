@@ -1,4 +1,4 @@
-# KAVRA embedded package (v0.1.4)
+# KAVRA embedded package (v0.1.6)
 
 Unity 6.3 LTS `com.progesor.kavra`. Core is UnityEngine-only and remains
 independent of rendering or input assets.
@@ -195,3 +195,113 @@ commands instead of repeatedly applying the tractor's controls.
 `VehicleAssemblyDefinition` upgrades old M1.3 serialized settings.
 The zero-value break thresholds mean Infinity/unbreakable on new
 definition assets.
+
+### M1.5 ordered multi-body vehicle chains
+
+`VehicleAssemblyChainDefinition` lists 1..16 ordered
+`VehicleAssemblyDefinition` edges. Each has a distinct tractor/trailer
+pair; edge i+1 reuses edge i's Trailer as its Tractor. Vehicle assets
+for different chassis nodes must be separate objects.
+
+Runtime `VehicleAssemblyChainRoot` holds arrays of separate VehicleRoot
+and VehicleCoupling objects. A fully connected chain has N vehicles
+and N-1 real ConfigurableJoint components. No fixed truck/wheel count.
+`TryAttachLink(i)`, `DetachLink(i)`, `SelectLink(i)`,
+`TryAttachSelected()`, `DetachSelected()` provide user-controlled
+lifecycle. A physically broken joint on one edge does not affect
+other joint ownership/state automatically.
+
+Basic service/parking brake signals propagate from the lead only
+through continuously connected links. All trailer wheel contact and
+suspension simulation still occurs independently per Rigidbody.
+`VehicleAssemblyChainRecovery` is reached only from deliberate R on
+lead driver input; it preflights and repositions ONLY the connected
+lead prefix (never the disconnected suffix).
+
+An Editor-only `VehicleAssemblyChainBuilder` and chain Wizard build
+and save N-body prefabs; PhysicsLab remains outside UPM. No extra runtime
+packages. This is an ordered convoy rather than a branched coupling graph.
+
+### M1.5.1 easier H capture (rendering remains host-only)
+
+`VehicleAssemblyDefinition` new defaults:
+`MaximumAttachErrorMeters=0.5` and
+`MaximumAttachYawDegrees=55`. Preflight speed/yaw/distance
+checks and explicitly triggered one-time snap are still mandatory.
+Old unchanged M1.4 values 0.15/35 migrate to new defaults; different
+user-authored tolerances remain unchanged.
+
+`VehicleCoupling.AssessAttach(tractorBody, settings,
+out VehicleHitchAssessment)` exposes the SAME checks used by
+`TryAttach`, but never adds a joint or moves a Rigidbody. The struct
+reports gap, heading difference, relative hitch velocity, max body
+speed and reason/status. This enables optional UI highlight/ready
+guides for consumers without depending on host materials.
+
+All checker road textures, shaders, vehicle colors, marker rendering
+and speed-sensitive FOV are optional PhysicsLab host scripts under
+`Assets/VehiclePhysicsLab`; the KAVRA UPM runtime remains
+renderer-/render-pipeline-/input-system-independent.
+
+## P1 development-only acceptance (2026-10-18)
+
+The host's optional EditMode tests now include
+`KavraDefinitionValidationEditModeTests` (corrupt ScriptableObject inputs)
+and `KavraPrefabRoundtripEditModeTests` (4W, 20W, two-body and N-body
+prefab reference retention). They create temporary Assets folders
+and delete only those folders after each run. They do not reside in or
+run as part of the portable UPM runtime.
+
+On Windows, close the running Editor and execute
+`scripts/Run-KavraUnityEditMode.ps1` from the repository root to
+collect an actual Unity 6.3 Test Runner result. No real Unity PASS
+has been received as of this source update.
+
+## Editor creation Undo policy — 19 October 2026
+
+Editor builders now expose an additive `recordUndo = true` argument:
+
+- `VehicleScaffoldBuilder.Create(configuration, dynamicPhysics, driveSource, recordUndo)`
+- `VehicleAssemblyBuilder.Build(definition, recordUndo)`
+- `VehicleAssemblyChainBuilder.Build(definition, recordUndo)`
+- `VehicleWheelVisualRigBuilder.Bind(vehicle, addDemonstrationShock, recordUndo)`
+
+Interactive scene construction defaults to true, maintaining Unity's
+normal Undo/Redo and selection workflow. Ephemeral prefab-export staging
+and EditMode regression tests pass false, so no Undo stack entries remain
+for objects which are immediately disposed. The option propagates to
+wheel pivot/shock building and hitch markers.
+
+No UPM Runtime physics, public serialized fields, manual H/R behavior,
+input/URP bindings, scene assets or stored telemetry were changed.
+The native Test Runner Undo rollback crash is **not considered fixed**
+until an actual Unity Editor rerun completes without a crash.
+
+
+## P2.0 — Imported FBX / model asset visual binding (source: 19 Oct 2026)
+
+Open `Tools > KAVRA > Vehicle Setup Wizard` and choose
+`Open Imported Model Binding Wizard` in section 5, or use
+`Tools > KAVRA > Imported Model Binding Wizard` directly.
+
+Assign an existing `VehicleDefinition`, create a separate
+`VehicleVisualBindingDefinition`, and choose a GameObject already
+imported by Unity (FBX or prefab). If a host installs an optional GLB
+importer such as Unity glTFast, GLB may also be used after import;
+KAVRA itself has no GLB/FBX SDK/Blender/URP dependency.
+
+Map each stable `WheelId` to an imported child Transform path. The
+node pivot should be at the wheel center. Adjust visual scale/Euler
+and offset; alignment mismatches >0.5m in X/Z warn without changing
+physics. Use scene build or save a **new** reusable prefab (no
+overwrites). Source mesh/material GUIDs are preserved by reference.
+
+This creates presentation-only meshes under each KAVRA
+`TravelPivot/SteeringPivot/SpinPivot` and a static imported body.
+No source colliders/physics/scripts are cloned. The existing physics
+BoxCollider remains (renderer optionally hidden). MeshFilter and
+MeshRenderer only; skinned/rigged geometry is unsupported in P2.0.
+
+Real Editor C# compilation and seven-suite TestRunner/Play Mode visual
+acceptance are **not yet confirmed**. Detail:
+`docs/30_2026-10-19_P20_IMPORTED_MODEL_BINDING.md`.

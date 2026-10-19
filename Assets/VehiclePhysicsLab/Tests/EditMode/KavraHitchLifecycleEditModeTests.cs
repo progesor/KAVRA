@@ -41,7 +41,7 @@ namespace Progesor.Kavra.Lab.Tests
 
         private VehicleAssemblyRoot MakeRig()
         {
-            assemblyObject = VehicleAssemblyBuilder.Build(definition);
+            assemblyObject = VehicleAssemblyBuilder.Build(definition, false);
             return assemblyObject.GetComponent<VehicleAssemblyRoot>();
         }
 
@@ -170,11 +170,16 @@ namespace Progesor.Kavra.Lab.Tests
             Assert.That(towed.ServiceBrake, Is.GreaterThan(0f));
             Assert.IsTrue(assembly.IsAttached);
 
-            // EditMode does not run a PhysX overload step. Simulate the
-            // Unity callback AFTER removing its joint; actual break force
-            // handling remains a separate Play Mode acceptance test.
+            // The EditMode runner cannot invoke the engine's native
+            // MonoBehaviour SendMessage dispatcher safely (ShouldRunBehaviour
+            // assertion). Invoke the same private callback through reflection
+            // after removing the joint. The real PhysX overload is PlayMode.
             Object.DestroyImmediate(assembly.Coupling.Joint);
-            assembly.Coupling.SendMessage("OnJointBreak", 12345f);
+            var callback = typeof(VehicleCoupling).GetMethod("OnJointBreak",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic);
+            Assert.IsNotNull(callback, "Unity joint-break callback was renamed.");
+            callback.Invoke(assembly.Coupling, new object[] { 12345f });
             Assert.IsFalse(assembly.IsAttached);
             Assert.AreEqual(VehicleHitchState.Broken, assembly.HitchState);
             Assert.AreEqual(1, assembly.Coupling.PhysicalBreakCount);
@@ -232,6 +237,169 @@ namespace Progesor.Kavra.Lab.Tests
             migrate.Invoke(definition, null);
             Assert.AreEqual(0f, definition.BreakForceNewtons);
             Assert.AreEqual(0f, definition.BreakTorqueNewtonMeters);
+        }
+
+        [Test]
+        public void M151HitchCaptureDefaultsAreUserFriendly()
+        {
+            Assert.That(definition.MaximumAttachErrorMeters,
+                Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(definition.MaximumAttachYawDegrees,
+                Is.EqualTo(55f).Within(0.0001f));
+            Assert.IsTrue(definition.AlignHitchesOnManualAttach);
+        }
+
+        [Test]
+        public void M151OldDefaultCaptureMigratesButCustomSettingsRemainUnchanged()
+        {
+            var field = typeof(VehicleAssemblyDefinition).GetField(
+                "hitchSettingsVersion",
+                System.Reflection.BindingFlags.NonPublic |
+                System.Reflection.BindingFlags.Instance);
+            var migration = typeof(VehicleAssemblyDefinition).GetMethod(
+                "UpgradeLegacyHitchSettings",
+                System.Reflection.BindingFlags.NonPublic |
+                System.Reflection.BindingFlags.Instance);
+            Assert.IsNotNull(field);
+            Assert.IsNotNull(migration);
+
+            // Old v0.1.4 defaults: convert to the more forgiving settings.
+            field.SetValue(definition, 1);
+            definition.MaximumAttachErrorMeters = 0.15f;
+            definition.MaximumAttachYawDegrees = 35f;
+            migration.Invoke(definition, null);
+            Assert.That(definition.MaximumAttachErrorMeters,
+                Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(definition.MaximumAttachYawDegrees,
+                Is.EqualTo(55f).Within(0.0001f));
+            Assert.AreEqual(2, (int)field.GetValue(definition));
+
+            // A user's hand-tuned asset is respected exactly.
+            field.SetValue(definition, 1);
+            definition.MaximumAttachErrorMeters = 0.28f;
+            definition.MaximumAttachYawDegrees = 41f;
+            migration.Invoke(definition, null);
+            Assert.That(definition.MaximumAttachErrorMeters,
+                Is.EqualTo(0.28f).Within(0.0001f));
+            Assert.That(definition.MaximumAttachYawDegrees,
+                Is.EqualTo(41f).Within(0.0001f));
+        }
+
+        [Test]
+        public void M151SharedAssessmentAndAttachAcceptFortyCentimeterManualCapture()
+        {
+            var assembly = MakeRig();
+            Rigidbody a = assembly.Tractor.GetComponent<Rigidbody>();
+            Rigidbody b = assembly.Trailer.GetComponent<Rigidbody>();
+            Assert.IsTrue(assembly.Detach());
+            a.linearVelocity = Vector3.zero;
+            b.linearVelocity = Vector3.zero;
+            b.position += Vector3.right * 0.40f;
+            Physics.SyncTransforms();
+
+            VehicleHitchAssessment result;
+            var status = assembly.Coupling.AssessAttach(
+                a, definition, out result);
+            Assert.AreEqual(VehicleCouplingResult.Connected, status);
+            Assert.IsTrue(result.ReadyToAttach);
+            Assert.That(result.HitchGapMeters,
+                Is.EqualTo(0.4f).Within(0.001f));
+            Assert.That(result.YawErrorDegrees, Is.LessThan(0.01f));
+
+            // Only the explicit attach command performs the snap.
+            Assert.AreEqual(VehicleCouplingResult.Connected,
+                assembly.TryAttach());
+            float aligned = VehicleAssemblyMath.CalculateHitchErrorMeters(
+                a.position, a.rotation, definition.TractorHitchLocal,
+                b.position, b.rotation, definition.TrailerHitchLocal);
+            Assert.That(aligned, Is.LessThan(0.0001f));
+            Assert.IsTrue(assembly.IsAttached);
+        }
+
+        [Test]
+        public void M151AssessmentDistinguishesTooFarAngleAndSpeed()
+        {
+            var assembly = MakeRig();
+            Rigidbody a = assembly.Tractor.GetComponent<Rigidbody>();
+            Rigidbody b = assembly.Trailer.GetComponent<Rigidbody>();
+            Assert.IsTrue(assembly.Detach());
+
+            b.position += Vector3.right * 0.85f;
+            Physics.SyncTransforms();
+            VehicleHitchAssessment result;
+            Assert.AreEqual(VehicleCouplingResult.AttachmentPointsSeparated,
+                assembly.Coupling.AssessAttach(a, definition, out result));
+            Assert.Greater(result.HitchGapMeters,
+                definition.MaximumAttachErrorMeters);
+
+            b.rotation = Quaternion.Euler(0f, 72f, 0f);
+            b.position = VehicleAssemblyMath.CalculateTrailerRootPosition(
+                a.position, a.rotation, definition.TractorHitchLocal,
+                b.rotation, definition.TrailerHitchLocal);
+            Physics.SyncTransforms();
+            Assert.AreEqual(VehicleCouplingResult.AttachmentYawMisaligned,
+                assembly.Coupling.AssessAttach(a, definition, out result));
+            Assert.Greater(result.YawErrorDegrees,
+                definition.MaximumAttachYawDegrees);
+
+            b.rotation = a.rotation;
+            b.position = VehicleAssemblyMath.CalculateTrailerRootPosition(
+                a.position, a.rotation, definition.TractorHitchLocal,
+                b.rotation, definition.TrailerHitchLocal);
+            a.linearVelocity = Vector3.right * 1.6f;
+            b.linearVelocity = Vector3.zero;
+            Physics.SyncTransforms();
+            Assert.AreEqual(VehicleCouplingResult.RelativeSpeedTooHigh,
+                assembly.Coupling.AssessAttach(a, definition, out result));
+
+            a.linearVelocity = Vector3.right * 2.0f;
+            Assert.AreEqual(VehicleCouplingResult.VehicleSpeedTooHigh,
+                assembly.Coupling.AssessAttach(a, definition, out result));
+        }
+
+        [Test]
+        public void M151EditorHitchGuideSetupWorksBeforeAwakeInitializesMaterialBlock()
+        {
+            var root = new GameObject("HitchGuide_EditMode_Test");
+            GameObject tractorMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            GameObject trailerMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            try
+            {
+                tractorMarker.transform.position = Vector3.zero;
+                trailerMarker.transform.position = Vector3.right * 0.4f;
+                VehicleLabHitchGuide guide = root.AddComponent<VehicleLabHitchGuide>();
+
+                // Even if AddComponent triggers Awake on some Unity versions,
+                // reproduce the precise user's scene-generator ordering:
+                // Setup is called with an UNINITIALIZED colorBlock.
+                var blockField = typeof(VehicleLabHitchGuide).GetField(
+                    "colorBlock",
+                    System.Reflection.BindingFlags.NonPublic |
+                    System.Reflection.BindingFlags.Instance);
+                Assert.IsNotNull(blockField);
+                blockField.SetValue(guide, null);
+
+                Assert.DoesNotThrow(() => guide.Setup(
+                    null, null,
+                    new[] { tractorMarker.transform },
+                    new[] { trailerMarker.transform },
+                    null));
+
+                Assert.AreEqual(1, guide.LinkCount);
+                Assert.IsNotNull(blockField.GetValue(guide));
+                Assert.IsNotNull(guide.Lines);
+                Assert.AreEqual(1, guide.Lines.Length);
+                Assert.IsNotNull(guide.Lines[0]);
+                Assert.IsNotNull(guide.CaptureRings[0]);
+                Assert.That(guide.SelectedHitchGapMeters(),
+                    Is.EqualTo(0.4f).Within(0.001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+                Object.DestroyImmediate(tractorMarker);
+                Object.DestroyImmediate(trailerMarker);
+            }
         }
 
     }

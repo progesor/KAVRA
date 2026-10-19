@@ -1,5 +1,79 @@
 # Changelog
 
+## Unreleased — P2.0 imported model binder (source-only)
+
+- New visual mapping ScriptableObject and read-only vehicle visual marker.
+- Editor-only mesh binding validator, dedicated Wizard and prefab
+  generator; no new physics body, extra collider or hard importer package.
+- Source meshes/materials referenced instead of duplicated. Existing
+  vehicle definitions, joints and user data unmodified.
+- Seven-suite Unity EditMode validation and real FBX visual acceptance pending.
+
+
+## Unreleased — 19 October 2026 (Editor-only Undo lifecycle fix)
+
+- Editor vehicle/assembly/visual builders now support optional
+  Undo-free temporary generation. Normal scene operations preserve
+  previous Undo/Redo behavior by default.
+- Prefab staging uses ordinary temporary objects with no Undo
+  registration. Test cleanup no longer destroys Undo-registered
+  temporary hierarchies made by KAVRA.
+- No changes in Runtime C#, serialized configuration, GUIDs,
+  H/K coupling, manual R recovery or package dependencies.
+- Unity 6.3 Editor native rollback crash **requires rerun**.
+
+
+## Unreleased — 2026-10-19 wheel contact filter correction
+
+- Prevent treating static ground colliders as own-vehicle colliders
+  when `WheelContactProbe` receives a null `ownBody`.
+- Other physics behavior, braking, manual-only recovery, hitch solver,
+  serialized assets and UPM dependencies remain unchanged.
+- Source regression added in optional PhysicsLab host. First Unity
+  EditMode feedback (111/117 passed) prompted this change; **new
+  Unity test acceptance is not yet available**.
+
+
+## Unreleased — shared host-facing assembly API
+
+- Additive `IVehicleAssemblyController` implemented by M1.4 and M1.5
+  roots; consistent link queries and explicit manual control.
+- No serialized field changes, assembly physics changes or new package
+  dependency. Unity compiler and Test Runner acceptance pending.
+
+
+## Unreleased — 2026-10-18 P1 guardrails (source only)
+
+- Non-finite configuration parameters and malformed IDs are now rejected
+  by validation before prefab construction. Legacy valid assets stay valid.
+- Host EditMode roundtrip tests cover independent rigidbodies and joint
+  references after prefab save/reimport/load. Unity results pending.
+- Package version remains v0.1.6 until acceptance.
+
+## [0.1.6] — 2026-10-17
+
+- More forgiving manual assembly hitch defaults (0.5m / 55deg).
+- Versioned migration for older default tolerance values.
+- Shared read-only hitch assessment result and measurements, consistent
+  with active TryAttach preflight; no automatic attachment or
+  new physics corrections.
+- Editor-host PhysicsLab visuals (checker surface/colored chassis and
+  hitch guide) added outside UPM.
+- Added 4 EditMode capture/migration regression tests.
+- Source/static inspections completed; Unity actual tests pending.
+
+
+## [0.1.5] — 2026-10-17
+
+- Added ordered chain definition/validator, N-body runtime/Editor builder
+  and per-link coupling selection with existing breakable hitch components.
+- Added braking relay through lead-connected prefix and manual recovery
+  of that prefix without moving any detached suffix vehicle.
+- Added 14-wheel, 3-Rigidbody multi-trailer PhysicsLab and source tests.
+- Preserved all previous scenes and UPM dependencies.
+- Unity Editor compilation/Play Mode still needs user verification.
+
+
 ## [0.1.4] — 2026-10-17
 
 - Added position/yaw/speed-limited manual hitch attachment and detachment.

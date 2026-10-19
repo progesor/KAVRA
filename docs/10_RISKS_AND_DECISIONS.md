@@ -1,5 +1,15 @@
 # 10 — Karar kayıtları, riskler ve ertelenen işler
 
+> **Eski ADR/risk matrisi arşiv değerindedir.** Bazı 13 Ekim 2026
+> riskleri (örneğin "multi-body çok erken") o tarihte gelecekteydi,
+> fakat 17 Ekim itibarıyla gerçek çok gövdeli VehicleAssembly ve
+> M1.5 ordered chains **kaynakta uygulanmış** durumda.
+> Güncel karar, öncelik ve Unity kabulü için
+> [docs/00](00_SCOPE_AND_GOALS.md),
+> [docs/08](08_ROADMAP_AND_MILESTONES.md),
+> [docs/25](25_2026-10-17_CURRENT_STATE_AND_HANDOVER.md) esas alınır.
+> Özellikle **otomatik devrilme düzeltmesi yok; sadece manuel R**.
+
 ## Architecture Decision Records
 
 ### ADR-001 — Kendi wheel tire force modelimiz

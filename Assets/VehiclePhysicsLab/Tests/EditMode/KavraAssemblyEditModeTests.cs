@@ -107,7 +107,7 @@ namespace Progesor.Kavra.Lab.Tests
             GameObject instance = null;
             try
             {
-                instance = VehicleAssemblyBuilder.Build(config);
+                instance = VehicleAssemblyBuilder.Build(config, false);
                 VehicleAssemblyRoot root = instance.GetComponent<VehicleAssemblyRoot>();
                 Assert.IsNotNull(root);
                 Assert.AreSame(config, root.Definition);
@@ -203,7 +203,7 @@ namespace Progesor.Kavra.Lab.Tests
             GameObject instance = null;
             try
             {
-                instance = VehicleAssemblyBuilder.Build(config);
+                instance = VehicleAssemblyBuilder.Build(config, false);
                 VehicleAssemblyRoot assembly = instance.GetComponent<VehicleAssemblyRoot>();
                 VehicleSimulationRoot tow = assembly.Tractor.GetComponent<VehicleSimulationRoot>();
                 VehicleSimulationRoot towed = assembly.Trailer.GetComponent<VehicleSimulationRoot>();
@@ -238,7 +238,7 @@ namespace Progesor.Kavra.Lab.Tests
             {
                 floor.transform.position = new Vector3(0f, -0.5f, 0f);
                 floor.transform.localScale = new Vector3(200f, 1f, 200f);
-                instance = VehicleAssemblyBuilder.Build(config);
+                instance = VehicleAssemblyBuilder.Build(config, false);
                 VehicleAssemblyRoot assembly = instance.GetComponent<VehicleAssemblyRoot>();
                 Rigidbody a = assembly.Tractor.GetComponent<Rigidbody>();
                 Rigidbody b = assembly.Trailer.GetComponent<Rigidbody>();
@@ -256,8 +256,11 @@ namespace Progesor.Kavra.Lab.Tests
                 var result = VehicleManualRecovery.TryRecover(
                     assembly.Tractor.GetComponent<VehicleSimulationRoot>());
                 Assert.AreEqual(VehicleRecoveryResult.Success, result);
-                Assert.Greater(Vector3.Dot(a.transform.up, Vector3.up), 0.999f);
-                Assert.Greater(Vector3.Dot(b.transform.up, Vector3.up), 0.999f);
+                // Rigidbody.rotation is the authoritative physics pose in
+                // EditMode; Transform.rotation can remain stale until Unity's
+                // NEXT simulation tick after a Rigidbody teleport.
+                Assert.Greater(Vector3.Dot(a.rotation * Vector3.up, Vector3.up), 0.999f);
+                Assert.Greater(Vector3.Dot(b.rotation * Vector3.up, Vector3.up), 0.999f);
                 float error = VehicleAssemblyMath.CalculateHitchErrorMeters(
                     a.position, a.rotation, config.TractorHitchLocal,
                     b.position, b.rotation, config.TrailerHitchLocal);
@@ -276,7 +279,7 @@ namespace Progesor.Kavra.Lab.Tests
             GameObject instance = null;
             try
             {
-                instance = VehicleAssemblyBuilder.Build(config);
+                instance = VehicleAssemblyBuilder.Build(config, false);
                 var assembly = instance.GetComponent<VehicleAssemblyRoot>();
                 Rigidbody tow = assembly.Tractor.GetComponent<Rigidbody>();
                 Rigidbody towed = assembly.Trailer.GetComponent<Rigidbody>();
@@ -294,5 +297,48 @@ namespace Progesor.Kavra.Lab.Tests
             }
             finally { Cleanup(instance, config, tractor, trailer, motor); }
         }
+        [Test]
+        public void M13CommonControlApiPreservesExplicitHitchCommands()
+        {
+            VehicleDefinition tractor, trailer;
+            SimplePowertrainDefinition motor;
+            VehicleAssemblyDefinition config =
+                MakeAssembly(out tractor, out trailer, out motor);
+            GameObject instance = null;
+            try
+            {
+                instance = VehicleAssemblyBuilder.Build(config, false);
+                var assembly = instance.GetComponent<VehicleAssemblyRoot>();
+                IVehicleAssemblyController api = assembly;
+                Assert.AreEqual(2, api.VehicleCount);
+                Assert.AreEqual(1, api.LinkCount);
+                Assert.AreSame(assembly.Tractor, api.GetVehicle(0));
+                Assert.AreSame(assembly.Trailer, api.GetVehicle(1));
+                Assert.AreSame(assembly.Coupling, api.GetCoupling(0));
+                Assert.IsNull(api.GetVehicle(-1));
+                Assert.IsNull(api.GetCoupling(1));
+                Assert.AreEqual(2, api.ConnectedLeadVehicleCount());
+                VehicleHitchAssessment assessment;
+                Assert.AreEqual(VehicleCouplingResult.AlreadyAttached,
+                    api.AssessAttachLink(0, out assessment));
+                Assert.IsTrue(api.DetachLink(0));
+                Assert.AreEqual(1, api.ConnectedLeadVehicleCount());
+                Assert.AreEqual(VehicleHitchState.Detached, api.GetLinkState(0));
+                Assert.AreEqual(VehicleCouplingResult.Connected,
+                    api.AssessAttachLink(0, out assessment));
+                Assert.IsTrue(assessment.ReadyToAttach);
+                Assert.IsFalse(api.IsLinkAttached(0)); // query cannot reattach
+                Assert.AreEqual(VehicleCouplingResult.Connected,
+                    api.TryAttachLink(0));
+                Assert.IsTrue(api.IsLinkAttached(0));
+                Assert.AreEqual(VehicleCouplingResult.InvalidConfiguration,
+                    api.TryAttachLink(1));
+                Assert.AreEqual(VehicleCouplingResult.InvalidConfiguration,
+                    api.AssessAttachLink(-1, out assessment));
+                Assert.IsFalse(api.DetachLink(1));
+            }
+            finally { Cleanup(instance, config, tractor, trailer, motor); }
+        }
+
     }
 }

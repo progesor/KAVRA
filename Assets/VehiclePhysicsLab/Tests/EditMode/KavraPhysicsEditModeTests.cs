@@ -277,6 +277,30 @@ namespace Progesor.Kavra.Lab.Tests
             Assert.That(transfer, Is.EqualTo(rightSpring));
         }
 
+        [Test]
+        public void NullOwnBodyDoesNotExcludeStaticRoadFromContactProbe()
+        {
+            GameObject road = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                road.transform.position = new Vector3(73f, -0.5f, 0f);
+                road.transform.localScale = new Vector3(10f, 1f, 10f);
+                road.layer = 30;
+                Physics.SyncTransforms();
+
+                RaycastHit hit;
+                bool found = WheelContactProbe.TryRaycast(
+                    new Vector3(73f, 1.4f, 0f), Vector3.down, 3f,
+                    1 << 30, null, null, new RaycastHit[16], out hit);
+                Assert.IsTrue(found, "Null ownBody must not reject static ground.");
+                Assert.AreSame(road.GetComponent<Collider>(), hit.collider);
+            }
+            finally
+            {
+                Object.DestroyImmediate(road);
+            }
+        }
+
         [TestCase(WheelContactMode.Raycast)]
         [TestCase(WheelContactMode.SphereCastWithRayFallback)]
         public void WheelContactKeepsDistanceAtStaticRideHeight(WheelContactMode mode)
@@ -1329,14 +1353,15 @@ namespace Progesor.Kavra.Lab.Tests
                 ScriptableObject.CreateInstance<SimplePowertrainDefinition>();
             try
             {
-                original = VehicleScaffoldBuilder.Create(definition, true);
+                original = VehicleScaffoldBuilder.Create(definition, true,
+                    VehicleDriveSource.LegacyDirectWheelTorque, false);
                 foreach (VehicleWheelAnchor anchor in
                          original.GetComponentsInChildren<VehicleWheelAnchor>())
                     Assert.IsNull(anchor.GetComponent<VehicleWheelVisualRig>());
 
                 definition.Powertrain = engine;
                 powered = VehicleScaffoldBuilder.Create(definition, true,
-                    VehicleDriveSource.SimplePowertrain);
+                    VehicleDriveSource.SimplePowertrain, false);
                 int visualRigs = powered.GetComponentsInChildren<VehicleWheelVisualRig>().Length;
                 int shocks = powered.GetComponentsInChildren<VehicleSuspensionVisualLink>().Length;
                 Assert.AreEqual(4, visualRigs);

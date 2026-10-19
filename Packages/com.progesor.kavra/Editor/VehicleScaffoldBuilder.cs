@@ -10,9 +10,22 @@ namespace Progesor.Kavra.Editor
     /// </summary>
     public static class VehicleScaffoldBuilder
     {
+        // Exact legacy signature is preserved for method-group/delegate
+        // consumers as well as source calls with optional arguments.
         public static GameObject Create(VehicleDefinition configuration,
             bool dynamicPhysics = false,
             VehicleDriveSource driveSource = VehicleDriveSource.LegacyDirectWheelTorque)
+        {
+            return Create(configuration, dynamicPhysics, driveSource, true);
+        }
+
+        /// <summary>
+        /// Explicit temporary-build overload. Pass false for disposable
+        /// NUnit/prefab stages so Unity Test Runner Undo rollback has no
+        /// references to objects deleted by DestroyImmediate.
+        /// </summary>
+        public static GameObject Create(VehicleDefinition configuration,
+            bool dynamicPhysics, VehicleDriveSource driveSource, bool recordUndo)
         {
             if (dynamicPhysics && driveSource == VehicleDriveSource.SimplePowertrain &&
                 (configuration == null || configuration.Powertrain == null))
@@ -26,10 +39,18 @@ namespace Progesor.Kavra.Editor
                     throw new System.InvalidOperationException("KAVRA invalid vehicle: " + issue.Message);
 
             var root = new GameObject("KAVRA_" + configuration.VehicleName);
-            Undo.RegisterCreatedObjectUndo(root, "Create KAVRA vehicle");
-            var vehicleRoot = Undo.AddComponent<VehicleRoot>(root);
+            // Persisted Editor scene creation remains Undo-able by default.
+            // Temporary test/prefab construction opts out so a later
+            // Test Runner Undo rollback never touches destroyed objects.
+            if (recordUndo)
+                Undo.RegisterCreatedObjectUndo(root, "Create KAVRA vehicle");
+            var vehicleRoot = recordUndo
+                ? Undo.AddComponent<VehicleRoot>(root)
+                : root.AddComponent<VehicleRoot>();
             vehicleRoot.Definition = configuration;
-            var body = Undo.AddComponent<Rigidbody>(root);
+            var body = recordUndo
+                ? Undo.AddComponent<Rigidbody>(root)
+                : root.AddComponent<Rigidbody>();
             body.mass = configuration.ChassisMassKg;
             body.centerOfMass = configuration.CenterOfMassLocal;
             body.interpolation = RigidbodyInterpolation.Interpolate;
@@ -93,18 +114,23 @@ namespace Progesor.Kavra.Editor
             if (dynamicPhysics)
             {
                 body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-                var simulation = Undo.AddComponent<VehicleSimulationRoot>(root);
+                var simulation = recordUndo
+                    ? Undo.AddComponent<VehicleSimulationRoot>(root)
+                    : root.AddComponent<VehicleSimulationRoot>();
                 simulation.DriveSource = driveSource;
 
                 // Only new M1 scaffolds gain the transform rig by default.
                 // Existing M0 scenes/prefabs retain their original single-
                 // cylinder visual behavior for backward compatibility.
                 if (driveSource == VehicleDriveSource.SimplePowertrain)
-                    VehicleWheelVisualRigBuilder.Bind(root, true);
+                    VehicleWheelVisualRigBuilder.Bind(root, true, recordUndo);
             }
 
-            Selection.activeGameObject = root;
-            EditorGUIUtility.PingObject(root);
+            if (recordUndo)
+            {
+                Selection.activeGameObject = root;
+                EditorGUIUtility.PingObject(root);
+            }
             return root;
         }
     }
