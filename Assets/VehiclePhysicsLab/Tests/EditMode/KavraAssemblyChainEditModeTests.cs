@@ -181,8 +181,15 @@ namespace Progesor.Kavra.Lab.Tests
                 .SetInputs(0f, 0f, 0.7f, 0.5f);
             chain.PropagateBrakes();
 
+            // EditMode must not dispatch native MonoBehaviour messages;
+            // SendMessage("OnJointBreak") causes ShouldRunBehaviour asserts.
+            // Check our callback logic directly; real solver breaks are PlayMode.
             Object.DestroyImmediate(chain.Couplings[0].Joint);
-            chain.Couplings[0].SendMessage("OnJointBreak", 160000f);
+            var callback = typeof(VehicleCoupling).GetMethod("OnJointBreak",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic);
+            Assert.IsNotNull(callback, "Unity joint-break callback was renamed.");
+            callback.Invoke(chain.Couplings[0], new object[] { 160000f });
             Assert.IsFalse(chain.IsLinkAttached(0));
             Assert.IsTrue(chain.IsLinkAttached(1));
             Assert.AreEqual(1, chain.ConnectedLeadVehicleCount());

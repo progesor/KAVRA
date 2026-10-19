@@ -256,8 +256,11 @@ namespace Progesor.Kavra.Lab.Tests
                 var result = VehicleManualRecovery.TryRecover(
                     assembly.Tractor.GetComponent<VehicleSimulationRoot>());
                 Assert.AreEqual(VehicleRecoveryResult.Success, result);
-                Assert.Greater(Vector3.Dot(a.transform.up, Vector3.up), 0.999f);
-                Assert.Greater(Vector3.Dot(b.transform.up, Vector3.up), 0.999f);
+                // Rigidbody.rotation is the authoritative physics pose in
+                // EditMode; Transform.rotation can remain stale until Unity's
+                // NEXT simulation tick after a Rigidbody teleport.
+                Assert.Greater(Vector3.Dot(a.rotation * Vector3.up, Vector3.up), 0.999f);
+                Assert.Greater(Vector3.Dot(b.rotation * Vector3.up, Vector3.up), 0.999f);
                 float error = VehicleAssemblyMath.CalculateHitchErrorMeters(
                     a.position, a.rotation, config.TractorHitchLocal,
                     b.position, b.rotation, config.TrailerHitchLocal);

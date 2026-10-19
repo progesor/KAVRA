@@ -170,11 +170,16 @@ namespace Progesor.Kavra.Lab.Tests
             Assert.That(towed.ServiceBrake, Is.GreaterThan(0f));
             Assert.IsTrue(assembly.IsAttached);
 
-            // EditMode does not run a PhysX overload step. Simulate the
-            // Unity callback AFTER removing its joint; actual break force
-            // handling remains a separate Play Mode acceptance test.
+            // The EditMode runner cannot invoke the engine's native
+            // MonoBehaviour SendMessage dispatcher safely (ShouldRunBehaviour
+            // assertion). Invoke the same private callback through reflection
+            // after removing the joint. The real PhysX overload is PlayMode.
             Object.DestroyImmediate(assembly.Coupling.Joint);
-            assembly.Coupling.SendMessage("OnJointBreak", 12345f);
+            var callback = typeof(VehicleCoupling).GetMethod("OnJointBreak",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic);
+            Assert.IsNotNull(callback, "Unity joint-break callback was renamed.");
+            callback.Invoke(assembly.Coupling, new object[] { 12345f });
             Assert.IsFalse(assembly.IsAttached);
             Assert.AreEqual(VehicleHitchState.Broken, assembly.HitchState);
             Assert.AreEqual(1, assembly.Coupling.PhysicalBreakCount);
