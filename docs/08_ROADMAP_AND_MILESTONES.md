@@ -1,6 +1,15 @@
 # KAVRA — Güncel yol haritası, teslim hedefleri ve kabul kriterleri
 
 **Tek güncel roadmap — 17 Ekim 2026**  
+
+**19 Ekim native crash ek kaydı:** Kullanıcının sonraki çalıştırmasında
+EditMode testlerinin tamamı geçtiği bildirildi; Unity yine kapandı.
+Sıkıştırılmış crash raporunda `Undo.RevertAllDownToGroup` çağrısındaki
+native `Dereferencing NULL ImmediatePtr!` doğrulandı. Geçici Editor
+objelerinin Undo kaydı ile `DestroyImmediate` birleşimine yönelik
+kaynak düzeltmesi yapıldı. **Crash-free Unity tekrar kabulü bekliyor.**
+[Detaylı rapor](29_2026-10-19_NATIVE_EDITOR_UNDO_CRASH.md).
+
 **Aktif dal:** `feat/m15-multitrailer-chain` · **Kaynak paket:** v0.1.6  
 **Bağlantılar:** [Vizyon](00_SCOPE_AND_GOALS.md) ·
 [Yeni sohbet/devir](25_2026-10-17_CURRENT_STATE_AND_HANDOVER.md)
@@ -107,6 +116,25 @@ testlerden geçiyor ve lab sürüşünde fonksiyonel görünüyor.
   [19 Ekim analiz](28_2026-10-19_P0_UNITY_TEST_RESULTS_AND_FIXES.md).
 
 ## 3. P1 — Çekirdeği ve modül arabirimlerini sağlamlaştır
+
+### 19 Ekim native Test Runner rollback düzeltmesi — kabul bekliyor
+
+- Kullanıcı yeni turda **tüm EditMode testlerinin geçtiğini** bildirdi;
+  tam NUnit XML eklenmediği için toplam/passed sayısını bu kayıtta
+  yeniden doğrulanmış gibi göstermiyoruz.
+- Kullanıcının sağladığı `CrashReport2026-10-19_074234331.json.gz`:
+  `has_native_crash=true`, `has_managed_exception=false`.
+  Test çıktı kaydı ve PerformanceTesting cleanup sonrasında native
+  `Dereferencing NULL ImmediatePtr!` ve managed
+  `UnityEditor.Undo.RevertAllDownToGroup` gözlendi.
+- Araç, wheel visual, iki-gövde ve chain Editor üreticilerine
+  varsayılanı **true** olan `recordUndo` opsiyonu eklendi. Geçici
+  prefab/test oluşturma `false` kullanıyor; normal kullanıcı
+  sahne üretiminde Undo korunuyor.
+- Kaynak doğrulayıcı yeni Undo-sız geçici üretim yolunu denetliyor;
+  **Unity crash'in gerçekten kalktığı henüz gözlenmedi**.
+  [docs/29](29_2026-10-19_NATIVE_EDITOR_UNDO_CRASH.md).
+
 
 **Ürün hedefi:** Başka bir Unity projesi KAVRA'yı ekleyip, kopyalanmış
 host test sınıflarına mecbur kalmadan mevcut otomobil/çok akslı

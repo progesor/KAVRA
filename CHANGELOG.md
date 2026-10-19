@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased — Unity native Test Runner Undo rollback mitigation (2026-10-19)
+
+- User reports all EditMode tests passed on a later local rerun, but
+  native Unity Editor crash occurred **after** results were saved.
+- Analyzed supplied compressed Unity crash report: Test Runner calls
+  `Undo.RevertAllDownToGroup`, native `Dereferencing NULL ImmediatePtr!`.
+- Editor scaffold, wheel visual, two-body and multi-trailer builders
+  now accept additive `recordUndo = true` argument.
+- Temporary NUnit test objects and prefab export staging explicitly
+  build with `recordUndo = false`, including nested pivots/hitches;
+  regular Editor interactive Undo remains available by default.
+- Source-only CI guard added. Native crash is not claimed fixed
+  until an actual Unity Test Runner rerun exits cleanly. No UPM
+  Runtime physics or user scenes/telemetry modified.
+
+
 ## Unreleased — 2026-10-19 Unity P0 test feedback (acceptance pending)
 
 - Received actual Unity 6.3 EditMode evidence: 111/117 PASS, 6 FAIL.

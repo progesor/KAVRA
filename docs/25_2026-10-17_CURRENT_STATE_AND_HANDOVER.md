@@ -373,3 +373,24 @@ Prefab roundtrip 4/4 ve yeni veri doğrulama 10/10 geçti. Altı açık
 test vakası [docs/28](28_2026-10-19_P0_UNITY_TEST_RESULTS_AND_FIXES.md)
 altında analiz edilip düzeltme commitleri kaydedildi. Güncel kaynakta
 bu testler tekrar çalıştırılmadı; `docs/Telemetry/` korunuyor.
+
+## 14. 19 Ekim 2026 native Unity Undo crash sonucu
+
+Kullanıcı, yeni EditMode test turunda **bütün testlerin geçtiğini**,
+ancak Unity'nin kapanırken tekrar crash verdiğini bildirdi. Yüklediği
+`CrashReport2026-10-19_074234331.json.gz` doğrudan incelendi:
+- Native crash gerçek; `has_native_crash: true`.
+- Test sonuçları kaydedildikten ve `IPostBuildCleanup` bittikten
+  sonra `Dereferencing NULL ImmediatePtr!` oluştu.
+- Crash stack: `UnityEditor.Undo.RevertAllDownToGroup` →
+  `TestJobRunner.ExecuteStep`. Son dosyada tam NUnit XML bulunmadığından
+  sadece kullanıcı bildirimi ile tüm testler PASS olarak değerlendiriliyor.
+- Çok sayıda Editor builder'da Undo ile oluşturulup test
+  teardown'da `DestroyImmediate` ile silinen geçici objeler olası
+  tetikleyici olarak saptandı; GUI Undo'yu koruyan
+  `recordUndo = true` varsayılanıyla birlikte geçici kullanım için
+  `false` modu eklendi. **Kaynak düzeltmesi, henüz Unity'de
+  crash-free olarak kabul edilmedi.**
+- Ana framework Physics/telemetry/scriptable definition ve bütün
+  `.unity`, `.prefab`, `docs/Telemetry/` dosyaları korunmuştur.
+- Yeni devir referansı: [docs/29](29_2026-10-19_NATIVE_EDITOR_UNDO_CRASH.md).

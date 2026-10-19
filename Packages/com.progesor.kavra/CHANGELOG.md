@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — 19 October 2026 (Editor-only Undo lifecycle fix)
+
+- Editor vehicle/assembly/visual builders now support optional
+  Undo-free temporary generation. Normal scene operations preserve
+  previous Undo/Redo behavior by default.
+- Prefab staging uses ordinary temporary objects with no Undo
+  registration. Test cleanup no longer destroys Undo-registered
+  temporary hierarchies made by KAVRA.
+- No changes in Runtime C#, serialized configuration, GUIDs,
+  H/K coupling, manual R recovery or package dependencies.
+- Unity 6.3 Editor native rollback crash **requires rerun**.
+
+
 ## Unreleased — 2026-10-19 wheel contact filter correction
 
 - Prevent treating static ground colliders as own-vehicle colliders
