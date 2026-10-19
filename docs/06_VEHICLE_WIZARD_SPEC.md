@@ -69,3 +69,30 @@ asset'i oluşturmuyor (şimdilik **Scene** GameObject üretiyor).
 
 Kısmen çakışan `VehicleDefinition` mevcut M0 asset yapısını kırmadan
 migration planı ile evrimleştirilmeli.
+
+
+## P2.0 imported model Visual Binding — source implemented 19 Oct 2026
+
+The existing M0/M1 instructions above are historical. The new menu
+`Tools > KAVRA > Imported Model Binding Wizard` is additionally linked
+from section 5 of Vehicle Setup Wizard.
+
+This creates a separate `VehicleVisualBindingDefinition` with a
+Unity-imported FBX/model prefab asset, alignment offset/rotation/scale,
+and WheelId-to-model-node paths. Validator provides errors for missing
+assets, duplicate/overlapping wheel visual nodes, malformed dimensions
+and unsupported skinned renderers. An optional name matcher suggests
+obvious WheelIds; manual selection remains authoritative.
+
+`VehicleImportedVisualBuilder` builds one standard KAVRA physical
+chassis and separate renderer-only body/wheels, preserving mesh and
+material references, and animating mapped wheels under existing
+TravelPivot, SteeringPivot and SpinPivot. The physics test BoxCollider
+remains, even if its Renderer is disabled. No original FBX or
+VehicleDefinition asset is modified.
+
+Supported in source: 3–20W layouts, MeshFilter/MeshRenderer, saved
+prefab; GLB only if imported as GameObject by optional host package.
+Actual Unity 6000.3.18f1 compile, seven EditMode suites and external
+FBX Scene/Play test are still pending. See
+[docs/30](30_2026-10-19_P20_IMPORTED_MODEL_BINDING.md).
