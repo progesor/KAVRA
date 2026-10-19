@@ -210,6 +210,35 @@ parçaları görsel olarak hareket etsin. **Düşük öncelik modeller**
 **Çıkış:** Kullanıcı kendi modelini içe alıp makul, sınırlı sayıda
 Wizard adımıyla tekerlekli çalışan araç prefabı üretebiliyor.
 
+### 19 Ekim 2026 — P2.0 Imported Model Binder (kaynak)
+
+Kullanıcı, önceki EditMode testlerinin geçtiğini ve native Undo crash'inin
+çözüldüğünü bildirdi. Bu kullanıcı kabulü olarak kayda alındı;
+M1.5.1 checker/hitch **Play Mode** kriterleri ayrı açık kalıyor.
+
+- [x] Ayrı `VehicleVisualBindingDefinition`: model GameObject/prefab
+  referansı, kaynaktan bağımsız tekerlek ID → node path eşlemesi,
+  ölçek/konum/yön hizalaması.
+- [x] `Tools > KAVRA > Imported Model Binding Wizard` ve ana
+  Vehicle Setup Wizard'dan açılış, node seçimi ve isim bazlı öneriler.
+- [x] Yalnız MeshFilter/MeshRenderer görsellerinin orijinal mesh/materyal
+  referanslarıyla ayrılıp mevcut Travel/Steering/Spin pivotlarına
+  bağlanması. Tek Rigidbody, eski collider ve fizik modülleri korunuyor.
+- [x] Yanlış/tekrarlanan tekerlek node'u ve geçersiz ölçek doğrulaması;
+  horizontal pivot uyuşmazlığı uyarısı.
+- [x] 4W, 6x6 ve 20W için sentetik model/regresyon ve prefab
+  save/reimport testleri kaynakta; Unity kabul betiğinde **7. suite**.
+- [ ] Güncel P2 kodu Unity 6000.3.18f1'de derlendi, yedi EditMode
+  suite PASS ve Test Runner crash yok.
+- [ ] Ayrı tekerlek mesh'leri olan gerçek bir FBX ile görsel Scene/Play
+  Mode, direksiyon/dönme/süspansiyon ve prefab kalıcılığı kabulü.
+- [ ] Sonraki P2: özel gövde collider uyumu, detaylı model pivot önizleme
+  ve mekanik süspansiyon görsel parçaları.
+
+Ayrıntı: [docs/30](30_2026-10-19_P20_IMPORTED_MODEL_BINDING.md).
+Harici lisanslı modelleri açık repoya ekleme. Paket v0.1.6,
+PR #16 hâlâ Draft; fizikte otomatik anti-flip yok.
+
 ## 5. P3 — Basit tahrikten genişletilebilir araç mekaniğine
 
 - [ ] Mevcut `SimplePowertrainRuntime`ın yanına gerçek
