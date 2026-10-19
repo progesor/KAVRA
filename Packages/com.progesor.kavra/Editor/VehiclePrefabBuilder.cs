@@ -44,8 +44,11 @@ namespace Progesor.Kavra.Editor
             GameObject temporary = null;
             try
             {
+                // This hierarchy exists only to serialize the prefab.
+                // Recording Undo for objects immediately destroyed afterward
+                // can leave invalid Undo handles for the Test Runner to revert.
                 temporary = VehicleScaffoldBuilder.Create(configuration, true,
-                    VehicleDriveSource.SimplePowertrain);
+                    VehicleDriveSource.SimplePowertrain, false);
                 bool success;
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     temporary, path, out success);
@@ -69,7 +72,7 @@ namespace Progesor.Kavra.Editor
             finally
             {
                 if (temporary != null)
-                    Undo.DestroyObjectImmediate(temporary);
+                    Object.DestroyImmediate(temporary);
             }
         }
     }
