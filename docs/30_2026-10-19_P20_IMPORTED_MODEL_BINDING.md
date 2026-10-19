@@ -69,6 +69,36 @@ URP/HDRP, and any particular model library become KAVRA core dependencies.
 8. Use `Build model-bound vehicle in scene` or
    `Save reusable model-bound prefab` (refuses to overwrite files).
 
+## First external model smoke test — CC0
+
+**Suggested source:** [Kenney Car Kit](https://kenney.nl/assets/car-kit)
+([publisher release](https://kenney-assets.itch.io/car-kit)).
+The available Car Kit contains low-poly vehicle bodies, separate wheel
+models and FBX interchange files. The official release lists **CC0**,
+so this is a convenient no-purchase prototype test, not a final visual
+quality target.
+
+The initial P2.0 binder expects one **source prefab hierarchy**, rather
+than selecting separate wheel prefab assets per WheelId. This does not
+require modifying Kenney's imported source files:
+
+1. Import a body FBX and wheel FBX models into your own Unity host
+   project's Assets folder.
+2. Make a NEW empty root GameObject (for example `Car_AssemblyVisual`).
+   Add the imported body as a child and **four instances** of a wheel
+   model, positioned with each wheel pivot at the correct wheel center.
+3. Name the wheel instance roots `front-L`, `front-R`, `rear-L`,
+   `rear-R` (matching the selected `VehicleDefinition` WheelIds).
+4. Save this root as a **new prefab**. Use that prefab as the Wizard's
+   `Imported model`; then map its relative wheel node paths.
+5. Validate X/Z wheel offsets, correct the scale/orientation and build
+   a new KAVRA model-bound vehicle prefab. The original Kenney files
+   remain untouched and the generated prefab keeps mesh/material
+   references rather than distributing raw model files.
+
+Separate `WheelPrefab` fields per physical wheel (without composing
+one source hierarchy) are a **future P2.1 convenience improvement**.
+
 ## Produced hierarchy
 
 ```
