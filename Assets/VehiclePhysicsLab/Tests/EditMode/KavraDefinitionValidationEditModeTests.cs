@@ -212,5 +212,38 @@ namespace Progesor.Kavra.Lab.Tests
                 Object.DestroyImmediate(b);
             }
         }
+        [Test]
+        public void EditorBuilderOriginalMethodSignaturesRemainDelegateCompatible()
+        {
+            // Optional parameters alone change the method group signature.
+            // Keep the original overloads for external Unity Editor clients.
+            System.Func<VehicleDefinition, bool, VehicleDriveSource, GameObject>
+                previousScaffold = VehicleScaffoldBuilder.Create;
+            System.Func<VehicleDefinition, bool, VehicleDriveSource, bool, GameObject>
+                temporaryScaffold = VehicleScaffoldBuilder.Create;
+            System.Func<VehicleAssemblyDefinition, GameObject>
+                previousTwoBody = VehicleAssemblyBuilder.Build;
+            System.Func<VehicleAssemblyDefinition, bool, GameObject>
+                temporaryTwoBody = VehicleAssemblyBuilder.Build;
+            System.Func<VehicleAssemblyChainDefinition, GameObject>
+                previousChain = VehicleAssemblyChainBuilder.Build;
+            System.Func<VehicleAssemblyChainDefinition, bool, GameObject>
+                temporaryChain = VehicleAssemblyChainBuilder.Build;
+            System.Func<GameObject, bool, int>
+                previousRig = VehicleWheelVisualRigBuilder.Bind;
+            System.Func<GameObject, bool, bool, int>
+                temporaryRig = VehicleWheelVisualRigBuilder.Bind;
+
+            Assert.IsNotNull(previousScaffold);
+            Assert.IsNotNull(temporaryScaffold);
+            Assert.IsNotNull(previousTwoBody);
+            Assert.IsNotNull(temporaryTwoBody);
+            Assert.IsNotNull(previousChain);
+            Assert.IsNotNull(temporaryChain);
+            Assert.IsNotNull(previousRig);
+            Assert.IsNotNull(temporaryRig);
+            // This is compile-time API coverage, not a scene mutation.
+        }
+
     }
 }
