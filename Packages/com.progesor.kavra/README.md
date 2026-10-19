@@ -276,3 +276,32 @@ No UPM Runtime physics, public serialized fields, manual H/R behavior,
 input/URP bindings, scene assets or stored telemetry were changed.
 The native Test Runner Undo rollback crash is **not considered fixed**
 until an actual Unity Editor rerun completes without a crash.
+
+
+## P2.0 — Imported FBX / model asset visual binding (source: 19 Oct 2026)
+
+Open `Tools > KAVRA > Vehicle Setup Wizard` and choose
+`Open Imported Model Binding Wizard` in section 5, or use
+`Tools > KAVRA > Imported Model Binding Wizard` directly.
+
+Assign an existing `VehicleDefinition`, create a separate
+`VehicleVisualBindingDefinition`, and choose a GameObject already
+imported by Unity (FBX or prefab). If a host installs an optional GLB
+importer such as Unity glTFast, GLB may also be used after import;
+KAVRA itself has no GLB/FBX SDK/Blender/URP dependency.
+
+Map each stable `WheelId` to an imported child Transform path. The
+node pivot should be at the wheel center. Adjust visual scale/Euler
+and offset; alignment mismatches >0.5m in X/Z warn without changing
+physics. Use scene build or save a **new** reusable prefab (no
+overwrites). Source mesh/material GUIDs are preserved by reference.
+
+This creates presentation-only meshes under each KAVRA
+`TravelPivot/SteeringPivot/SpinPivot` and a static imported body.
+No source colliders/physics/scripts are cloned. The existing physics
+BoxCollider remains (renderer optionally hidden). MeshFilter and
+MeshRenderer only; skinned/rigged geometry is unsupported in P2.0.
+
+Real Editor C# compilation and seven-suite TestRunner/Play Mode visual
+acceptance are **not yet confirmed**. Detail:
+`docs/30_2026-10-19_P20_IMPORTED_MODEL_BINDING.md`.
