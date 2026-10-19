@@ -76,3 +76,16 @@ but Unity still crashes, save both results and the newest Unity native
 crash report. The next step is to isolate suites / report the Unity
 native crash; **do not** delete Library, existing assets, or telemetry.
 See `docs/29_2026-10-19_NATIVE_EDITOR_UNDO_CRASH.md`.
+
+
+### P2 imported model tests
+
+The Unity EditMode acceptance script now requires **seven** suites;
+`KavraImportedVisualEditModeTests` covers synthetic imported model
+GameObject assets for 4W, 6x6 and 20W configurations, one-Rigidbody
+invariance, wheel visual binding and source mesh/material preservation,
+error handling, scale warnings and prefab save/reimport.
+
+The tests use unique temporary Assets folders and `recordUndo=false`;
+they do **not** install FBX or glTF importers, add vendor models to
+the repository, or replace a real external FBX scene inspection.
