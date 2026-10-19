@@ -102,7 +102,8 @@ $expectedSuites = @(
     "KavraHitchLifecycleEditModeTests",
     "KavraAssemblyChainEditModeTests",
     "KavraDefinitionValidationEditModeTests",
-    "KavraPrefabRoundtripEditModeTests"
+    "KavraPrefabRoundtripEditModeTests",
+    "KavraImportedVisualEditModeTests"
 )
 $missing = New-Object "System.Collections.Generic.List[string]"
 foreach ($suite in $expectedSuites) {

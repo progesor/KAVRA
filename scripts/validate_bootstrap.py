@@ -150,6 +150,7 @@ def main():
         "KavraHitchLifecycleEditModeTests.cs", "KavraPhysicsEditModeTests.cs",
         "KavraPrefabRoundtripEditModeTests.cs",
         "KavraDefinitionValidationEditModeTests.cs",
+        "KavraImportedVisualEditModeTests.cs",
     )
     for filename in test_paths:
         code = (LAB / "Tests/EditMode" / filename).read_text(encoding="utf-8")
@@ -164,9 +165,34 @@ def main():
             check("false" in invocation,
                   filename + " must opt out of Undo for temporary build")
 
+    # P2: model mapping is optional; core Runtime must never reference
+    # the Editor import, Blender, FBX SDK, GLB importer or render pipeline.
+    visual_profile = PKG / "Runtime/Definitions/VehicleVisualBindingDefinition.cs"
+    info = PKG / "Runtime/Components/VehicleImportedVisualRoot.cs"
+    visual_builder = editor / "VehicleImportedVisualBuilder.cs"
+    visual_validator = editor / "VehicleImportedVisualValidator.cs"
+    visual_window = editor / "KavraImportedModelWizardWindow.cs"
+    for path in (visual_profile, info, visual_builder,
+                 visual_validator, visual_window):
+        check(path.is_file(), "P2 model binding file missing: " + str(path))
+    model_source = visual_builder.read_text(encoding="utf-8")
+    check("CloneVisualTree(" in model_source and
+          "mesh.sharedMesh = filter.sharedMesh" in model_source and
+          "renderer.sharedMaterials = originalRenderer.sharedMaterials" in model_source,
+          "P2 must reuse mesh/material references without exporting source model")
+    check("VehicleScaffoldBuilder.Create(" in model_source and
+          "Build(binding, false)" in model_source,
+          "P2 must share existing KAVRA physics and use Undo-free temporary prefab staging")
+    imported_test = (LAB / "Tests/EditMode/KavraImportedVisualEditModeTests.cs"
+                     ).read_text(encoding="utf-8")
+    check(imported_test.count("VehicleImportedVisualBuilder.Build(binding, false)") >= 3,
+          "Imported model tests must use no-Undo temporary builds")
+    check('"KavraImportedVisualEditModeTests"' in runner,
+          "P2 suite absent from Windows Unity acceptance runner")
+
     for path in ROOT.rglob("*.json"):
         load(path)
-    print("PASS: UPM, asmdef graph, hitch GUID, P1 control API and JSON source")
+    print("PASS: UPM, asmdef graph, hitch GUID, P1/P2 control, model references and JSON source")
     print("LIMIT: Unity compile, EditMode tests, PhysX and visuals NOT verified")
 
 
