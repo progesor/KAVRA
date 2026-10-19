@@ -17,7 +17,7 @@ The gzip report is valid JSON. Key facts from its contents:
 - `has_managed_exception: false`
 - 246 threads, main thread marked `crashed: true`
 - `2026-10-19 07:42:25.262 UTC`: `Saving results to:
-  C:/Users/proge/AppData/LocalLow/DefaultCompany/KAVRA/TestResults.xml`
+  [Windows user profile]/AppData/LocalLow/DefaultCompany/KAVRA/TestResults.xml`
 - `07:42:25.420 UTC`: `IPostBuildCleanup` for
   `Unity.PerformanceTesting.Editor.TestRunBuilder`
 - `07:42:25.854 UTC`: `Dereferencing NULL ImmediatePtr!`
@@ -53,7 +53,9 @@ the observed native null pointer. **The crash report does not identify
 the exact stale object**, and a Unity engine defect remains possible.
 
 Source changes:
-1. Editor builders accept `recordUndo = true` (backwards-compatible).
+1. Editor builders keep their **exact original public method signatures**
+   (including delegate/method-group compatibility) and add explicit
+   `recordUndo` overloads. The original call path uses `true`.
 2. **Normal Editor menu/Wizard scene creation** retains Undo.
 3. **All temporary test/prefab creates** explicitly pass
    `recordUndo = false`, using regular `GameObject.AddComponent`
@@ -64,6 +66,8 @@ Source changes:
 5. Temporary prefab stage objects are cleaned using
    `Object.DestroyImmediate`, no Undo registration.
 6. Static preflight checks that test sources use the no-Undo pathway.
+   A compile-time EditMode regression also guards the original and new
+   builder delegate signatures without creating any scene object.
 
 Importantly **no global `Undo.ClearAll()`** call was introduced:
 user Editor undo history must not be discarded.
