@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased — P2.0 imported model visual binding (2026-10-19)
+
+- Added external FBX/model GameObject visual binding profile, validator,
+  dedicated Editor Wizard (also linked from Vehicle Setup Wizard), and
+  reusable prefab builder.
+- Mesh/material references are reused; imported body and separate wheel
+  meshes move into KAVRA's existing 3-pivot visual rig without copying
+  source physics/colliders/scripts or touching input, drivetrain, hitch
+  or manual R recovery.
+- Added 4W/6W/20W synthetic model regression, prefab save/reimport,
+  invalid source node mapping and scale-mismatch checks.
+- FBX first, GLB only once host imports it to a prefab via optional
+  importer; no core UPM dependency. Actual Unity P2 acceptance pending.
+- User confirmed resolved Undo/Test Runner native crash.
+
+
 ## Unreleased — Unity native Test Runner Undo rollback mitigation (2026-10-19)
 
 - User reports all EditMode tests passed on a later local rerun, but
