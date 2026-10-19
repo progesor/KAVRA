@@ -122,6 +122,48 @@ def main():
           "Unity Test Framework forbids -quit with -runTests")
     check('"-runTests"' in runner, "Unity Test Runner invocation missing")
 
+    # Editor-native crash guard. EditMode test objects are destroyed
+    # immediately, so never register their creation in the Undo stack
+    # that Unity TestRunner reverts after the suite completes.
+    editor = PKG / "Editor"
+    builder_names = (
+        "VehicleScaffoldBuilder", "VehicleAssemblyBuilder",
+        "VehicleAssemblyChainBuilder", "VehicleWheelVisualRigBuilder",
+    )
+    for name in builder_names:
+        code = (editor / (name + ".cs")).read_text(encoding="utf-8")
+        check("bool recordUndo = true" in code and "if (recordUndo)" in code,
+              name + " must keep default GUI Undo and an opt-out for temp objects")
+    scaffold = (editor / "VehicleScaffoldBuilder.cs").read_text(encoding="utf-8")
+    check("VehicleWheelVisualRigBuilder.Bind(root, true, recordUndo)" in scaffold,
+          "Wheel rig must inherit the temporary build Undo policy")
+    assembly = (editor / "VehicleAssemblyBuilder.cs").read_text(encoding="utf-8")
+    chain = (editor / "VehicleAssemblyChainBuilder.cs").read_text(encoding="utf-8")
+    check("Build(definition, false)" in assembly and
+          "Build(definition, false)" in chain,
+          "Temporary prefab saves must not create Undo records")
+    powered = (editor / "VehiclePrefabBuilder.cs").read_text(encoding="utf-8")
+    check("VehicleDriveSource.SimplePowertrain, false" in powered,
+          "Temporary powered prefab save must not register Undo")
+    test_paths = (
+        "KavraAssemblyEditModeTests.cs", "KavraAssemblyChainEditModeTests.cs",
+        "KavraHitchLifecycleEditModeTests.cs", "KavraPhysicsEditModeTests.cs",
+        "KavraPrefabRoundtripEditModeTests.cs",
+        "KavraDefinitionValidationEditModeTests.cs",
+    )
+    for filename in test_paths:
+        code = (LAB / "Tests/EditMode" / filename).read_text(encoding="utf-8")
+        check("Undo.RegisterCreatedObjectUndo(" not in code,
+              filename + " adds its own Undo registrations")
+        for match in re.finditer(
+                r"Vehicle(?:Scaffold|Assembly|AssemblyChain)Builder\.(?:Create|Build)\(",
+                code):
+            # Include the multi-line argument list, but not the rest of
+            # the test. This guard is intentionally a source-only preflight.
+            invocation = code[match.start():match.start() + 280].split(");", 1)[0]
+            check("false" in invocation,
+                  filename + " must opt out of Undo for temporary build")
+
     for path in ROOT.rglob("*.json"):
         load(path)
     print("PASS: UPM, asmdef graph, hitch GUID, P1 control API and JSON source")

@@ -256,3 +256,23 @@ On Windows, close the running Editor and execute
 `scripts/Run-KavraUnityEditMode.ps1` from the repository root to
 collect an actual Unity 6.3 Test Runner result. No real Unity PASS
 has been received as of this source update.
+
+## Editor creation Undo policy — 19 October 2026
+
+Editor builders now expose an additive `recordUndo = true` argument:
+
+- `VehicleScaffoldBuilder.Create(configuration, dynamicPhysics, driveSource, recordUndo)`
+- `VehicleAssemblyBuilder.Build(definition, recordUndo)`
+- `VehicleAssemblyChainBuilder.Build(definition, recordUndo)`
+- `VehicleWheelVisualRigBuilder.Bind(vehicle, addDemonstrationShock, recordUndo)`
+
+Interactive scene construction defaults to true, maintaining Unity's
+normal Undo/Redo and selection workflow. Ephemeral prefab-export staging
+and EditMode regression tests pass false, so no Undo stack entries remain
+for objects which are immediately disposed. The option propagates to
+wheel pivot/shock building and hitch markers.
+
+No UPM Runtime physics, public serialized fields, manual H/R behavior,
+input/URP bindings, scene assets or stored telemetry were changed.
+The native Test Runner Undo rollback crash is **not considered fixed**
+until an actual Unity Editor rerun completes without a crash.

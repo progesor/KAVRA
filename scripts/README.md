@@ -52,3 +52,27 @@ normally does), upload the generated `Unity-Editor.log` and the
 `%LOCALAPPDATA%\\Unity\\Editor\\Editor.log` immediately after the crash;
 native reports may be under `%TMP%\\Unity\\Editor\\Crashes`.
 A completed NUnit XML does not prove that Unity exited normally.
+
+## 19 October — native Unity Test Runner Undo rollback crash
+
+A user-supplied Unity native crash report shows test results saved and
+`IPostBuildCleanup` finished before `Dereferencing NULL ImmediatePtr!`.
+The crashing managed stack includes `UnityEditor.Undo.RevertAllDownToGroup`
+inside `TestJobRunner.ExecuteStep`.
+
+KAVRA's older Editor builders registered `Undo` creations and components
+for the same temporary test/prefab objects later destroyed with
+`Object.DestroyImmediate`. This is a plausible source of stale Undo
+handles, not a proven Unity-engine root cause.
+
+Builders now accept `recordUndo` (defaults to **true**, preserving the
+interactive scene tools). All disposable EditMode test rigs and temporary
+prefab builds explicitly use `recordUndo: false`; nested visual rigs
+and hitch markers inherit the same option. No `Undo.ClearAll()`
+or forceful undo-stack removal is used.
+
+Re-run Test Runner on the updated branch. If **all NUnit cases PASS**
+but Unity still crashes, save both results and the newest Unity native
+crash report. The next step is to isolate suites / report the Unity
+native crash; **do not** delete Library, existing assets, or telemetry.
+See `docs/29_2026-10-19_NATIVE_EDITOR_UNDO_CRASH.md`.
