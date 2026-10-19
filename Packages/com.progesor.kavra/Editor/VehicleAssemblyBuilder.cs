@@ -9,7 +9,8 @@ namespace Progesor.Kavra.Editor
     /// </summary>
     public static class VehicleAssemblyBuilder
     {
-        public static GameObject Build(VehicleAssemblyDefinition definition)
+        public static GameObject Build(VehicleAssemblyDefinition definition,
+            bool recordUndo = true)
         {
             foreach (VehicleValidationIssue issue in
                      VehicleAssemblyValidator.Validate(definition))
@@ -17,23 +18,27 @@ namespace Progesor.Kavra.Editor
                     throw new System.InvalidOperationException("KAVRA assembly: " + issue.Message);
 
             var assembly = new GameObject("KAVRA_Assembly_TractorTrailer");
-            Undo.RegisterCreatedObjectUndo(assembly, "Create KAVRA VehicleAssembly");
+            if (recordUndo)
+                Undo.RegisterCreatedObjectUndo(assembly, "Create KAVRA VehicleAssembly");
             try
             {
-                VehicleAssemblyRoot assemblyRoot =
-                    Undo.AddComponent<VehicleAssemblyRoot>(assembly);
+                VehicleAssemblyRoot assemblyRoot = recordUndo
+                    ? Undo.AddComponent<VehicleAssemblyRoot>(assembly)
+                    : assembly.AddComponent<VehicleAssemblyRoot>();
                 assemblyRoot.Definition = definition;
 
                 GameObject tractor = VehicleScaffoldBuilder.Create(
                     definition.Tractor, true,
                     definition.Tractor.Powertrain != null
                         ? VehicleDriveSource.SimplePowertrain
-                        : VehicleDriveSource.LegacyDirectWheelTorque);
+                        : VehicleDriveSource.LegacyDirectWheelTorque,
+                    recordUndo);
                 tractor.name = "Tractor_" + definition.Tractor.VehicleName;
                 tractor.transform.SetParent(assembly.transform, true);
 
                 GameObject trailer = VehicleScaffoldBuilder.Create(
-                    definition.Trailer, true, VehicleDriveSource.LegacyDirectWheelTorque);
+                    definition.Trailer, true,
+                    VehicleDriveSource.LegacyDirectWheelTorque, recordUndo);
                 trailer.name = "Trailer_" + definition.Trailer.VehicleName;
                 trailer.transform.SetParent(assembly.transform, true);
 
@@ -49,7 +54,9 @@ namespace Progesor.Kavra.Editor
                 Physics.SyncTransforms();
 
                 Rigidbody towBody = tractor.GetComponent<Rigidbody>();
-                VehicleCoupling coupling = Undo.AddComponent<VehicleCoupling>(trailer);
+                VehicleCoupling coupling = recordUndo
+                    ? Undo.AddComponent<VehicleCoupling>(trailer)
+                    : trailer.AddComponent<VehicleCoupling>();
                 VehicleCouplingResult joined = coupling.TryAttach(towBody, definition);
                 if (joined != VehicleCouplingResult.Connected)
                     throw new System.InvalidOperationException(
@@ -59,29 +66,35 @@ namespace Progesor.Kavra.Editor
                 assemblyRoot.Trailer = trailer.GetComponent<VehicleRoot>();
                 assemblyRoot.Coupling = coupling;
 
-                VehicleAssemblyMember towMember =
-                    Undo.AddComponent<VehicleAssemblyMember>(tractor);
+                VehicleAssemblyMember towMember = recordUndo
+                    ? Undo.AddComponent<VehicleAssemblyMember>(tractor)
+                    : tractor.AddComponent<VehicleAssemblyMember>();
                 towMember.Assembly = assemblyRoot;
                 towMember.IsTractor = true;
 
-                VehicleAssemblyMember towedMember =
-                    Undo.AddComponent<VehicleAssemblyMember>(trailer);
+                VehicleAssemblyMember towedMember = recordUndo
+                    ? Undo.AddComponent<VehicleAssemblyMember>(trailer)
+                    : trailer.AddComponent<VehicleAssemblyMember>();
                 towedMember.Assembly = assemblyRoot;
                 towedMember.IsTractor = false;
 
                 AddHitchMarker(tractor.transform, definition.TractorHitchLocal,
-                    "TractorHitchMarker");
+                    "TractorHitchMarker", recordUndo);
                 AddHitchMarker(trailer.transform, definition.TrailerHitchLocal,
-                    "TrailerCouplingMarker");
-                AddDrawbar(trailer.transform, definition.TrailerHitchLocal);
+                    "TrailerCouplingMarker", recordUndo);
+                AddDrawbar(trailer.transform, definition.TrailerHitchLocal, recordUndo);
 
-                Selection.activeGameObject = assembly;
-                EditorGUIUtility.PingObject(assembly);
+                if (recordUndo)
+                {
+                    Selection.activeGameObject = assembly;
+                    EditorGUIUtility.PingObject(assembly);
+                }
                 return assembly;
             }
             catch
             {
-                Undo.DestroyObjectImmediate(assembly);
+                if (recordUndo) Undo.DestroyObjectImmediate(assembly);
+                else Object.DestroyImmediate(assembly);
                 throw;
             }
         }
@@ -109,7 +122,7 @@ namespace Progesor.Kavra.Editor
             GameObject temporary = null;
             try
             {
-                temporary = Build(definition);
+                temporary = Build(definition, false);
                 bool succeeded;
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(
                     temporary, path, out succeeded);
@@ -126,15 +139,17 @@ namespace Progesor.Kavra.Editor
             }
             finally
             {
-                if (temporary != null) Undo.DestroyObjectImmediate(temporary);
+                if (temporary != null) Object.DestroyImmediate(temporary);
             }
         }
 
-        private static void AddHitchMarker(Transform parent, Vector3 local, string name)
+        private static void AddHitchMarker(Transform parent, Vector3 local, string name,
+            bool recordUndo)
         {
             GameObject point = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             point.name = name;
-            Undo.RegisterCreatedObjectUndo(point, "Create hitch marker");
+            if (recordUndo)
+                Undo.RegisterCreatedObjectUndo(point, "Create hitch marker");
             point.transform.SetParent(parent, false);
             point.transform.localPosition = local;
             point.transform.localScale = Vector3.one * 0.12f;
@@ -142,13 +157,15 @@ namespace Progesor.Kavra.Editor
             if (col != null) Object.DestroyImmediate(col);
         }
 
-        private static void AddDrawbar(Transform trailerRoot, Vector3 hitchLocal)
+        private static void AddDrawbar(Transform trailerRoot, Vector3 hitchLocal,
+            bool recordUndo)
         {
             Vector3 towardsBody = new Vector3(0f, hitchLocal.y, -1.45f);
             Vector3 vector = hitchLocal - towardsBody;
             GameObject bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
             bar.name = "__TRAILER_DRAWBAR_VISUAL";
-            Undo.RegisterCreatedObjectUndo(bar, "Create trailer drawbar");
+            if (recordUndo)
+                Undo.RegisterCreatedObjectUndo(bar, "Create trailer drawbar");
             bar.transform.SetParent(trailerRoot, false);
             bar.transform.localPosition = (towardsBody + hitchLocal) * 0.5f;
             bar.transform.localRotation = Quaternion.FromToRotation(Vector3.forward,

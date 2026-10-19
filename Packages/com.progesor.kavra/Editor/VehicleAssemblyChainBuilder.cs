@@ -9,7 +9,8 @@ namespace Progesor.Kavra.Editor
     /// </summary>
     public static class VehicleAssemblyChainBuilder
     {
-        public static GameObject Build(VehicleAssemblyChainDefinition definition)
+        public static GameObject Build(VehicleAssemblyChainDefinition definition,
+            bool recordUndo = true)
         {
             foreach (VehicleValidationIssue issue in
                      VehicleAssemblyChainValidator.Validate(definition))
@@ -18,10 +19,13 @@ namespace Progesor.Kavra.Editor
                         "KAVRA chain configuration: " + issue.Message);
 
             var assemblyObject = new GameObject("KAVRA_AssemblyChain");
-            Undo.RegisterCreatedObjectUndo(assemblyObject, "Create KAVRA chain");
+            if (recordUndo)
+                Undo.RegisterCreatedObjectUndo(assemblyObject, "Create KAVRA chain");
             try
             {
-                var chain = Undo.AddComponent<VehicleAssemblyChainRoot>(assemblyObject);
+                var chain = recordUndo
+                    ? Undo.AddComponent<VehicleAssemblyChainRoot>(assemblyObject)
+                    : assemblyObject.AddComponent<VehicleAssemblyChainRoot>();
                 chain.Definition = definition;
 
                 int bodyCount = definition.VehicleCount;
@@ -38,7 +42,7 @@ namespace Progesor.Kavra.Editor
                         ? VehicleDriveSource.SimplePowertrain
                         : VehicleDriveSource.LegacyDirectWheelTorque;
                     GameObject body = VehicleScaffoldBuilder.Create(
-                        source, true, driveSource);
+                        source, true, driveSource, recordUndo);
                     body.name = (i == 0 ? "Tractor_" : "Trailer_" + i + "_") +
                                 source.VehicleName;
                     body.transform.SetParent(assemblyObject.transform, true);
@@ -54,8 +58,9 @@ namespace Progesor.Kavra.Editor
                             edge.TrailerHitchLocal);
                         Physics.SyncTransforms();
 
-                        VehicleCoupling coupling =
-                            Undo.AddComponent<VehicleCoupling>(body);
+                        VehicleCoupling coupling = recordUndo
+                            ? Undo.AddComponent<VehicleCoupling>(body)
+                            : body.AddComponent<VehicleCoupling>();
                         VehicleCouplingResult result = coupling.TryAttach(
                             vehicles[i - 1].GetComponent<Rigidbody>(), edge);
                         if (result != VehicleCouplingResult.Connected)
@@ -64,26 +69,33 @@ namespace Progesor.Kavra.Editor
                                 " could not connect: " + result);
                         couplings[i - 1] = coupling;
                         AddHitchMarker(vehicles[i - 1].transform,
-                            edge.TractorHitchLocal, "HitchRear_To_" + i);
+                            edge.TractorHitchLocal, "HitchRear_To_" + i,
+                            recordUndo);
                         AddHitchMarker(body.transform, edge.TrailerHitchLocal,
-                            "HitchFront_From_" + (i - 1));
+                            "HitchFront_From_" + (i - 1), recordUndo);
                     }
 
                     vehicles[i] = body.GetComponent<VehicleRoot>();
-                    var member = Undo.AddComponent<VehicleAssemblyChainMember>(body);
+                    var member = recordUndo
+                        ? Undo.AddComponent<VehicleAssemblyChainMember>(body)
+                        : body.AddComponent<VehicleAssemblyChainMember>();
                     member.Chain = chain;
                     member.VehicleIndex = i;
                 }
 
                 chain.Vehicles = vehicles;
                 chain.Couplings = couplings;
-                Selection.activeGameObject = assemblyObject;
-                EditorGUIUtility.PingObject(assemblyObject);
+                if (recordUndo)
+                {
+                    Selection.activeGameObject = assemblyObject;
+                    EditorGUIUtility.PingObject(assemblyObject);
+                }
                 return assemblyObject;
             }
             catch
             {
-                Undo.DestroyObjectImmediate(assemblyObject);
+                if (recordUndo) Undo.DestroyObjectImmediate(assemblyObject);
+                else Object.DestroyImmediate(assemblyObject);
                 throw;
             }
         }
@@ -111,7 +123,7 @@ namespace Progesor.Kavra.Editor
             GameObject temporary = null;
             try
             {
-                temporary = Build(definition);
+                temporary = Build(definition, false);
                 bool success;
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(
                     temporary, path, out success);
@@ -124,16 +136,17 @@ namespace Progesor.Kavra.Editor
             finally
             {
                 if (temporary != null)
-                    Undo.DestroyObjectImmediate(temporary);
+                    Object.DestroyImmediate(temporary);
             }
         }
 
         private static void AddHitchMarker(Transform parent,
-            Vector3 localPosition, string name)
+            Vector3 localPosition, string name, bool recordUndo)
         {
             GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             marker.name = name;
-            Undo.RegisterCreatedObjectUndo(marker, "Create KAVRA hitch marker");
+            if (recordUndo)
+                Undo.RegisterCreatedObjectUndo(marker, "Create KAVRA hitch marker");
             marker.transform.SetParent(parent, false);
             marker.transform.localPosition = localPosition;
             marker.transform.localScale = Vector3.one * 0.13f;
